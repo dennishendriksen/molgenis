@@ -572,7 +572,8 @@
 		<module>molgenis-data-excel</module>
 		<module>molgenis-data-csv</module>
 		<module>molgenis-data-googlespreadsheet</module>
-        <module>molgenis-data-omx</module>
+        <module>molgenis-data-mongo</module>
+		<module>molgenis-data-omx</module>
 		<module>molgenis-data</module>
 		<module>molgenis-data-jpa</module>
 		<module>molgenis-data-rest</module>
