@@ -557,6 +557,61 @@
 
         <plugins>
             <plugin>
+                <groupId>com.github.eirslett</groupId>
+                <artifactId>frontend-maven-plugin</artifactId>
+                <version>0.0.23</version>
+                <executions>
+                    <execution>
+                        <id>install node and npm</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>install-node-and-npm</goal>
+                        </goals>
+                        <configuration>
+                            <nodeVersion>v0.10.38</nodeVersion>
+                            <npmVersion>1.4.28</npmVersion>
+                            <skip>${maven.test.skip}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm install</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <!-- Optional configuration which provides for running any npm command -->
+                        <configuration>
+                            <arguments>--no-color install</arguments>
+                            <skip>${maven.test.skip}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm install jest-cli</id>
+                        <phase>generate-test-resources</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <!-- Optional configuration which provides for running any npm command -->
+                        <configuration>
+                            <arguments>--no-color install -g jest-cli --save-dev</arguments>
+                            <skip>${maven.test.skip}</skip>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>default-cli</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>npm</goal>
+                        </goals>
+                        <!-- Optional configuration which provides for running any npm command -->
+                        <configuration>
+                            <arguments>--no-color test</arguments>
+                            <skip>${maven.test.skip}</skip>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
             </plugin>
