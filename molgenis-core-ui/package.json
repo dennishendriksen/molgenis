@@ -1,0 +1,25 @@
+{
+  "name": "molgenis-core-ui", 
+  "dependencies": {
+    "react": "0.13.2",
+    "react-tools": "0.13.2"
+  },
+  "devDependencies": {
+    "browserify": "*",
+    "gulp": "*",
+    "vinyl-source-stream": "*",
+    "vinyl-buffer": "*",
+    "gulp-uglify" : "*",
+    "gulp-sourcemaps": "*",
+    "gulp-util": "*"
+    
+  },
+  "scripts": {
+    "test": "jest"
+  },
+  "jest": {
+    "testDirectoryName": "js",
+    "testPathDirs": ["src/test/resources"],
+    "unmockedModulePathPatterns": ["<rootDir>/node_modules/react"]
+  }
+}
