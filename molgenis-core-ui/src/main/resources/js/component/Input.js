@@ -28,6 +28,12 @@
 			onValueChange: React.PropTypes.func.isRequired,
 			onBlur: React.PropTypes.func
 		},
+		getDefaultProps: function() {
+			return {
+				onValueChange: function() {},
+				onBlur: function() {}
+			};
+		},
 		getInitialState: function() {
 			return this._isRadioOrCheckbox() ? {checked: this.props.checked} : {value: this.props.value};
 		},
