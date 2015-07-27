@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-import org.apache.poi.ss.formula.eval.NotImplementedException;
 import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.ManageableRepositoryCollection;
@@ -48,16 +47,19 @@ public class InMemoryRepositoryCollection implements ManageableRepositoryCollect
 	@Override
 	public Repository addEntityMeta(EntityMetaData entityMetaData)
 	{
-		Repository repo = new InMemoryRepository(entityMetaData);
-		repos.put(entityMetaData.getName(), repo);
-
-		return repo;
+		String name = entityMetaData.getName();
+		if (!repos.containsKey(name))
+		{
+			Repository repo = new InMemoryRepository(entityMetaData);
+			repos.put(name, repo);
+		}
+		return repos.get(name);
 	}
 
 	@Override
 	public void deleteAttribute(String entityName, String attributeName)
 	{
-		throw new NotImplementedException("Not implemented yet");
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -75,13 +77,13 @@ public class InMemoryRepositoryCollection implements ManageableRepositoryCollect
 	@Override
 	public void addAttribute(String entityName, AttributeMetaData attribute)
 	{
-		throw new NotImplementedException("Not implemented yet");
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
 	public void addAttributeSync(String entityName, AttributeMetaData attribute)
 	{
-		throw new NotImplementedException("Not implemented yet");
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

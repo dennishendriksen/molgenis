@@ -9,7 +9,7 @@ import org.molgenis.compute.ui.model.decorator.UIWorkflowDecorator;
 import org.molgenis.data.DataService;
 import org.molgenis.dataexplorer.event.DataExplorerRegisterRefCellClickEvent;
 import org.molgenis.dataexplorer.event.DataExplorerRegisterRefCellClickEventHandler;
-import org.molgenis.security.runas.RunAsSystem;
+import org.molgenis.security.core.runas.RunAsSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -19,8 +19,8 @@ import org.springframework.stereotype.Service;
  * Register and deregister workflow action handlers with the data explorer
  */
 @Service
-public class AnalysisHandlerRegistratorServiceImpl implements AnalysisHandlerRegistratorService,
-		ApplicationEventPublisherAware
+public class AnalysisHandlerRegistratorServiceImpl
+		implements AnalysisHandlerRegistratorService, ApplicationEventPublisherAware
 {
 	private final DataService dataService;
 	private final DataExplorerRegisterRefCellClickEventHandler dataExplorerRegisterRefCellClickEventHandler;

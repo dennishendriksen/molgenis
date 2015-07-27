@@ -2,8 +2,8 @@ package org.molgenis.data.mysql;
 
 import java.util.Locale;
 
-import org.molgenis.AppConfig;
 import org.molgenis.MolgenisFieldTypes;
+import org.molgenis.MysqlTestConfig;
 import org.molgenis.data.Entity;
 import org.molgenis.data.Repository;
 import org.molgenis.data.support.DefaultEntityMetaData;
@@ -14,7 +14,7 @@ import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-@ContextConfiguration(classes = AppConfig.class)
+@ContextConfiguration(classes = MysqlTestConfig.class)
 public class MysqlRepositoryCollectionTest extends AbstractTestNGSpringContextTests
 {
 	@Autowired
@@ -28,8 +28,7 @@ public class MysqlRepositoryCollectionTest extends AbstractTestNGSpringContextTe
 
 		// create collection, add repo, destroy and reload
 		DefaultEntityMetaData personMD = new DefaultEntityMetaData("coll_person");
-		personMD.setIdAttribute("email");
-		personMD.addAttribute("email").setNillable(false);
+		personMD.addAttribute("email").setNillable(false).setIdAttribute(true);
 		personMD.addAttribute("firstName");
 		personMD.addAttribute("lastName");
 		personMD.addAttribute("birthday").setDataType(MolgenisFieldTypes.DATE);

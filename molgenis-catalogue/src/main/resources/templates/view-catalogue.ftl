@@ -1,11 +1,12 @@
 <#include "molgenis-header.ftl">
 <#include "molgenis-footer.ftl">
 
-<#assign css=['ui.fancytree.min.css', 'jquery-ui-1.9.2.custom.min.css', 'catalogue.css']>
-<#assign js=['jquery-ui-1.9.2.custom.min.js', 'jquery.fancytree.min.js', 'jquery.molgenis.tree.js', 'jquery.molgenis.attributemetadata.table.js', 'catalogue.js']>
+<#assign css=['ui.fancytree.min.css', 'catalogue.css']>
+<#assign js=['jquery.fancytree.min.js', 'jquery.molgenis.tree.js', 'jquery.molgenis.attributemetadata.table.js', 'catalogue.js']>
 
 <@header css js/>
 
+<#if selectedEntityName??>
 <div id="entity-class" class="well clearfix">
     <h3 id="entity-class-name"></h3>
     <span id="entity-class-description"></span>
@@ -32,8 +33,7 @@
             <div class="panel">
                 <div class="panel-heading">
                     <h4 class="panel-title clearfix">
-                        Data item selection
-                        <button type="button" title="Show shoppingcard" class="pull-right btn btn-default btn-sm" id="cart-button"><span class="glyphicon glyphicon-shopping-cart"></span></button>             
+                        Data item selection             
                     </h4>
                 </div>
                 <div class="panel-body">
@@ -53,8 +53,9 @@
 
 <div class="modal" id="cart-modal"></div>
 
-<#if selectedEntityName??>
 <script>var selectedEntityName='${selectedEntityName?js_string}';</script>
+<#else>
+<span>No available catalogues.</span>
+<script>var selectedEntityName=undefined;</script>
 </#if>
-
 <@footer/>

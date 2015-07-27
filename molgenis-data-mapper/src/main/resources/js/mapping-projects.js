@@ -1,7 +1,5 @@
 (function($, molgenis) {	
 	"use strict";
-	var restApi = new molgenis.RestClient();
-	
 	/**
 	 * Updates a table's column widths.
 	 * 
@@ -9,9 +7,9 @@
 	 *            the scrollable table whose header and body cells should be
 	 *            realigned
 	 */
-	var updateColumnWidths = function($table) {
-		var $bodyCells = $table.find('tbody tr:first').children();
-		var colWidth;
+	function updateColumnWidths($table) {
+		var $bodyCells = $table.find('tbody tr:first').children(),
+			colWidth;
 
 		// Get the tbody columns width array
 		colWidth = $bodyCells.map(function() {
@@ -46,6 +44,8 @@
 		});
 		
 		$('#create-new-mapping-project-form').validate();
+		
+		$('select[name="target-entity"]').select2();
 	});
 		
 }($, window.top.molgenis = window.top.molgenis || {}));

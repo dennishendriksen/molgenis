@@ -20,12 +20,11 @@ import org.molgenis.data.importer.EntitiesValidationReportImpl;
 import org.molgenis.data.importer.ImportService;
 import org.molgenis.data.support.GenericImporterExtensions;
 import org.molgenis.data.support.QueryImpl;
+import org.molgenis.file.FileStore;
 import org.molgenis.framework.db.EntitiesValidationReport;
 import org.molgenis.framework.db.EntityImportReport;
-import org.molgenis.ontology.OntologyService;
-import org.molgenis.ontology.model.OntologyMetaData;
+import org.molgenis.ontology.core.meta.OntologyMetaData;
 import org.molgenis.security.permission.PermissionSystemService;
-import org.molgenis.util.FileStore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -44,9 +43,6 @@ public class OntologyImportService implements ImportService
 	private FileStore fileStore;
 
 	@Autowired
-	private OntologyService ontologyService;
-
-	@Autowired
 	public OntologyImportService(FileRepositoryCollectionFactory fileRepositoryCollectionFactory,
 			DataService dataService, SearchService searchService, PermissionSystemService permissionSystemService)
 	{
@@ -62,7 +58,7 @@ public class OntologyImportService implements ImportService
 
 	@Override
 	@Transactional
-	public EntityImportReport doImport(RepositoryCollection source, DatabaseAction databaseAction)
+	public EntityImportReport doImport(RepositoryCollection source, DatabaseAction databaseAction, String defaultPackage)
 	{
 		if (databaseAction != DatabaseAction.ADD) throw new IllegalArgumentException("Only ADD is supported");
 
@@ -85,7 +81,7 @@ public class OntologyImportService implements ImportService
 
 					List<String> entityNames = addedEntities.stream().map(emd -> emd.getName())
 							.collect(Collectors.toList());
-					permissionSystemService.giveUserEntityAndMenuPermissions(SecurityContextHolder.getContext(),
+					permissionSystemService.giveUserEntityPermissions(SecurityContextHolder.getContext(),
 							entityNames);
 					int count = 1;
 					for (String entityName : entityNames)

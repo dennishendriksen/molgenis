@@ -1,7 +1,5 @@
 package org.molgenis.compute.ui.meta;
 
-import static org.molgenis.MolgenisFieldTypes.XREF;
-
 import org.molgenis.data.support.DefaultEntityMetaData;
 
 public class UIWorkflowParameterValueMetaData extends DefaultEntityMetaData

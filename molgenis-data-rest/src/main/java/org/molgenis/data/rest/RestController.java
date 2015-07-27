@@ -1,13 +1,14 @@
 package org.molgenis.data.rest;
 
 import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.CATEGORICAL;
+import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.CATEGORICAL_MREF;
 import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.COMPOUND;
 import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.DATE;
 import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.DATE_TIME;
+import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.FILE;
 import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.MREF;
 import static org.molgenis.MolgenisFieldTypes.FieldTypeEnum.XREF;
 import static org.molgenis.data.rest.RestController.BASE_URI;
-import static org.molgenis.ui.MolgenisPluginAttributes.KEY_RESOURCE_FINGERPRINT_REGISTRY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -21,8 +22,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -33,11 +32,11 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
@@ -51,11 +50,14 @@ import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
 import org.molgenis.data.EntityCollection;
 import org.molgenis.data.EntityMetaData;
+import org.molgenis.data.IdGenerator;
 import org.molgenis.data.MolgenisDataAccessException;
 import org.molgenis.data.MolgenisDataException;
+import org.molgenis.data.MolgenisReferencedEntityException;
 import org.molgenis.data.Query;
 import org.molgenis.data.QueryRule;
 import org.molgenis.data.Repository;
+import org.molgenis.data.Sort;
 import org.molgenis.data.UnknownAttributeException;
 import org.molgenis.data.UnknownEntityException;
 import org.molgenis.data.rsql.MolgenisRSQL;
@@ -65,13 +67,14 @@ import org.molgenis.data.support.QueryImpl;
 import org.molgenis.data.validation.ConstraintViolation;
 import org.molgenis.data.validation.MolgenisValidationException;
 import org.molgenis.fieldtypes.BoolField;
-import org.molgenis.framework.db.EntityNotFoundException;
+import org.molgenis.file.FileDownloadController;
+import org.molgenis.file.FileMeta;
+import org.molgenis.file.FileStore;
 import org.molgenis.security.core.MolgenisPermissionService;
-import org.molgenis.security.core.Permission;
+import org.molgenis.security.core.runas.RunAsSystem;
 import org.molgenis.security.token.TokenExtractor;
 import org.molgenis.security.token.TokenService;
 import org.molgenis.security.token.UnknownTokenException;
-import org.molgenis.ui.form.EntityForm;
 import org.molgenis.util.ErrorMessageResponse;
 import org.molgenis.util.ErrorMessageResponse.ErrorMessage;
 import org.molgenis.util.MolgenisDateFormat;
@@ -81,7 +84,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.convert.ConversionException;
 import org.springframework.core.convert.ConversionFailedException;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -92,7 +94,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -100,9 +101,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -132,29 +135,29 @@ public class RestController
 	private final DataService dataService;
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
-	private final String ENTITY_FORM_MODEL_ATTRIBUTE = "form";
 	private final MolgenisPermissionService molgenisPermissionService;
 	private final MolgenisRSQL molgenisRSQL;
-	private final ResourceFingerprintRegistry resourceFingerprintRegistry;
+	private final IdGenerator idGenerator;
+	private final FileStore fileStore;
 
 	@Autowired
 	public RestController(DataService dataService, TokenService tokenService,
 			AuthenticationManager authenticationManager, MolgenisPermissionService molgenisPermissionService,
-			MolgenisRSQL molgenisRSQL, ResourceFingerprintRegistry resourceFingerprintRegistry)
+			MolgenisRSQL molgenisRSQL, ResourceFingerprintRegistry resourceFingerprintRegistry,
+			IdGenerator idGenerator, FileStore fileStore)
 	{
 		if (dataService == null) throw new IllegalArgumentException("dataService is null");
 		if (tokenService == null) throw new IllegalArgumentException("tokenService is null");
 		if (authenticationManager == null) throw new IllegalArgumentException("authenticationManager is null");
 		if (molgenisPermissionService == null) throw new IllegalArgumentException("molgenisPermissionService is null");
-		if (resourceFingerprintRegistry == null) throw new IllegalArgumentException(
-				"resourceFingerprintRegistry is null");
 
 		this.dataService = dataService;
 		this.tokenService = tokenService;
 		this.authenticationManager = authenticationManager;
 		this.molgenisPermissionService = molgenisPermissionService;
 		this.molgenisRSQL = molgenisRSQL;
-		this.resourceFingerprintRegistry = resourceFingerprintRegistry;
+		this.idGenerator = idGenerator;
+		this.fileStore = fileStore;
 	}
 
 	/**
@@ -193,7 +196,7 @@ public class RestController
 		Map<String, Set<String>> attributeExpandSet = toExpandMap(attributeExpands);
 
 		EntityMetaData meta = dataService.getEntityMetaData(entityName);
-		return new EntityMetaDataResponse(meta, attributeSet, attributeExpandSet);
+		return new EntityMetaDataResponse(meta, attributeSet, attributeExpandSet, molgenisPermissionService);
 	}
 
 	/**
@@ -213,7 +216,7 @@ public class RestController
 		Map<String, Set<String>> attributeExpandSet = toExpandMap(request != null ? request.getExpand() : null);
 
 		EntityMetaData meta = dataService.getEntityMetaData(entityName);
-		return new EntityMetaDataResponse(meta, attributesSet, attributeExpandSet);
+		return new EntityMetaDataResponse(meta, attributesSet, attributeExpandSet, molgenisPermissionService);
 	}
 
 	/**
@@ -460,7 +463,7 @@ public class RestController
 			{
 				String sortAttribute = sortAttributeArray[0];
 				String sortOrderArray[] = req.getParameterMap().get("sortOrder");
-				Sort.Direction order = Sort.DEFAULT_DIRECTION;
+				Sort.Direction order = Sort.Direction.ASC;
 
 				if (sortOrderArray != null && sortOrderArray.length == 1 && StringUtils.isNotEmpty(sortOrderArray[0]))
 				{
@@ -478,7 +481,7 @@ public class RestController
 						throw new RuntimeException("unknown sort order");
 					}
 				}
-				q.sort(order, sortAttribute);
+				q.sort().on(sortAttribute, order);
 			}
 
 			if (q.getPageSize() == 0)
@@ -509,14 +512,7 @@ public class RestController
 
 		// Check attribute names
 		Iterable<String> attributesIterable = Iterables.transform(meta.getAtomicAttributes(),
-				new Function<AttributeMetaData, String>()
-				{
-					@Override
-					public String apply(AttributeMetaData attributeMetaData)
-					{
-						return attributeMetaData.getName().toLowerCase();
-					}
-				});
+				attributeMetaData -> attributeMetaData.getName().toLowerCase());
 
 		if (attributesSet != null)
 		{
@@ -528,25 +524,12 @@ public class RestController
 			}
 		}
 
-		attributesIterable = Iterables.transform(meta.getAtomicAttributes(), new Function<AttributeMetaData, String>()
-		{
-			@Override
-			public String apply(AttributeMetaData attributeMetaData)
-			{
-				return attributeMetaData.getName();
-			}
-		});
+		attributesIterable = Iterables.transform(meta.getAtomicAttributes(), AttributeMetaData::getName);
 
 		if (attributesSet != null)
 		{
-			attributesIterable = Iterables.filter(attributesIterable, new Predicate<String>()
-			{
-				@Override
-				public boolean apply(@Nullable String attribute)
-				{
-					return attributesSet.contains(attribute.toLowerCase());
-				}
-			});
+			attributesIterable = Iterables.filter(attributesIterable,
+					attribute -> attributesSet.contains(attribute.toLowerCase()));
 		}
 
 		return new DefaultEntityCollection(entities, attributesIterable);
@@ -567,7 +550,8 @@ public class RestController
 		Map<String, Object> paramMap = new HashMap<String, Object>();
 		for (String param : request.getParameterMap().keySet())
 		{
-			String value = request.getParameter(param);
+			String[] values = request.getParameterValues(param);
+			String value = values != null ? StringUtils.join(values, ',') : null;
 			if (StringUtils.isNotBlank(value))
 			{
 				paramMap.put(param, value);
@@ -577,9 +561,46 @@ public class RestController
 		createInternal(entityName, paramMap, response);
 	}
 
+	/**
+	 * Creates a new entity from a html form post.
+	 * 
+	 * @param entityName
+	 * @param request
+	 * @param response
+	 * @throws UnknownEntityException
+	 */
+	@RequestMapping(value = "/{entityName}", method = POST, headers = "Content-Type=multipart/form-data")
+	public void createFromFormPostMultiPart(@PathVariable("entityName") String entityName,
+			MultipartHttpServletRequest request, HttpServletResponse response)
+	{
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		for (String param : request.getParameterMap().keySet())
+		{
+			String[] values = request.getParameterValues(param);
+			String value = values != null ? StringUtils.join(values, ',') : null;
+			if (StringUtils.isNotBlank(value))
+			{
+				paramMap.put(param, value);
+			}
+		}
+
+		// add files to param map
+		for (Entry<String, List<MultipartFile>> entry : request.getMultiFileMap().entrySet())
+		{
+			String param = entry.getKey();
+			List<MultipartFile> files = entry.getValue();
+			if (files != null && files.size() > 1)
+			{
+				throw new IllegalArgumentException("Multiple file input not supported");
+			}
+			paramMap.put(param, files != null && !files.isEmpty() ? files.get(0) : null);
+		}
+		createInternal(entityName, paramMap, response);
+	}
+
 	@RequestMapping(value = "/{entityName}", method = POST)
 	public void create(@PathVariable("entityName") String entityName, @RequestBody Map<String, Object> entityMap,
-			HttpServletResponse response) throws EntityNotFoundException
+			HttpServletResponse response)
 	{
 		if (entityMap == null)
 		{
@@ -632,9 +653,10 @@ public class RestController
 		updateAttribute(entityName, attributeName, id, paramValue);
 	}
 
+	// TODO alternative for synchronization, for example by adding updatAttribute methods to the REST api
 	@RequestMapping(value = "/{entityName}/{id}/{attributeName}", method = POST, params = "_method=PUT")
 	@ResponseStatus(OK)
-	public void updateAttribute(@PathVariable("entityName") String entityName,
+	public synchronized void updateAttribute(@PathVariable("entityName") String entityName,
 			@PathVariable("attributeName") String attributeName, @PathVariable("id") Object id,
 			@RequestBody Object paramValue)
 	{
@@ -675,6 +697,48 @@ public class RestController
 	 * @param request
 	 * @throws UnknownEntityException
 	 */
+	@RequestMapping(value = "/{entityName}/{id}", method = POST, params = "_method=PUT", headers = "Content-Type=multipart/form-data")
+	@ResponseStatus(NO_CONTENT)
+	public void updateFromFormPostMultiPart(@PathVariable("entityName") String entityName,
+			@PathVariable("id") Object id, MultipartHttpServletRequest request)
+	{
+		Object typedId = dataService.getRepository(entityName).getEntityMetaData().getIdAttribute().getDataType()
+				.convert(id);
+
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		for (String param : request.getParameterMap().keySet())
+		{
+			String[] values = request.getParameterValues(param);
+			String value = values != null ? StringUtils.join(values, ',') : null;
+			paramMap.put(param, value);
+		}
+
+		// add files to param map
+		for (Entry<String, List<MultipartFile>> entry : request.getMultiFileMap().entrySet())
+		{
+			String param = entry.getKey();
+			List<MultipartFile> files = entry.getValue();
+			if (files != null && files.size() > 1)
+			{
+				throw new IllegalArgumentException("Multiple file input not supported");
+			}
+			paramMap.put(param, files != null && !files.isEmpty() ? files.get(0) : null);
+		}
+		updateInternal(entityName, typedId, paramMap);
+	}
+
+	/**
+	 * Updates an entity from a html form post.
+	 * 
+	 * Tunnels PUT through POST
+	 * 
+	 * Example url: /api/v1/person/99?_method=PUT
+	 * 
+	 * @param entityName
+	 * @param id
+	 * @param request
+	 * @throws UnknownEntityException
+	 */
 	@RequestMapping(value = "/{entityName}/{id}", method = POST, params = "_method=PUT", headers = "Content-Type=application/x-www-form-urlencoded")
 	@ResponseStatus(NO_CONTENT)
 	public void updateFromFormPost(@PathVariable("entityName") String entityName, @PathVariable("id") Object id,
@@ -686,7 +750,9 @@ public class RestController
 		Map<String, Object> paramMap = new HashMap<String, Object>();
 		for (String param : request.getParameterMap().keySet())
 		{
-			paramMap.put(param, request.getParameter(param));
+			String[] values = request.getParameterValues(param);
+			String value = values != null ? StringUtils.join(values, ',') : null;
+			paramMap.put(param, value);
 		}
 
 		updateInternal(entityName, typedId, paramMap);
@@ -697,7 +763,6 @@ public class RestController
 	 * 
 	 * @param entityName
 	 * @param id
-	 * @throws EntityNotFoundException
 	 */
 	@RequestMapping(value = "/{entityName}/{id}", method = DELETE)
 	@ResponseStatus(NO_CONTENT)
@@ -715,7 +780,6 @@ public class RestController
 	 * 
 	 * @param entityName
 	 * @param id
-	 * @throws EntityNotFoundException
 	 */
 	@RequestMapping(value = "/{entityName}/{id}", method = POST, params = "_method=DELETE")
 	@ResponseStatus(NO_CONTENT)
@@ -729,7 +793,6 @@ public class RestController
 	 * 
 	 * @param entityName
 	 * @param id
-	 * @throws EntityNotFoundException
 	 */
 	@RequestMapping(value = "/{entityName}", method = DELETE)
 	@ResponseStatus(NO_CONTENT)
@@ -743,7 +806,6 @@ public class RestController
 	 * 
 	 * @param entityName
 	 * @param id
-	 * @throws EntityNotFoundException
 	 */
 	@RequestMapping(value = "/{entityName}", method = POST, params = "_method=DELETE")
 	@ResponseStatus(NO_CONTENT)
@@ -757,7 +819,6 @@ public class RestController
 	 * 
 	 * @param entityName
 	 * @param id
-	 * @throws EntityNotFoundException
 	 */
 	@RequestMapping(value = "/{entityName}/meta", method = DELETE)
 	@ResponseStatus(NO_CONTENT)
@@ -772,7 +833,6 @@ public class RestController
 	 * 
 	 * @param entityName
 	 * @param id
-	 * @throws EntityNotFoundException
 	 */
 	@RequestMapping(value = "/{entityName}/meta", method = POST, params = "_method=DELETE")
 	@ResponseStatus(NO_CONTENT)
@@ -785,33 +845,6 @@ public class RestController
 	private void deleteMetaInternal(String entityName)
 	{
 		dataService.getMeta().deleteEntityMeta(entityName);
-	}
-
-	@RequestMapping(value = "/{entityName}/create", method = GET)
-	public String createForm(@PathVariable("entityName") String entityName, Model model)
-	{
-
-		Repository repo = dataService.getRepository(entityName);
-
-		EntityMetaData entityMeta = repo.getEntityMetaData();
-		model.addAttribute(ENTITY_FORM_MODEL_ATTRIBUTE, new EntityForm(entityMeta, true, null));
-		model.addAttribute(KEY_RESOURCE_FINGERPRINT_REGISTRY, resourceFingerprintRegistry);
-
-		return "view-entity-create";
-	}
-
-	@RequestMapping(value = "/{entityName}/{id}/edit", method = GET)
-	public String editForm(@PathVariable("entityName") String entityName, @PathVariable Object id, Model model)
-	{
-		Entity entity = dataService.findOne(entityName, id);
-		EntityMetaData entityMetaData = dataService.getEntityMetaData(entityName);
-
-		boolean hasWritePermission = molgenisPermissionService.hasPermissionOnEntity(entityName, Permission.WRITE);
-		model.addAttribute(ENTITY_FORM_MODEL_ATTRIBUTE, new EntityForm(entityMetaData, entity, id, hasWritePermission));
-		model.addAttribute(KEY_RESOURCE_FINGERPRINT_REGISTRY, resourceFingerprintRegistry);
-		model.addAttribute("entity", entity);
-
-		return "view-entity-edit";
 	}
 
 	/**
@@ -832,6 +865,7 @@ public class RestController
 	 */
 	@RequestMapping(value = "/login", method = POST, produces = APPLICATION_JSON_VALUE)
 	@ResponseBody
+	@RunAsSystem
 	public LoginResponse login(@Valid @RequestBody LoginRequest login, HttpServletRequest request)
 	{
 		if (login == null)
@@ -850,14 +884,14 @@ public class RestController
 			throw new BadCredentialsException("Unknown username or password");
 		}
 
+		MolgenisUser user = dataService.findOne(MolgenisUser.ENTITY_NAME,
+				new QueryImpl().eq(MolgenisUser.USERNAME, authentication.getName()), MolgenisUser.class);
+
 		// User authenticated, log the user in
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 
 		// Generate a new token for the user
 		String token = tokenService.generateAndStoreToken(authentication.getName(), "Rest api login");
-
-		MolgenisUser user = dataService.findOne(MolgenisUser.ENTITY_NAME,
-				new QueryImpl().eq(MolgenisUser.USERNAME, authentication.getName()), MolgenisUser.class);
 
 		return new LoginResponse(token, user.getUsername(), user.getFirstName(), user.getLastName());
 	}
@@ -974,6 +1008,15 @@ public class RestController
 		return new ErrorMessageResponse(new ErrorMessage(e.getMessage()));
 	}
 
+	@ExceptionHandler(MolgenisReferencedEntityException.class)
+	@ResponseStatus(INTERNAL_SERVER_ERROR)
+	@ResponseBody
+	public ErrorMessageResponse handleMolgenisReferencingEntityException(MolgenisReferencedEntityException e)
+	{
+		LOG.error("", e);
+		return new ErrorMessageResponse(new ErrorMessage(e.getMessage()));
+	}
+
 	private void updateInternal(String entityName, Object id, Map<String, Object> entityMap)
 	{
 		EntityMetaData meta = dataService.getEntityMetaData(entityName);
@@ -1004,7 +1047,7 @@ public class RestController
 		Object id = entity.getIdValue();
 		if (id != null)
 		{
-			response.addHeader("Location", String.format(BASE_URI + "/%s/%s", entityName, id));
+			response.addHeader("Location", Href.concatEntityHref(RestController.BASE_URI, entityName, id));
 		}
 
 		response.setStatus(HttpServletResponse.SC_CREATED);
@@ -1013,8 +1056,7 @@ public class RestController
 	// Creates a new MapEntity based from a HttpServletRequest
 	private Entity toEntity(EntityMetaData meta, Map<String, Object> request)
 	{
-		Entity entity = new MapEntity();
-		if (meta.getIdAttribute() != null) entity = new MapEntity(meta.getIdAttribute().getName());
+		Entity entity = new MapEntity(meta);
 
 		for (AttributeMetaData attr : meta.getAtomicAttributes())
 		{
@@ -1045,6 +1087,32 @@ public class RestController
 
 		if (paramValue != null)
 		{
+			if (attr.getDataType().getEnumType() == FieldTypeEnum.FILE)
+			{
+				MultipartFile multipartFile = (MultipartFile) paramValue;
+
+				String id = idGenerator.generateId();
+				try
+				{
+					fileStore.store(multipartFile.getInputStream(), id);
+				}
+				catch (IOException e)
+				{
+					throw new MolgenisDataException(e);
+				}
+
+				FileMeta fileEntity = new FileMeta(dataService);
+				fileEntity.setId(id);
+				fileEntity.setFilename(multipartFile.getOriginalFilename());
+				fileEntity.setContentType(multipartFile.getContentType());
+				fileEntity.setSize(multipartFile.getSize());
+				fileEntity.setUrl(ServletUriComponentsBuilder.fromCurrentRequest()
+						.replacePath(FileDownloadController.URI + "/" + id).replaceQuery(null).build().toUriString());
+				dataService.add(FileMeta.ENTITY_NAME, fileEntity);
+
+				return fileEntity;
+			}
+
 			if (attr.getDataType().getEnumType() == XREF || attr.getDataType().getEnumType() == CATEGORICAL)
 			{
 				value = dataService.findOne(attr.getRefEntity().getName(), paramValue);
@@ -1054,7 +1122,7 @@ public class RestController
 							+ " found");
 				}
 			}
-			else if (attr.getDataType().getEnumType() == MREF)
+			else if (attr.getDataType().getEnumType() == MREF || attr.getDataType().getEnumType() == CATEGORICAL_MREF)
 			{
 				List<Object> ids = DataConverter.toObjectList(paramValue);
 				if ((ids != null) && !ids.isEmpty())
@@ -1084,7 +1152,8 @@ public class RestController
 		AttributeMetaData attributeMetaData = meta.getAttribute(attributeName);
 		if (attributeMetaData != null)
 		{
-			return new AttributeMetaDataResponse(entityName, attributeMetaData, attributeSet, attributeExpandSet);
+			return new AttributeMetaDataResponse(entityName, attributeMetaData, attributeSet, attributeExpandSet,
+					molgenisPermissionService);
 		}
 		else
 		{
@@ -1111,7 +1180,8 @@ public class RestController
 			throw new UnknownEntityException(entityName + " " + id + " not found");
 		}
 
-		String attrHref = String.format(BASE_URI + "/%s/%s/%s", meta.getName(), entity.getIdValue(), refAttributeName);
+		String attrHref = Href.concatAttributeHref(RestController.BASE_URI, meta.getName(), entity.getIdValue(),
+				refAttributeName);
 		switch (attr.getDataType().getEnumType())
 		{
 			case COMPOUND:
@@ -1125,6 +1195,7 @@ public class RestController
 					entityHasAttributeMap.put(attrName, entity.get(attrName));
 				}
 				return entityHasAttributeMap;
+			case CATEGORICAL_MREF:
 			case MREF:
 				List<Entity> mrefEntities = new ArrayList<Entity>();
 				for (Entity e : entity.getEntities((attr.getName())))
@@ -1142,7 +1213,8 @@ public class RestController
 				}
 
 				EntityPager pager = new EntityPager(request.getStart(), request.getNum(), (long) count, mrefEntities);
-				return new EntityCollectionResponse(pager, refEntityMaps, attrHref);
+				return new EntityCollectionResponse(pager, refEntityMaps, attrHref, null, molgenisPermissionService);
+			case CATEGORICAL:
 			case XREF:
 				Map<String, Object> entityXrefAttributeMap = getEntityAsMap((Entity) entity.get(refAttributeName),
 						attr.getRefEntity(), attributesSet, attributeExpandSet);
@@ -1163,9 +1235,25 @@ public class RestController
 		EntityMetaData meta = dataService.getEntityMetaData(entityName);
 		Repository repository = dataService.getRepository(entityName);
 
+		// convert sort
+		Sort sort;
+		SortV1 sortV1 = request.getSort();
+		if (sortV1 != null)
+		{
+			sort = new Sort();
+			for (SortV1.OrderV1 orderV1 : sortV1)
+			{
+				sort.on(orderV1.getProperty(),
+						orderV1.getDirection() == SortV1.DirectionV1.ASC ? Sort.Direction.ASC : Sort.Direction.DESC);
+			}
+		}
+		else
+		{
+			sort = null;
+		}
+
 		List<QueryRule> queryRules = request.getQ() == null ? Collections.<QueryRule> emptyList() : request.getQ();
-		Query q = new QueryImpl(queryRules).pageSize(request.getNum()).offset(request.getStart())
-				.sort(request.getSort());
+		Query q = new QueryImpl(queryRules).pageSize(request.getNum()).offset(request.getStart()).sort(sort);
 
 		Iterable<Entity> it = dataService.findAll(entityName, q);
 		Long count = repository.count(q);
@@ -1177,7 +1265,8 @@ public class RestController
 			entities.add(getEntityAsMap(entity, meta, attributesSet, attributeExpandsSet));
 		}
 
-		return new EntityCollectionResponse(pager, entities, BASE_URI + "/" + entityName);
+		return new EntityCollectionResponse(pager, entities, BASE_URI + "/" + entityName, meta,
+				molgenisPermissionService);
 	}
 
 	// Transforms an entity to a Map so it can be transformed to json
@@ -1189,17 +1278,7 @@ public class RestController
 		if (null == meta) throw new IllegalArgumentException("meta is null");
 
 		Map<String, Object> entityMap = new LinkedHashMap<String, Object>();
-		try
-		{
-			entityMap.put(
-					"href",
-					(String.format(BASE_URI + "/%s/%s", meta.getName(),
-							URLEncoder.encode(DataConverter.toString(entity.getIdValue()), "UTF-8"))));
-		}
-		catch (UnsupportedEncodingException e)
-		{
-			throw new RuntimeException(e);
-		}
+		entityMap.put("href", Href.concatEntityHref(RestController.BASE_URI, meta.getName(), entity.getIdValue()));
 
 		// TODO system fields
 		for (AttributeMetaData attr : meta.getAtomicAttributes())
@@ -1219,13 +1298,16 @@ public class RestController
 					{
 						Set<String> subAttributesSet = attributeExpandsSet.get(attrName.toLowerCase());
 						entityMap.put(attrName, new AttributeMetaDataResponse(meta.getName(), attr, subAttributesSet,
-								null));
+								null, molgenisPermissionService));
 					}
 					else
 					{
-						String attrHref = String.format(BASE_URI + "/%s/%s/%s", meta.getName(), entity.getIdValue(),
-								attrName);
-						entityMap.put(attrName, Collections.singletonMap("href", attrHref));
+						entityMap.put(
+								attrName,
+								Collections.singletonMap(
+										"href",
+										Href.concatAttributeHref(RestController.BASE_URI, meta.getName(),
+												entity.getIdValue(), attrName)));
 					}
 				}
 				else if (attrType == DATE)
@@ -1244,12 +1326,13 @@ public class RestController
 									date != null ? new SimpleDateFormat(MolgenisDateFormat.DATEFORMAT_DATETIME)
 											.format(date) : null);
 				}
-				else if (attrType != XREF && attrType != CATEGORICAL && attrType != MREF)
+				else if (attrType != XREF && attrType != CATEGORICAL && attrType != MREF
+						&& attrType != CATEGORICAL_MREF && attrType != FILE)
 				{
 					entityMap.put(attrName, entity.get(attr.getName()));
 				}
-				else if ((attrType == XREF || attrType == CATEGORICAL) && attributeExpandsSet != null
-						&& attributeExpandsSet.containsKey(attrName.toLowerCase()))
+				else if ((attrType == XREF || attrType == CATEGORICAL || attrType == FILE)
+						&& attributeExpandsSet != null && attributeExpandsSet.containsKey(attrName.toLowerCase()))
 				{
 					Entity refEntity = entity.getEntity(attr.getName());
 					if (refEntity != null)
@@ -1261,7 +1344,7 @@ public class RestController
 						entityMap.put(attrName, refEntityMap);
 					}
 				}
-				else if (attrType == MREF && attributeExpandsSet != null
+				else if ((attrType == MREF || attrType == CATEGORICAL_MREF) && attributeExpandsSet != null
 						&& attributeExpandsSet.containsKey(attrName.toLowerCase()))
 				{
 					EntityMetaData refEntityMetaData = dataService.getEntityMetaData(attr.getRefEntity().getName());
@@ -1279,17 +1362,20 @@ public class RestController
 					EntityPager pager = new EntityPager(0, new EntityCollectionRequest().getNum(),
 							(long) refEntityMaps.size(), mrefEntities);
 
-					String uri = String.format(BASE_URI + "/%s/%s/%s", meta.getName(), entity.getIdValue(), attrName);
-					EntityCollectionResponse ecr = new EntityCollectionResponse(pager, refEntityMaps, uri);
+					EntityCollectionResponse ecr = new EntityCollectionResponse(pager, refEntityMaps,
+							Href.concatAttributeHref(RestController.BASE_URI, meta.getName(), entity.getIdValue(),
+									attrName), null, molgenisPermissionService);
 					entityMap.put(attrName, ecr);
 				}
 				else if ((attrType == XREF && entity.get(attr.getName()) != null)
-						|| (attrType == CATEGORICAL && entity.get(attr.getName()) != null) || attrType == MREF)
+						|| (attrType == CATEGORICAL && entity.get(attr.getName()) != null)
+						|| (attrType == FILE && entity.get(attr.getName()) != null) || attrType == MREF
+						|| attrType == CATEGORICAL_MREF)
 				{
 					// Add href to ref field
 					Map<String, String> ref = new LinkedHashMap<String, String>();
-					ref.put("href",
-							String.format(BASE_URI + "/%s/%s/%s", meta.getName(), entity.getIdValue(), attrName));
+					ref.put("href", Href.concatAttributeHref(RestController.BASE_URI, meta.getName(),
+							entity.getIdValue(), attrName));
 					entityMap.put(attrName, ref);
 				}
 

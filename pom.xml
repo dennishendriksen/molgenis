@@ -9,7 +9,7 @@
     </parent>
     <groupId>org.molgenis</groupId>
     <artifactId>molgenis</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <!-- More Project Information -->
@@ -31,39 +31,20 @@
     <developers/>
 
     <profiles>
-        <!-- development profile -->
-        <profile>
-            <id>dev</id>
-            <properties>
-                <molgenis.build.profile>dev</molgenis.build.profile>
-                <logger.level.root>INFO</logger.level.root>
-                <logger.level.org.molgenis>DEBUG</logger.level.org.molgenis>
-                <minify.skipMinify>true</minify.skipMinify>
-                <skip.delivery>true</skip.delivery>
-            </properties>
-        </profile>
         <!-- release profile (default) -->
         <profile>
             <id>release</id>
             <properties>
-                <molgenis.build.profile>release</molgenis.build.profile>
-                <logger.level.root>WARN</logger.level.root>
-                <logger.level.org.molgenis>INFO</logger.level.org.molgenis>
-                <minify.skipMinify>false</minify.skipMinify>
                 <skip.delivery>true</skip.delivery>
             </properties>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
         </profile>
-
+        <!-- create runnable jar -->
         <profile>
             <id>create-delivery</id>
             <properties>
-                <molgenis.build.profile>dev</molgenis.build.profile>
-                <logger.level.root>INFO</logger.level.root>
-                <logger.level.org.molgenis>DEBUG</logger.level.org.molgenis>
-                <minify.skipMinify>true</minify.skipMinify>
                 <skip.delivery>false</skip.delivery>
             </properties>
         </profile>
@@ -71,13 +52,14 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <slf4j.version>1.7.9</slf4j.version>
-        <logback.version>1.1.2</logback.version>
+        <slf4j.version>1.7.12</slf4j.version>
+        <logback.version>1.1.3</logback.version>
         
-        <spring.version>4.0.8.RELEASE</spring.version>
-        <spring.security.version>3.2.5.RELEASE</spring.security.version>
+        <spring.version>4.1.6.RELEASE</spring.version>
+        <spring.security.version>4.0.1.RELEASE</spring.security.version>
         <mysql.connector.java.version>5.1.28</mysql.connector.java.version>
-
+        <hibernate.validator.version>4.2.0.Final</hibernate.validator.version>
+        
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm</maven.build.timestamp.format>
         <molgenis.build.timestamp>${maven.build.timestamp}</molgenis.build.timestamp>
     </properties>
@@ -152,6 +134,23 @@
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>2.6</version>
                     <executions>
+                        <!-- copy generated resources to target folder -->
+                        <execution>
+                            <id>copy-generated-resources</id>
+                            <phase>process-classes</phase>
+                            <goals>
+                                <goal>copy-resources</goal>
+                            </goals>
+                            <configuration>
+                                <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                                <resources>
+                                    <resource>
+                                        <directory>target/generated-resources</directory>
+                                        <filtering>false</filtering>
+                                    </resource>
+                                </resources>
+                            </configuration>
+                        </execution>                    
 					<!-- 
 						Copying the das server config to the war ROOT
 						the uk.ac.ebi.mydas.controller.MydasServlet cannot find the file if
@@ -264,8 +263,21 @@
                                 <minPortNumber>8080</minPortNumber>
                                 <portNames>
                                     <portName>jetty.http.port</portName>
-                                    <portName>selenium.http.port</portName>
                                 </portNames>
+                            </configuration>
+                        </execution>
+                        <execution>
+                            <id>minify-build-helper</id>
+                            <phase>generate-resources</phase>
+                            <goals>
+                                <goal>add-resource</goal>
+                            </goals>
+                            <configuration>
+                                <resources>
+                                    <resource>
+                                        <directory>target/generated-resources</directory>
+                                    </resource>
+                                </resources>
                             </configuration>
                         </execution>
                         <execution>
@@ -302,6 +314,19 @@
                                         <directory>target/generated-test-sources/molgenis/java</directory>
                                     </resource>
                                 </resources>
+                            </configuration>
+                        </execution>
+                        <!-- add sources created by jaxb -->
+                        <execution>
+                            <id>execution-annotations</id>
+                            <phase>generate-sources</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                            </goals>
+                            <configuration>
+                                <sources>
+                                    <source>target/generated-sources/annotations</source>
+                                </sources>
                             </configuration>
                         </execution>
                     </executions>
@@ -348,33 +373,6 @@
                             </webInfIncludeJarPattern>
                         </webAppConfig>
                     </configuration>
-                    <!-- use jetty to run integration tests  -->
-                    <executions>
-                        <execution>
-                            <id>start-jetty</id>
-                            <phase>pre-integration-test</phase>
-                            <goals>
-                                <goal>run</goal>
-                            </goals>
-                            <configuration>
-                                <scanIntervalSeconds>0</scanIntervalSeconds>
-                                <daemon>true</daemon>
-                                <connectors>
-                                    <connector implementation="org.eclipse.jetty.server.nio.SelectChannelConnector">
-                                        <port>${selenium.http.port}</port>
-                                        <maxIdleTime>60000</maxIdleTime>
-                                    </connector>
-                                </connectors>
-                            </configuration>
-                        </execution>
-                        <execution>
-                            <id>stop-jetty</id>
-                            <phase>post-integration-test</phase>
-                            <goals>
-                                <goal>stop</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                     <dependencies>
                         <dependency>
                             <groupId>mysql</groupId>
@@ -490,33 +488,41 @@
                 <plugin>
                     <groupId>com.samaxes.maven</groupId>
                     <artifactId>minify-maven-plugin</artifactId>
-                    <version>1.7.2</version>
+                    <version>1.7.4</version>
                     <executions>
                         <execution>
                             <id>default-minify</id>
+                            <phase>generate-resources</phase>
                             <goals>
                                 <goal>minify</goal>
                             </goals>
                             <configuration>
+                                <charset>UTF-8</charset>
                                 <webappSourceDir>${project.basedir}/src/main/resources</webappSourceDir>
-                                <webappTargetDir>${project.build.outputDirectory}</webappTargetDir>
+                                <webappTargetDir>${project.build.directory}/generated-resources</webappTargetDir>
                                 <cssSourceIncludes>
                                     <cssSourceInclude>**/*.css</cssSourceInclude>
+                                    <cssSourceInclude>**/**/*.css</cssSourceInclude>
                                 </cssSourceIncludes>
                                 <cssSourceExcludes>
+                                    <!-- changes to excludes must be applied to molgenis-core-ui/src/main/resources/templates/resource-macros.ftl -->
                                     <cssSourceExclude>**/*.min.css</cssSourceExclude>
+                                    <cssSourceExclude>**/*-min.css</cssSourceExclude>
+                                    <cssSourceExclude>**/**/*.min.css</cssSourceExclude>
+                                    <cssSourceExclude>**/**/*-min.css</cssSourceExclude>
                                 </cssSourceExcludes>
                                 <jsSourceIncludes>
                                     <jsSourceInclude>**/*.js</jsSourceInclude>
                                 </jsSourceIncludes>
                                 <jsSourceExcludes>
+                                    <!-- changes to excludes must be applied to molgenis-core-ui/src/main/resources/templates/resource-macros.ftl -->
                                     <jsSourceExclude>**/*.min.js</jsSourceExclude>
+                                    <cssSourceExclude>**/*-min.js</cssSourceExclude>
                                     <jsSourceExclude>**/src-min-noconflict/**</jsSourceExclude>
-                                    <jsSourceExclude>**/ace-min/**</jsSourceExclude>
                                 </jsSourceExcludes>
+                                <nosuffix>false</nosuffix>
                                 <skipMerge>true</skipMerge>
-                                <skipMinify>${minify.skipMinify}</skipMinify>
-                                <nosuffix>true</nosuffix>
+                                <skipMinify>false</skipMinify>
                                 <verbose>true</verbose>
                             </configuration>
                         </execution>
@@ -529,6 +535,16 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+            <plugin>
+            <!-- add minified resources to build path -->
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>minify-build-helper</id>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -607,6 +623,12 @@
                 <version>${spring.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+                <exclusions>
+         			<exclusion>
+           				<groupId>commons-logging</groupId>
+           				<artifactId>commons-logging</artifactId>
+       				</exclusion>
+      			</exclusions>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -632,8 +654,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>log4j-over-slf4j</artifactId>
-            <version>1.7.10</version>
+            <version>${slf4j.version}</version>
         </dependency>
+        <dependency>
+      		<groupId>org.slf4j</groupId>
+      		<artifactId>jcl-over-slf4j</artifactId>
+      		<version>${slf4j.version}</version>
+   		</dependency>
         <!-- scope: test -->
         <dependency>
             <groupId>org.testng</groupId>
@@ -690,20 +717,23 @@
         <module>molgenis-data-rest</module>
         <module>molgenis-data-elasticsearch</module>
         <module>molgenis-data-semanticsearch</module>
+        <module>molgenis-data-validation</module>
         <module>molgenis-python</module>
         <module>molgenis-r</module>
         <module>molgenis-charts</module>
-        <module>molgenis-annotators</module>
         <module>molgenis-js</module>
         <module>molgenis-model-registry</module>
         <module>molgenis-disease-matcher</module>
         <module>molgenis-data-examples</module>
         <module>molgenis-scripts</module>
         <module>molgenis-data-import</module>
-        <module>molgenis-catalogue</module>
         <module>molgenis-compute-ui</module>
         <module>molgenis-data-mapper</module>
         <module>molgenis-pathways</module>
         <module>molgenis-data-rest-client</module>
+        <module>molgenis-data-migrate</module>
+        <module>molgenis-questionnaires</module>
+		<module>molgenis-file</module>
+		<module>molgenis-catalogue</module>
     </modules>
 </project>

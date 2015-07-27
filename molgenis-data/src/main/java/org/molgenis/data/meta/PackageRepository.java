@@ -29,7 +29,7 @@ class PackageRepository
 {
 	private static final Logger LOG = LoggerFactory.getLogger(PackageRepository.class);
 
-	public static final PackageMetaData META_DATA = new PackageMetaData();
+	public static final PackageMetaData META_DATA = PackageMetaData.INSTANCE;
 
 	/**
 	 * The repository where the package entities are stored.
@@ -92,6 +92,22 @@ class PackageRepository
 	}
 
 	/**
+	 * Get all packages
+	 * 
+	 * @return List of Package
+	 */
+	public List<Package> getPackages()
+	{
+		List<Package> result = new ArrayList<>();
+		for (Package p : packageCache.values())
+		{
+			result.add(p);
+		}
+
+		return result;
+	}
+
+	/**
 	 * Gets a package.
 	 * 
 	 * @param name
@@ -108,8 +124,8 @@ class PackageRepository
 	 */
 	public void deleteAll()
 	{
-		List<Entity> importOrderPackages = Lists.newLinkedList(DependencyResolver.resolveSelfReferences(repository,
-				META_DATA));
+		List<Entity> importOrderPackages = Lists.newLinkedList(new DependencyResolver().resolveSelfReferences(
+				repository, META_DATA));
 		Collections.reverse(importOrderPackages);
 		for (Entity p : importOrderPackages)
 		{

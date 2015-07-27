@@ -130,8 +130,8 @@ public class DefaultEntityMetaData extends AbstractEntityMetaData implements Edi
 	public void addAttributeMetaData(AttributeMetaData attributeMetaData)
 	{
 		if (attributeMetaData == null) throw new IllegalArgumentException("AttributeMetaData cannot be null");
-		if (attributeMetaData.getName() == null) throw new IllegalArgumentException(
-				"Name of the AttributeMetaData cannot be null");
+		if (attributeMetaData.getName() == null)
+			throw new IllegalArgumentException("Name of the AttributeMetaData cannot be null");
 		if (attributeMetaData.isLabelAttribute()) setLabelAttribute(attributeMetaData.getName());
 		if (attributeMetaData.isIdAtrribute()) setIdAttribute(attributeMetaData.getName());
 
@@ -242,8 +242,8 @@ public class DefaultEntityMetaData extends AbstractEntityMetaData implements Edi
 		strBuilder.append(this.getName()).append('\'');
 		if (isAbstract()) strBuilder.append(" abstract='true'");
 		if (getExtends() != null) strBuilder.append(" extends='" + getExtends().getName()).append('\'');
-		if (getIdAttribute() != null) strBuilder.append(" idAttribute='").append(getIdAttribute().getName())
-				.append('\'');
+		if (getIdAttribute() != null)
+			strBuilder.append(" idAttribute='").append(getIdAttribute().getName()).append('\'');
 		if (getDescription() != null) strBuilder.append(" description='")
 				.append(getDescription().substring(0, Math.min(25, getDescription().length())))
 				.append(getDescription().length() > 25 ? "...'" : "'");

@@ -18,10 +18,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
 
 import org.molgenis.MolgenisFieldTypes;
+import org.molgenis.MolgenisFieldTypes.FieldTypeEnum;
 import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.DataConverter;
 import org.molgenis.data.DataService;
@@ -29,10 +31,12 @@ import org.molgenis.data.Entity;
 import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.Manageable;
 import org.molgenis.data.MolgenisDataException;
+import org.molgenis.data.MolgenisReferencedEntityException;
 import org.molgenis.data.Query;
 import org.molgenis.data.QueryRule;
 import org.molgenis.data.Repository;
 import org.molgenis.data.RepositoryCapability;
+import org.molgenis.data.Sort;
 import org.molgenis.data.support.AbstractRepository;
 import org.molgenis.data.support.BatchingQueryResult;
 import org.molgenis.data.support.DefaultEntity;
@@ -46,10 +50,11 @@ import org.molgenis.fieldtypes.StringField;
 import org.molgenis.fieldtypes.TextField;
 import org.molgenis.fieldtypes.XrefField;
 import org.molgenis.model.MolgenisModelException;
+import org.molgenis.util.EntityUtils;
+import org.molgenis.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
-import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -67,10 +72,11 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 	private final AsyncJdbcTemplate asyncJdbcTemplate;
 	private final DataService dataService;
 	private final DataSource dataSource;
+	private static final String VARCHAR = "VARCHAR(255)";
 
 	/**
 	 * Creates a new MysqlRepository.
-	 * 
+	 *
 	 * @param dataSource
 	 *            the datasource to use to execute statements on the Mysql database
 	 * @param asyncJdbcTemplate
@@ -103,8 +109,31 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 				remembered = remembered != null ? remembered : e;
 			}
 		}
-		DataAccessException e = tryExecute(getDropSql());
-		remembered = remembered != null ? remembered : e;
+
+		// Deleting entites that are referenced won't work due to failing key constraints
+		// Find out if the entity is referenced and if it is, report those entities
+		List<Pair<EntityMetaData, List<AttributeMetaData>>> referencingEntities = EntityUtils
+				.getReferencingEntityMetaData(getEntityMetaData(), dataService);
+		List<Pair<EntityMetaData, List<AttributeMetaData>>> nonSelfReferencingEntities = referencingEntities.stream()
+				.filter(ref -> !getEntityMetaData().getName().equals(referencingEntities.get(0).getA().getName()))
+				.collect(Collectors.toList());
+
+		if (!nonSelfReferencingEntities.isEmpty())
+		{
+			List<String> entityNames = Lists.newArrayList();
+			nonSelfReferencingEntities.forEach(pair -> entityNames.add(pair.getA().getName()));
+
+			StringBuilder msg = new StringBuilder("Cannot delete entity '").append(getEntityMetaData().getName())
+					.append("' because it is referenced by the following entities: ").append(entityNames.toString());
+
+			throw new MolgenisReferencedEntityException(msg.toString());
+		}
+		else
+		{
+			DataAccessException e = tryExecute(getDropSql());
+			remembered = remembered != null ? remembered : e;
+		}
+
 		if (remembered != null)
 		{
 			throw remembered;
@@ -113,7 +142,7 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 
 	/**
 	 * Tries to execute a piece of SQL.
-	 * 
+	 *
 	 * @param sql
 	 *            the SQL to execute
 	 * @return Exception if one was caught, or null if all went well
@@ -165,17 +194,24 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 					// computed attributes are not persisted
 					continue;
 				}
+
 				// add mref tables
+
 				if (attr.getDataType() instanceof MrefField)
 				{
 					asyncJdbcTemplate.execute(getMrefCreateSql(attr));
 				}
 				else if (attr.getDataType() instanceof XrefField)
 				{
-					asyncJdbcTemplate.execute(getCreateFKeySql(attr));
+					String backend = dataService.getMeta().getBackend(attr.getRefEntity()).getName();
+					if (backend.equalsIgnoreCase(MysqlRepositoryCollection.NAME))
+					{
+						asyncJdbcTemplate.execute(getCreateFKeySql(attr));
+					}
 				}
 
-				if (attr.isUnique())
+				// text can't be unique, so don't add unique constraint when type is string
+				if (attr.isUnique() && !(attr.getDataType() instanceof StringField))
 				{
 					asyncJdbcTemplate.execute(getUniqueSql(attr));
 				}
@@ -195,11 +231,46 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 		}
 	}
 
-    public void addAttribute(AttributeMetaData attributeMetaData) {
-        addAttribute(attributeMetaData, true);
-    }
+	/**
+	 * Adds an attribute to the repository. Will execute the alter table statement in a different thread so that the
+	 * current transaction does not get committed.
+	 *
+	 * This is needed for adding columns during an import.
+	 *
+	 * @param attributeMetaData
+	 *            the {@link AttributeMetaData} to add
+	 */
+	protected void addAttribute(AttributeMetaData attributeMetaData)
+	{
+		addAttributeInternal(attributeMetaData, true, true);
+	}
 
-	public void addAttribute(AttributeMetaData attributeMetaData, boolean addToEntityMetaData)
+	/**
+	 * Adds an attribute to the repository. Will excecute the alter table statement in the current thread. Please note
+	 * that this *will* commit any existing transactions.
+	 *
+	 * This is needed for adding columns in the annotator.
+	 *
+	 * @param attributeMetaData
+	 *            the {@link AttributeMetaData} to add
+	 */
+	protected void addAttributeSync(AttributeMetaData attributeMetaData)
+	{
+		addAttributeInternal(attributeMetaData, true, false);
+	}
+
+	/**
+	 * Adds an attribute to the repository.
+	 *
+	 * @param attributeMetaData
+	 *            the {@link AttributeMetaData} to add
+	 * @param addToEntityMetaData
+	 *            boolean indicating if the repository's {@link EntityMetaData} should be updated as well. This should
+	 *            not happen for parts of a compound attribute.
+	 * @param async
+	 *            boolean indicating if the alter table statement should be executed in a different thread or not.
+	 */
+	private void addAttributeInternal(AttributeMetaData attributeMetaData, boolean addToEntityMetaData, boolean async)
 	{
 		try
 		{
@@ -210,34 +281,36 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 			}
 			if (attributeMetaData.getDataType() instanceof MrefField)
 			{
-				asyncJdbcTemplate.execute(getMrefCreateSql(attributeMetaData));
+				execute(getMrefCreateSql(attributeMetaData), async);
 			}
-			else
+			else if (!attributeMetaData.getDataType().getEnumType().equals(MolgenisFieldTypes.FieldTypeEnum.COMPOUND))
 			{
-				asyncJdbcTemplate.execute(getAlterSql(attributeMetaData));
+				execute(getAlterSql(attributeMetaData), async);
 			}
 
 			if (attributeMetaData.getDataType() instanceof XrefField)
 			{
-				asyncJdbcTemplate.execute(getCreateFKeySql(attributeMetaData));
+				execute(getCreateFKeySql(attributeMetaData), async);
 			}
 
-			if (attributeMetaData.isUnique())
+			// TEXT cannot be UNIQUE, don't add constraint when field type is string
+			if (attributeMetaData.isUnique() && !(attributeMetaData.getDataType() instanceof StringField))
 			{
-				asyncJdbcTemplate.execute(getUniqueSql(attributeMetaData));
+				execute(getUniqueSql(attributeMetaData), async);
 			}
 
 			if (attributeMetaData.getDataType().getEnumType().equals(MolgenisFieldTypes.FieldTypeEnum.COMPOUND))
 			{
 				for (AttributeMetaData attrPart : attributeMetaData.getAttributeParts())
 				{
-					addAttribute(attrPart, false);
+					addAttributeInternal(attrPart, false, async);
 				}
 			}
-            DefaultEntityMetaData demd = new DefaultEntityMetaData(metaData);
-            if(addToEntityMetaData) {
-                demd.addAttributeMetaData(attributeMetaData);
-            }
+			DefaultEntityMetaData demd = new DefaultEntityMetaData(metaData);
+			if (addToEntityMetaData)
+			{
+				demd.addAttributeMetaData(attributeMetaData);
+			}
 			setMetaData(demd);
 		}
 		catch (Exception e)
@@ -247,50 +320,23 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 		}
 	}
 
-    public void addAttributeSync(AttributeMetaData attributeMetaData) {
-        addAttributeSync(attributeMetaData, true);
-    }
-
-	public void addAttributeSync(AttributeMetaData attributeMetaData, boolean addToEntityMetaData)
+	/**
+	 * Executes a SQL string.
+	 *
+	 * @param sql
+	 *            the String to execute
+	 * @param async
+	 *            indication if the string should be executed on a different thread or not
+	 */
+	private void execute(String sql, boolean async)
 	{
-		try
+		if (async)
 		{
-			if (attributeMetaData.getDataType() instanceof MrefField)
-			{
-				jdbcTemplate.execute(getMrefCreateSql(attributeMetaData));
-			}
-			else if (!attributeMetaData.getDataType().getEnumType().equals(MolgenisFieldTypes.FieldTypeEnum.COMPOUND))
-			{
-				jdbcTemplate.execute(getAlterSql(attributeMetaData));
-			}
-
-			if (attributeMetaData.getDataType() instanceof XrefField)
-			{
-				jdbcTemplate.execute(getCreateFKeySql(attributeMetaData));
-			}
-
-			if (attributeMetaData.isUnique())
-			{
-				jdbcTemplate.execute(getUniqueSql(attributeMetaData));
-			}
-
-			if (attributeMetaData.getDataType().getEnumType().equals(MolgenisFieldTypes.FieldTypeEnum.COMPOUND))
-			{
-				for (AttributeMetaData attrPart : attributeMetaData.getAttributeParts())
-				{
-					addAttributeSync(attrPart, false);
-				}
-			}
-            DefaultEntityMetaData demd = new DefaultEntityMetaData(metaData);
-            if(addToEntityMetaData) {
-                demd.addAttributeMetaData(attributeMetaData);
-            }
-			setMetaData(demd);
+			asyncJdbcTemplate.execute(sql);
 		}
-		catch (Exception e)
+		else
 		{
-			LOG.error("Exception updating MysqlRepository.", e);
-			throw new MolgenisDataException(e);
+			jdbcTemplate.execute(sql);
 		}
 	}
 
@@ -298,17 +344,31 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 	{
 		AttributeMetaData idAttribute = getEntityMetaData().getIdAttribute();
 		StringBuilder sql = new StringBuilder();
+
+		// mysql keys cannot have TEXT value, so change it to VARCHAR when needed
+		String idAttrMysqlType = (idAttribute.getDataType().getEnumType().equals(FieldTypeEnum.STRING) ? VARCHAR : idAttribute
+				.getDataType().getMysqlType());
+
+		String refAttrMysqlType = (att.getRefEntity().getIdAttribute().getDataType() instanceof StringField ? VARCHAR : att
+				.getRefEntity().getIdAttribute().getDataType().getMysqlType());
+
 		sql.append(" CREATE TABLE ").append('`').append(getTableName()).append('_').append(att.getName()).append('`')
-				.append('(').append('`').append(idAttribute.getName()).append('`').append(' ')
-				.append(idAttribute.getDataType().getMysqlType()).append(" NOT NULL, ").append('`')
-				.append(att.getName()).append('`').append(' ')
-				.append(att.getRefEntity().getIdAttribute().getDataType().getMysqlType())
-				.append(" NOT NULL, FOREIGN KEY (").append('`').append(idAttribute.getName()).append('`')
-				.append(") REFERENCES ").append('`').append(getTableName()).append('`').append('(').append('`')
-				.append(idAttribute.getName()).append('`').append(") ON DELETE CASCADE, FOREIGN KEY (").append('`')
-				.append(att.getName()).append('`').append(") REFERENCES ").append('`')
-				.append(getTableName(att.getRefEntity())).append('`').append('(').append('`')
-				.append(att.getRefEntity().getIdAttribute().getName()).append('`').append(") ON DELETE CASCADE);");
+				.append("(`order` INT,`").append(idAttribute.getName()).append('`').append(' ').append(idAttrMysqlType)
+				.append(" NOT NULL, ").append('`').append(att.getName()).append('`').append(' ')
+				.append(refAttrMysqlType).append(" NOT NULL, FOREIGN KEY (").append('`').append(idAttribute.getName())
+				.append('`').append(") REFERENCES ").append('`').append(getTableName()).append('`').append('(')
+				.append('`').append(idAttribute.getName()).append("`) ON DELETE CASCADE");
+
+		// If the refEntity is not of type MySQL do not add a foreign key to it
+		String refEntityBackend = dataService.getMeta().getBackend(att.getRefEntity()).getName();
+		if (refEntityBackend.equalsIgnoreCase(MysqlRepositoryCollection.NAME))
+		{
+			sql.append(", FOREIGN KEY (").append('`').append(att.getName()).append('`').append(") REFERENCES ")
+					.append('`').append(getTableName(att.getRefEntity())).append('`').append('(').append('`')
+					.append(att.getRefEntity().getIdAttribute().getName()).append("`) ON DELETE CASCADE");
+		}
+
+		sql.append(") ENGINE=InnoDB;");
 
 		return sql.toString();
 	}
@@ -326,7 +386,7 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 				sql.append(", ");
 			}
 		}
-		// primary key is first attribute unless otherwise indicate
+		// primary key is first attribute unless otherwise indicated
 		AttributeMetaData idAttribute = getEntityMetaData().getIdAttribute();
 
 		if (idAttribute == null) throw new MolgenisDataException("Missing idAttribute for entity [" + getName() + "]");
@@ -371,8 +431,6 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 				break;
 			case ENUM:
 				break;
-			case FILE:
-				break;
 			case HTML:
 				break;
 			case HYPERLINK:
@@ -393,7 +451,9 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 				break;
 			case MREF:
 			case CATEGORICAL:
+			case CATEGORICAL_MREF:
 			case XREF:
+			case FILE:
 				if (att.isLabelAttribute())
 				{
 					throw new MolgenisDataException("Attribute [" + att.getName() + "] of entity [" + getName()
@@ -420,14 +480,37 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 			// xref adopt type of the identifier of referenced entity
 			if (att.getDataType() instanceof XrefField)
 			{
-				sql.append(att.getRefEntity().getIdAttribute().getDataType().getMysqlType());
+				// mysql keys can not be of type TEXT, so don't adopt the field type of a referenced entity when it is
+				// of fieldtype STRING
+				if (att.getRefEntity().getIdAttribute().getDataType() instanceof StringField)
+				{
+					sql.append(VARCHAR);
+				}
+				else
+				{
+					sql.append(att.getRefEntity().getIdAttribute().getDataType().getMysqlType());
+				}
 			}
 			else
 			{
-				sql.append(att.getDataType().getMysqlType());
+				if (att.isIdAtrribute() && att.getDataType() instanceof StringField)
+				{
+					// id attributes can not be of type TEXT so we'll change it to VARCHAR
+					sql.append(VARCHAR);
+				}
+				else if (att.isUnique() && att.getDataType() instanceof StringField)
+				{
+					// mysql TEXT fields cannot be UNIQUE, so use VARCHAR instead
+					sql.append(VARCHAR);
+				}
+				else
+				{
+					sql.append(att.getDataType().getMysqlType());
+				}
 			}
 			// not null
-			if (!att.isNillable())
+			if (!att.isNillable() && !EntityUtils.doesExtend(metaData, "Questionnaire")
+					&& (att.getVisibleExpression() == null))
 			{
 				sql.append(" NOT NULL");
 			}
@@ -531,8 +614,8 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 
 		StringBuilder mrefSql = new StringBuilder();
 		mrefSql.append("INSERT INTO ").append('`').append(getTableName()).append('_').append(att.getName()).append('`')
-				.append(" (").append('`').append(idAttribute.getName()).append('`').append(',').append('`')
-				.append(att.getName()).append('`').append(") VALUES (?,?)");
+				.append(" (`order`,").append('`').append(idAttribute.getName()).append('`').append(',').append('`')
+				.append(att.getName()).append('`').append(") VALUES (?,?,?)");
 
 		jdbcTemplate.batchUpdate(mrefSql.toString(), new BatchPreparedStatementSetter()
 		{
@@ -545,26 +628,31 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 					LOG.debug("mref: " + mrefs.get(i).get(idAttribute.getName()) + ", "
 							+ mrefs.get(i).get(att.getName()));
 				}
+				preparedStatement.setInt(1, i);
 
-				preparedStatement.setObject(1, mrefs.get(i).get(idAttribute.getName()));
+				preparedStatement.setObject(2, mrefs.get(i).get(idAttribute.getName()));
 
 				Object value = mrefs.get(i).get(att.getName());
 				if (value instanceof Entity)
 				{
 					preparedStatement.setObject(
-							2,
+							3,
 							refEntityIdAttribute.getDataType().convert(
 									((Entity) value).get(refEntityIdAttribute.getName())));
 				}
 				else
 				{
-					preparedStatement.setObject(2, refEntityIdAttribute.getDataType().convert(value));
+					preparedStatement.setObject(3, refEntityIdAttribute.getDataType().convert(value));
 				}
 			}
 
 			@Override
 			public int getBatchSize()
 			{
+				if (null == mrefs)
+				{
+					return 0;
+				}
 				return mrefs.size();
 			}
 		});
@@ -607,8 +695,8 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 				if (att.getDataType() instanceof MrefField)
 				{
 					select.append("GROUP_CONCAT(DISTINCT(").append('`').append(att.getName()).append('`').append('.')
-							.append('`').append(att.getName()).append('`').append(")) AS ").append('`')
-							.append(att.getName()).append('`');
+							.append('`').append(att.getName()).append('`').append(") ORDER BY `").append(att.getName())
+							.append("`.`order`) AS ").append('`').append(att.getName()).append('`');
 				}
 				else
 				{
@@ -851,7 +939,7 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 		{
 			for (Sort.Order o : q.getSort())
 			{
-				AttributeMetaData att = getEntityMetaData().getAttribute(o.getProperty());
+				AttributeMetaData att = getEntityMetaData().getAttribute(o.getAttr());
 				if (att.getDataType() instanceof MrefField) sortSql.append(", ").append(att.getName());
 				else sortSql.append(", ").append('`').append(att.getName()).append('`');
 				if (o.getDirection().equals(Sort.Direction.DESC))
@@ -908,10 +996,49 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 	public void delete(Iterable<? extends Entity> entities)
 	{
 		// todo, split in subbatchs
-		final List<Object> batch = new ArrayList<Object>();
+		final List<Object> deleteByIdBatch = new ArrayList<Object>();
+
+		this.resetXrefValuesBySelfReference(entities);
+
 		for (Entity e : entities)
-			batch.add(e.getIdValue());
-		this.deleteById(batch);
+		{
+			deleteByIdBatch.add(e.getIdValue());
+		}
+		this.deleteById(deleteByIdBatch);
+	}
+
+	/**
+	 * Use before a delete action of a entity with XREF data type where the entity and refEntity are the same entities.
+	 *
+	 * @param entities
+	 */
+	private void resetXrefValuesBySelfReference(Iterable<? extends Entity> entities)
+	{
+		List<String> xrefAttributesWithSelfReference = new ArrayList<String>();
+		for (AttributeMetaData attributeMetaData : getEntityMetaData().getAttributes())
+		{
+			if (attributeMetaData.getDataType().getEnumType().equals(FieldTypeEnum.XREF)
+					&& getEntityMetaData().getName().equals(attributeMetaData.getRefEntity().getName()))
+			{
+				xrefAttributesWithSelfReference.add(attributeMetaData.getName());
+			}
+		}
+
+		final List<Entity> updateBatch = new ArrayList<Entity>();
+		for (Entity e : entities)
+		{
+			for (String attributeName : xrefAttributesWithSelfReference)
+			{
+				Entity en = e.getEntity(attributeName);
+				if (null != en)
+				{
+					en.set(attributeName, null);
+					updateBatch.add(en);
+					break;
+				}
+			}
+		}
+		this.update(updateBatch);
 	}
 
 	public String getDeleteSql()
@@ -934,7 +1061,9 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 	{
 		final List<Object> idList = new ArrayList<Object>();
 		for (Object id : ids)
+		{
 			idList.add(id);
+		}
 
 		jdbcTemplate.batchUpdate(getDeleteSql(), new BatchPreparedStatementSetter()
 		{
@@ -1118,9 +1247,11 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 							List<Entity> vals = Lists.newArrayList(e.getEntities(att.getName()));
 							if (vals != null)
 							{
+								int i = 0;
 								for (Entity val : vals)
 								{
 									Map<String, Object> mref = new HashMap<>();
+									mref.put("order", i++);
 									mref.put(idAttribute.getName(), idValue);
 									mref.put(att.getName(), val.get(att.getRefEntity().getIdAttribute().getName()));
 									mrefs.get(att.getName()).add(mref);
@@ -1194,6 +1325,7 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 
 	private class EntityMapper implements RowMapper<Entity>
 	{
+		private static final int GROUP_CONCAT_MAX_LEN = 1024;
 		private final EntityMetaData entityMetaData;
 
 		private EntityMapper(EntityMetaData entityMetaData)
@@ -1215,15 +1347,36 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 				if (att.getDataType() instanceof MrefField)
 				{
 					// TODO: convert to typed lists (or arrays?)
-					if (att.getRefEntity().getIdAttribute().getDataType() instanceof IntField)
+					String mrefIds = resultSet.getString(att.getName());
+					if (mrefIds != null)
 					{
-						e.set(att.getName(), DataConverter.toIntList(resultSet.getString(att.getName())));
+						if (att.getRefEntity().getIdAttribute().getDataType() instanceof IntField)
+						{
+							if (mrefIds.length() >= GROUP_CONCAT_MAX_LEN)
+							{
+								// this list is just as long as it's allowed to be so it probably got truncated.
+								// Retrieve the IDs explicitly in a separate query.
+								e.set(att.getName(), jdbcTemplate.queryForList(getMrefSelectSql(e, att), Integer.class));
+							}
+							else
+							{
+								e.set(att.getName(), DataConverter.toIntList(mrefIds));
+							}
+						}
+						else
+						{
+							if (mrefIds.length() >= GROUP_CONCAT_MAX_LEN)
+							{
+								// this list is just as long as it's allowed to be so it probably got truncated.
+								// Retrieve the IDs explicitly in a separate query.
+								e.set(att.getName(), jdbcTemplate.queryForList(getMrefSelectSql(e, att), Object.class));
+							}
+							else
+							{
+								e.set(att.getName(), DataConverter.toObjectList(mrefIds));
+							}
+						}
 					}
-					else
-					{
-						e.set(att.getName(), DataConverter.toObjectList(resultSet.getString(att.getName())));
-					}
-
 				}
 				else if (att.getDataType() instanceof XrefField)
 				{
@@ -1246,6 +1399,13 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 			}
 			return e;
 
+		}
+
+		private String getMrefSelectSql(Entity e, AttributeMetaData att)
+		{
+			return String.format("SELECT `%s` FROM `%s_%1$s` WHERE `%s` = '%s' ORDER BY `order`", att.getName(),
+					getTableName(), entityMetaData.getIdAttribute().getName().toLowerCase(),
+					e.get(entityMetaData.getIdAttribute().getName()));
 		}
 	}
 
@@ -1315,7 +1475,7 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 
 	/**
 	 * Adds an attribute to the table for this entity. Looks up the type of the attribute in {@link #metaData}.
-	 * 
+	 *
 	 * @param attributeName
 	 *            name of the attribute to add
 	 */
@@ -1339,7 +1499,7 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 
 	/**
 	 * Creates the table for this repository if it does not already exist.
-	 * 
+	 *
 	 * @return boolean indicating if the table was created
 	 */
 	public boolean createTableIfNotExists()
@@ -1355,7 +1515,7 @@ public class MysqlRepository extends AbstractRepository implements Manageable
 	@Override
 	public Set<RepositoryCapability> getCapabilities()
 	{
-		return Sets.newHashSet(WRITABLE, UPDATEABLE, QUERYABLE);
+		return Sets.newHashSet(WRITABLE, UPDATEABLE);
 	}
 
 	@Override

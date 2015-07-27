@@ -1,9 +1,14 @@
 package org.molgenis.compute.ui.meta;
 
+import static org.molgenis.MolgenisFieldTypes.BOOL;
+import static org.molgenis.MolgenisFieldTypes.DATETIME;
+import static org.molgenis.MolgenisFieldTypes.SCRIPT;
+import static org.molgenis.MolgenisFieldTypes.TEXT;
+import static org.molgenis.MolgenisFieldTypes.XREF;
+
 import org.molgenis.compute.ui.model.AnalysisStatus;
 import org.molgenis.data.support.DefaultEntityMetaData;
-
-import static org.molgenis.MolgenisFieldTypes.*;
+import org.molgenis.fieldtypes.EnumField;
 
 public class AnalysisMetaData extends DefaultEntityMetaData
 {
@@ -35,12 +40,11 @@ public class AnalysisMetaData extends DefaultEntityMetaData
 				.setLabel("Workflow");
 		addAttribute(BACKEND).setDataType(XREF).setRefEntity(UIBackendMetaData.INSTANCE).setLabel("Backend");
 		addAttribute(SUBMIT_SCRIPT).setDataType(SCRIPT).setLabel("Submit script");
-		addAttribute(STATUS).setDataType(ENUM).setNillable(false).setEnumOptions(AnalysisStatus.names())
+		addAttribute(STATUS).setDataType(new EnumField()).setNillable(false).setEnumOptions(AnalysisStatus.names())
 				.setDefaultValue(STATUS_DEFAULT.toString()).setLabel("Status");
 		// FIXME user xref to MolgenisUser when https://github.com/molgenis/molgenis/issues/2054 is fixed
 		addAttribute(USER).setNillable(false).setLabel("User");
-		addAttribute(WAS_RUN).setDataType(BOOL).
-				setDefaultValue(false).setNillable(false).setLabel("was Run");
+		addAttribute(WAS_RUN).setDataType(BOOL).setDefaultValue(false).setNillable(false).setLabel("was Run");
 	}
 
 }

@@ -2,16 +2,24 @@ package org.molgenis.data.importer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.data.DataService;
 import org.molgenis.data.FileRepositoryCollectionFactory;
+import org.molgenis.data.MolgenisDataException;
+import org.molgenis.data.Package;
 import org.molgenis.data.RepositoryCollection;
-import org.molgenis.data.validation.EntityNameValidator;
+import org.molgenis.data.meta.MetaValidationUtils;
 import org.molgenis.framework.db.EntitiesValidationReport;
 import org.molgenis.ui.wizard.AbstractWizardPage;
 import org.molgenis.ui.wizard.Wizard;
+import org.molgenis.util.FileExtensionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,14 +36,15 @@ public class OptionsWizardPage extends AbstractWizardPage
 
 	private final transient FileRepositoryCollectionFactory fileRepositoryCollectionFactory;
 	private final transient ImportServiceFactory importServiceFactory;
+	private transient DataService dataService;
 
 	@Autowired
 	public OptionsWizardPage(FileRepositoryCollectionFactory fileRepositoryCollectionFactory,
-			ImportServiceFactory importServiceFactory)
+			ImportServiceFactory importServiceFactory, DataService dataService)
 	{
-		super();
 		this.fileRepositoryCollectionFactory = fileRepositoryCollectionFactory;
 		this.importServiceFactory = importServiceFactory;
+		this.dataService = dataService;
 	}
 
 	@Override
@@ -67,10 +76,13 @@ public class OptionsWizardPage extends AbstractWizardPage
 				return null;
 			}
 
-			if (!EntityNameValidator.isValid(userGivenName))
+			try
 			{
-				result.addError(new ObjectError("wizard",
-						"Invalid entity name (only alphanumeric characters are allowed)"));
+				MetaValidationUtils.validateName(userGivenName);
+			}
+			catch (MolgenisDataException e)
+			{
+				result.addError(new ObjectError("wizard", e.getMessage()));
 				return null;
 			}
 
@@ -79,12 +91,12 @@ public class OptionsWizardPage extends AbstractWizardPage
 			{
 				String fileName = tmpFile.getName();
 
-				// TODO FIXME wrong way to decide the extension of the file. It will not detect, for example a file with
-				// the obo.zip extension.
-				int index = fileName.lastIndexOf('.');
-				String extension = (index > -1) ? fileName.substring(index) : "";
+				// FIXME: can this be done a bit cleaner?
+				String extension = FileExtensionUtils
+						.findExtensionFromPossibilities(fileName, fileRepositoryCollectionFactory
+								.createFileRepositoryCollection(tmpFile).getFileNameExtensions());
 
-				File file = new File(tmpFile.getParent(), userGivenName + extension);
+				File file = new File(tmpFile.getParent(), userGivenName + "." + extension);
 				FileCopyUtils.copy(tmpFile, file);
 
 				importWizard.setFile(file);
@@ -127,6 +139,26 @@ public class OptionsWizardPage extends AbstractWizardPage
 		wizard.setFieldsAvailable(validationReport.getFieldsAvailable());
 		wizard.setFieldsUnknown(validationReport.getFieldsUnknown());
 
+		Set<String> allPackages = new HashSet<>(validationReport.getPackages());
+		for (Package p : dataService.getMeta().getPackages())
+		{
+			allPackages.add(p.getName());
+		}
+
+		List<String> entitiesInDefaultPackage = new ArrayList<>();
+		for (String entityName : validationReport.getSheetsImportable().keySet())
+		{
+			if (validationReport.getSheetsImportable().get(entityName))
+			{
+				if (isInDefaultPackage(entityName, allPackages)) entitiesInDefaultPackage.add(entityName);
+			}
+		}
+		wizard.setEntitiesInDefaultPackage(entitiesInDefaultPackage);
+
+		List<String> packages = new ArrayList<>(validationReport.getPackages());
+		packages.add(0, Package.DEFAULT_PACKAGE_NAME);
+		wizard.setPackages(packages);
+
 		String msg = null;
 		if (validationReport.valid())
 		{
@@ -139,6 +171,15 @@ public class OptionsWizardPage extends AbstractWizardPage
 		}
 
 		return msg;
+	}
 
+	private boolean isInDefaultPackage(String entityName, Set<String> packages)
+	{
+		for (String packageName : packages)
+		{
+			if (entityName.toLowerCase().startsWith(packageName.toLowerCase())) return false;
+		}
+
+		return true;
 	}
 }

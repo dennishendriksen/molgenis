@@ -5,6 +5,7 @@ import java.util.TreeMap;
 
 import org.molgenis.fieldtypes.BoolField;
 import org.molgenis.fieldtypes.CategoricalField;
+import org.molgenis.fieldtypes.CategoricalMrefField;
 import org.molgenis.fieldtypes.CompoundField;
 import org.molgenis.fieldtypes.DateField;
 import org.molgenis.fieldtypes.DatetimeField;
@@ -43,18 +44,17 @@ public class MolgenisFieldTypes
 
 	public enum FieldTypeEnum
 	{
-		BOOL, CATEGORICAL, COMPOUND, DATE, DATE_TIME, DECIMAL, EMAIL, ENUM, FILE, HTML, HYPERLINK, IMAGE, INT, LONG, MREF, SCRIPT, STRING, TEXT, XREF
+		BOOL, CATEGORICAL, CATEGORICAL_MREF, COMPOUND, DATE, DATE_TIME, DECIMAL, EMAIL, ENUM, FILE, HTML, HYPERLINK, IMAGE, INT, LONG, MREF, SCRIPT, STRING, TEXT, XREF
 	}
 
 	public static final FieldType BOOL = new BoolField();
 	public static final FieldType CATEGORICAL = new CategoricalField();
+	public static final FieldType CATEGORICAL_MREF = new CategoricalMrefField();
 	public static final FieldType COMPOUND = new CompoundField();
 	public static final FieldType DATE = new DateField();
 	public static final FieldType DATETIME = new DatetimeField();
 	public static final FieldType DECIMAL = new DecimalField();
 	public static final FieldType EMAIL = new EmailField();
-	public static final FieldType ENUM = new EnumField();
-	@Deprecated
 	public static final FieldType FILE = new FileField();
 	public static final FieldType HTML = new HtmlField();
 	public static final FieldType HYPERLINK = new HyperlinkField();
@@ -67,6 +67,9 @@ public class MolgenisFieldTypes
 	public static final FieldType TEXT = new TextField();
 	public static final FieldType XREF = new XrefField();
 
+	// FIXME Do not add public static final ENUM here, as it holds the enum options so it is different per attribute,
+	// this should be fixed. The options should not be added to the field
+
 	/** Initialize default field types */
 	private static void init()
 	{
@@ -74,12 +77,13 @@ public class MolgenisFieldTypes
 		{
 			addType(BOOL);
 			addType(CATEGORICAL);
+			addType(CATEGORICAL_MREF);
 			addType(COMPOUND);
 			addType(DATE);
 			addType(DATETIME);
 			addType(DECIMAL);
 			addType(EMAIL);
-			addType(ENUM);
+			addType(new EnumField());
 			addType(FILE);
 			addType(HTML);
 			addType(HYPERLINK);

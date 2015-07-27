@@ -2,8 +2,6 @@ package org.molgenis.data;
 
 import java.util.List;
 
-import org.springframework.data.domain.Sort;
-
 /**
  * Definition of a query
  */
@@ -17,6 +15,8 @@ public interface Query extends Iterable<Entity>
 	Long count();
 
 	Iterable<Entity> findAll();
+
+	Entity findOne();
 
 	/**
 	 * Filtering rules, seperated by QueryRule.AND and QueryRule.OR clauses
@@ -122,7 +122,7 @@ public interface Query extends Iterable<Entity>
 	Query unnestAll();
 
 	/**
-	 * Range (excluding smaller and bigger)
+	 * Range (including smaller and bigger)
 	 */
 	Query rng(String field, Object smaller, Object bigger);
 
@@ -130,7 +130,7 @@ public interface Query extends Iterable<Entity>
 
 	Query offset(int offset);
 
-	Query sort(Sort.Direction direction, String... fields);
+	Sort sort();
 
 	Query sort(Sort sort);
 }

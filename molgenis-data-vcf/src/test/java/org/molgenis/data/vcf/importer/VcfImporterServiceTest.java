@@ -17,6 +17,7 @@ import org.molgenis.data.DataService;
 import org.molgenis.data.DatabaseAction;
 import org.molgenis.data.FileRepositoryCollectionFactory;
 import org.molgenis.data.MolgenisDataException;
+import org.molgenis.data.Package;
 import org.molgenis.data.Repository;
 import org.molgenis.data.mem.InMemoryRepositoryCollection;
 import org.molgenis.data.meta.MetaDataServiceImpl;
@@ -36,6 +37,7 @@ public class VcfImporterServiceTest
 		DataServiceImpl dataService = new DataServiceImpl();
 		MetaDataServiceImpl metaDataService = new MetaDataServiceImpl(dataService);
 		metaDataService.setDefaultBackend(new InMemoryRepositoryCollection("ElasticSearch"));
+		dataService.setMeta(metaDataService);
 
 		File f = ResourceUtils.getFile(getClass(), "/testdata.vcf");
 		VcfRepositoryCollection source = new VcfRepositoryCollection(f);
@@ -43,7 +45,7 @@ public class VcfImporterServiceTest
 		VcfImporterService importer = new VcfImporterService(new FileRepositoryCollectionFactory(), dataService,
 				mock(PermissionSystemService.class));
 
-		EntityImportReport report = importer.doImport(source, DatabaseAction.ADD);
+		EntityImportReport report = importer.doImport(source, DatabaseAction.ADD, Package.DEFAULT_PACKAGE_NAME);
 
 		assertNotNull(report);
 		assertEquals(report.getNewEntities(), Arrays.asList("testdata_Sample", "testdata"));

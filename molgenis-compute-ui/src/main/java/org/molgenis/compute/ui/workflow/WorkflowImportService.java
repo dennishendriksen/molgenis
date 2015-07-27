@@ -10,6 +10,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.molgenis.compute.ComputeProperties;
+import org.molgenis.compute.model.Input;
+import org.molgenis.compute.model.Output;
+import org.molgenis.compute.model.Step;
+import org.molgenis.compute.model.Workflow;
+import org.molgenis.compute.parsers.impl.WorkflowCsvParserImpl;
 import org.molgenis.compute.ui.ComputeUiException;
 import org.molgenis.compute.ui.IdGenerator;
 import org.molgenis.compute.ui.meta.UIParameterMappingMetaData;
@@ -27,12 +33,6 @@ import org.molgenis.compute.ui.model.UIWorkflowNode;
 import org.molgenis.compute.ui.model.UIWorkflowParameter;
 import org.molgenis.compute.ui.model.UIWorkflowParameterValue;
 import org.molgenis.compute.ui.model.UIWorkflowProtocol;
-import org.molgenis.compute5.ComputeProperties;
-import org.molgenis.compute5.model.Input;
-import org.molgenis.compute5.model.Output;
-import org.molgenis.compute5.model.Step;
-import org.molgenis.compute5.model.Workflow;
-import org.molgenis.compute5.parsers.WorkflowCsvParser;
 import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
@@ -95,20 +95,20 @@ public class WorkflowImportService
 		if (!new File(baseDir).exists()) throw new IOException("Directory '" + baseDir + "' does not exist.");
 
 		String workflowFileName = Paths.get(baseDir, computeProperties.workFlow).toString();
-		if (!new File(workflowFileName).exists()) throw new IOException("Workflow file '" + workflowFileName
-				+ "' does not exist.");
+		if (!new File(workflowFileName).exists())
+			throw new IOException("Workflow file '" + workflowFileName + "' does not exist.");
 
 		String workflowName = Paths.get(baseDir).getFileName().toString();
-		if (workflowExists(workflowName)) throw new ComputeUiException("Workflow '" + workflowName
-				+ "' already exists.");
+		if (workflowExists(workflowName))
+			throw new ComputeUiException("Workflow '" + workflowName + "' already exists.");
 
 		File parameterFile = new File(baseDir, computeProperties.parameters[0]);
-		if (!parameterFile.exists()) throw new IOException("Parameters file '" + computeProperties.parameters[0]
-				+ "' does not exist.");
+		if (!parameterFile.exists())
+			throw new IOException("Parameters file '" + computeProperties.parameters[0] + "' does not exist.");
 
 		logger.info("Importing pipeline '" + workflowName + "'");
 
-		Workflow workflow = new WorkflowCsvParser().parse(workflowFileName, computeProperties);
+		Workflow workflow = new WorkflowCsvParserImpl().parse(workflowFileName, computeProperties);
 
 		Map<String, UIWorkflowNode> nodesByName = Maps.newLinkedHashMap();
 		Map<String, UIParameter> parametersByName = Maps.newLinkedHashMap();
@@ -121,8 +121,8 @@ public class WorkflowImportService
 
 			if (protocol == null)
 			{
-				protocol = new UIWorkflowProtocol(IdGenerator.generateId(), step.getProtocol().getName(), step
-						.getProtocol().getTemplate());
+				protocol = new UIWorkflowProtocol(IdGenerator.generateId(), step.getProtocol().getName(),
+						step.getProtocol().getTemplate());
 
 				List<UIParameter> parameters = Lists.newArrayList();
 
@@ -172,8 +172,8 @@ public class WorkflowImportService
 				List<UIParameterMapping> uiParameterMappings = Lists.newArrayList();
 				for (Map.Entry<String, String> mapping : step.getParametersMapping().entrySet())
 				{
-					uiParameterMappings.add(new UIParameterMapping(IdGenerator.generateId(), mapping.getKey(), mapping
-							.getValue()));
+					uiParameterMappings.add(
+							new UIParameterMapping(IdGenerator.generateId(), mapping.getKey(), mapping.getValue()));
 				}
 
 				dataService.add(UIParameterMappingMetaData.INSTANCE.getName(), uiParameterMappings);
@@ -204,8 +204,8 @@ public class WorkflowImportService
 
 	private List<UIWorkflowParameter> parseParametersFile(File f)
 	{
-		if (!f.getName().toLowerCase().endsWith(".csv")) throw new ComputeUiException(
-				"Parameters file must be a csv file.");
+		if (!f.getName().toLowerCase().endsWith(".csv"))
+			throw new ComputeUiException("Parameters file must be a csv file.");
 
 		List<UIWorkflowParameter> params = Lists.newArrayList();
 		CsvRepository csv = new CsvRepository(f, null);

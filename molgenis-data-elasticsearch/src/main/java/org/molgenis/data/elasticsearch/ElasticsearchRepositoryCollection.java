@@ -1,7 +1,5 @@
 package org.molgenis.data.elasticsearch;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -92,41 +90,35 @@ public class ElasticsearchRepositoryCollection implements ManageableRepositoryCo
 	@Override
 	public void addAttribute(String entityName, AttributeMetaData attribute)
 	{
-		EntityMetaData entityMetaData = dataService.getEntityMetaData(entityName);
-		if (entityMetaData == null) throw new UnknownEntityException(String.format("Unknown entity '%s'", entityName));
-
+		DefaultEntityMetaData entityMetaData;
 		try
 		{
-			searchService.createMappings(entityMetaData);
+			entityMetaData = (DefaultEntityMetaData) dataService.getEntityMetaData(entityName);
 		}
-		catch (IOException e)
+		catch (ClassCastException ex)
 		{
-			throw new UncheckedIOException("Error creating mappings for [" + entityName + "]", e);
+			throw new RuntimeException("Cannot cast EntityMetaData to DefaultEntityMetadata " + ex);
 		}
+		if (entityMetaData == null) throw new UnknownEntityException(String.format("Unknown entity '%s'", entityName));
+
+		entityMetaData.addAttributeMetaData(attribute);
+		searchService.createMappings(entityMetaData);
 	}
 
 	@Override
 	public void deleteAttribute(String entityName, String attributeName)
 	{
-		EntityMetaData entityMetaData = dataService.getEntityMetaData(entityName);
+		EntityMetaData entityMetaData = dataService.getMeta().getEntityMetaData(entityName);
 		if (entityMetaData == null) throw new UnknownEntityException(String.format("Unknown entity '%s'", entityName));
 
-		DefaultEntityMetaData defaultEntityMetaData = new DefaultEntityMetaData(
-				dataService.getEntityMetaData(entityName));
+		DefaultEntityMetaData defaultEntityMetaData = new DefaultEntityMetaData(dataService.getMeta()
+				.getEntityMetaData(entityName));
 		AttributeMetaData attr = entityMetaData.getAttribute(attributeName);
 		if (attr == null) throw new UnknownAttributeException(String.format("Unknown attribute '%s' of entity '%s'",
 				attributeName, entityName));
 
 		defaultEntityMetaData.removeAttributeMetaData(attr);
-
-		try
-		{
-			searchService.createMappings(entityMetaData);
-		}
-		catch (IOException e)
-		{
-			throw new UncheckedIOException("Error creating mappings for [" + entityName + "]", e);
-		}
+		searchService.createMappings(entityMetaData);
 	}
 
 	@Override

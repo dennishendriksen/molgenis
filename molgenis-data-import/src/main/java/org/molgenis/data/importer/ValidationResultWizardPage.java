@@ -2,16 +2,19 @@ package org.molgenis.data.importer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.molgenis.auth.MolgenisGroup;
 import org.molgenis.data.DataService;
 import org.molgenis.data.DatabaseAction;
 import org.molgenis.data.FileRepositoryCollectionFactory;
 import org.molgenis.data.RepositoryCollection;
 import org.molgenis.security.core.utils.SecurityUtils;
+import org.molgenis.security.user.UserAccountService;
 import org.molgenis.ui.wizard.AbstractWizardPage;
 import org.molgenis.ui.wizard.Wizard;
 import org.slf4j.Logger;
@@ -19,8 +22,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.ObjectError;
+
+import com.google.common.collect.Lists;
 
 @Component
 public class ValidationResultWizardPage extends AbstractWizardPage
@@ -43,7 +49,8 @@ public class ValidationResultWizardPage extends AbstractWizardPage
 	private ImportRunService importRunService;
 
 	@Autowired
-	private ImportPostProcessingService importPostProcessingService;
+	UserAccountService userAccountService;
+	private List<MolgenisGroup> groups;
 
 	@Override
 	public String getTitle()
@@ -52,6 +59,7 @@ public class ValidationResultWizardPage extends AbstractWizardPage
 	}
 
 	@Override
+	@Transactional
 	public String handleRequest(HttpServletRequest request, BindingResult result, Wizard wizard)
 	{
 		if (!(wizard instanceof ImportWizard))
@@ -82,8 +90,8 @@ public class ValidationResultWizardPage extends AbstractWizardPage
 					((ImportWizard) wizard).setImportRunId(importRun.getId());
 
 					asyncImportJobs.execute(new ImportJob(importService, SecurityContextHolder.getContext(),
-							repositoryCollection, entityDbAction, importRun.getId(), importRunService,
-							importPostProcessingService, request.getSession()));
+							repositoryCollection, entityDbAction, importRun.getId(), importRunService, request
+									.getSession(), importWizard.getDefaultEntity()));
 				}
 
 			}
@@ -102,6 +110,17 @@ public class ValidationResultWizardPage extends AbstractWizardPage
 
 		}
 
+		// Convert to list because it's less impossible use in FreeMarker
+		if (!userAccountService.getCurrentUser().getSuperuser())
+		{
+			groups = Lists.newArrayList(userAccountService.getCurrentUserGroups());
+		}
+		else
+		{
+			groups = Lists.newArrayList(dataService.findAll(MolgenisGroup.ENTITY_NAME, MolgenisGroup.class));
+		}
+
+		((ImportWizard) wizard).setGroups(groups);
 		return null;
 	}
 

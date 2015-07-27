@@ -9,19 +9,17 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.ResourceBundle;
-import java.util.Set;
 
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 
@@ -33,11 +31,10 @@ import org.molgenis.data.Entity;
 import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.MolgenisDataAccessException;
 import org.molgenis.data.RepositoryCapability;
-import org.molgenis.data.csv.CsvWriter;
 import org.molgenis.data.support.AggregateQueryImpl;
 import org.molgenis.data.support.GenomeConfig;
 import org.molgenis.data.support.QueryImpl;
-import org.molgenis.dataexplorer.controller.DataRequest.ColNames;
+import org.molgenis.dataexplorer.download.DataExplorerDownloadHandler;
 import org.molgenis.dataexplorer.event.DataExplorerRegisterActionEvent;
 import org.molgenis.dataexplorer.event.DataExplorerRegisterEvent;
 import org.molgenis.dataexplorer.event.DataExplorerRegisterRefCellClickEvent;
@@ -48,9 +45,9 @@ import org.molgenis.framework.server.MolgenisSettings;
 import org.molgenis.framework.ui.MolgenisPluginController;
 import org.molgenis.security.core.MolgenisPermissionService;
 import org.molgenis.security.core.Permission;
+import org.molgenis.security.core.runas.RunAsSystemProxy;
 import org.molgenis.security.core.utils.SecurityUtils;
 import org.molgenis.ui.MolgenisInterceptor;
-import org.molgenis.ui.menu.Menu;
 import org.molgenis.ui.menumanager.MenuManagerService;
 import org.molgenis.util.ErrorMessageResponse;
 import org.molgenis.util.ErrorMessageResponse.ErrorMessage;
@@ -85,8 +82,8 @@ import com.google.common.collect.Maps;
 @RequestMapping(URI)
 @SessionAttributes(
 { ATTR_GALAXY_URL, ATTR_GALAXY_API_KEY })
-public class DataExplorerController extends MolgenisPluginController implements
-		ApplicationListener<DataExplorerRegisterEvent>
+public class DataExplorerController extends MolgenisPluginController
+		implements ApplicationListener<DataExplorerRegisterEvent>
 {
 	private static final Logger LOG = LoggerFactory.getLogger(DataExplorerController.class);
 
@@ -107,7 +104,7 @@ public class DataExplorerController extends MolgenisPluginController implements
 	public static final String KEY_MOD_AGGREGATES_DISTINCT_HIDE = KEY_MOD_AGGREGATES + ".distinct.hide";
 	public static final String KEY_MOD_AGGREGATES_DISTINCT_OVERRIDE = KEY_MOD_AGGREGATES + ".distinct.override";
 	public static final String KEY_MOD_ENTITIESREPORT = "plugin.dataexplorer.mod.entitiesreport";
-
+	public static final String KEY_DATATABLE = "plugin.dataexplorer.table.javascript";
 	private static final boolean DEFAULT_VAL_MOD_AGGREGATES = true;
 	private static final boolean DEFAULT_VAL_MOD_ANNOTATORS = false;
 	private static final boolean DEFAULT_VAL_MOD_CHARTS = true;
@@ -170,7 +167,8 @@ public class DataExplorerController extends MolgenisPluginController implements
 	 * @return the view name
 	 */
 	@RequestMapping(method = RequestMethod.GET)
-	public String init(@RequestParam(value = "entity", required = false) String selectedEntityName, Model model) throws Exception
+	public String init(@RequestParam(value = "entity", required = false) String selectedEntityName, Model model)
+			throws Exception
 	{
 		boolean entityExists = false;
 		boolean hasEntityPermission = false;
@@ -230,8 +228,8 @@ public class DataExplorerController extends MolgenisPluginController implements
 			model.addAttribute("chains", molgenisSettings.getProperty(CHAINS));
 			model.addAttribute("sources", molgenisSettings.getProperty(SOURCES));
 			model.addAttribute("browserLinks", molgenisSettings.getProperty(BROWSERLINKS));
-			model.addAttribute("showHighlight", String.valueOf(molgenisSettings.getBooleanProperty(HIGHLIGHTREGION,
-					DEFAULT_VAL_KEY_HIGLIGHTREGION)));
+			model.addAttribute("showHighlight", String
+					.valueOf(molgenisSettings.getBooleanProperty(HIGHLIGHTREGION, DEFAULT_VAL_KEY_HIGLIGHTREGION)));
 
 			model.addAttribute("genomebrowser_start_list",
 					molgenisSettings.getProperty(GenomeConfig.GENOMEBROWSER_POS, "POS"));
@@ -244,15 +242,17 @@ public class DataExplorerController extends MolgenisPluginController implements
 			model.addAttribute("genomebrowser_patient_list",
 					molgenisSettings.getProperty(GenomeConfig.GENOMEBROWSER_PATIENT_ID, "patient_id"));
 
-			model.addAttribute("tableEditable", isTableEditable());
+			// Galaxy properties
 			model.addAttribute("galaxyEnabled",
 					molgenisSettings.getBooleanProperty(KEY_GALAXY_ENABLED, DEFAULT_VAL_GALAXY_ENABLED));
 			String galaxyUrl = molgenisSettings.getProperty(KEY_GALAXY_URL);
-			model.addAttribute("rowClickable", isRowClickable());
 			if (galaxyUrl != null) model.addAttribute(ATTR_GALAXY_URL, galaxyUrl);
 
 			model.addAttribute("cellClickHandlers", getCellClickHandlers(entityName));
 			model.addAttribute("actionHandlers", getActionHandlers(entityName));
+			// Custom report options
+			model.addAttribute("rowClickable", isRowClickable());
+			model.addAttribute("tableEditable", isTableEditable());
 		}
 		else if (moduleId.equals("diseasematcher"))
 		{
@@ -261,8 +261,9 @@ public class DataExplorerController extends MolgenisPluginController implements
 		}
 		else if (moduleId.equals("entitiesreport"))
 		{
-            model.addAttribute("datasetRepository", dataService.getRepository(entityName));
-			model.addAttribute("viewName", parseEntitiesReportRuntimeProperty(entityName));
+			model.addAttribute("datasetRepository", dataService.getRepository(entityName));
+			model.addAttribute("viewName",
+					parseEntitySpecificRuntimeProperty(entityName, KEY_MOD_ENTITIESREPORT, null));
 		}
 		return "view-dataexplorer-mod-" + moduleId; // TODO bad request in case of invalid module id
 	}
@@ -290,13 +291,16 @@ public class DataExplorerController extends MolgenisPluginController implements
 			modAggregates = dataService.getCapabilities(entityName).contains(RepositoryCapability.AGGREGATEABLE);
 		}
 
-		String modEntitiesReportName = parseEntitiesReportRuntimeProperty(entityName);
+		String modEntitiesReportName = parseEntitySpecificRuntimeProperty(entityName, KEY_MOD_ENTITIESREPORT, null);
 
 		// set data explorer permission
 		Permission pluginPermission = null;
-		if (molgenisPermissionService.hasPermissionOnEntity(entityName, Permission.WRITE)) pluginPermission = Permission.WRITE;
-		else if (molgenisPermissionService.hasPermissionOnEntity(entityName, Permission.READ)) pluginPermission = Permission.READ;
-		else if (molgenisPermissionService.hasPermissionOnEntity(entityName, Permission.COUNT)) pluginPermission = Permission.COUNT;
+		if (molgenisPermissionService.hasPermissionOnEntity(entityName, Permission.WRITE))
+			pluginPermission = Permission.WRITE;
+		else if (molgenisPermissionService.hasPermissionOnEntity(entityName, Permission.READ))
+			pluginPermission = Permission.READ;
+		else if (molgenisPermissionService.hasPermissionOnEntity(entityName, Permission.COUNT))
+			pluginPermission = Permission.COUNT;
 
 		ModulesConfigResponse modulesConfig = new ModulesConfigResponse();
 
@@ -332,8 +336,8 @@ public class DataExplorerController extends MolgenisPluginController implements
 					}
 					if (modDiseasematcher)
 					{
-						modulesConfig.add(new ModuleConfig("diseasematcher", "Disease Matcher",
-								"diseasematcher-icon.png"));
+						modulesConfig
+								.add(new ModuleConfig("diseasematcher", "Disease Matcher", "diseasematcher-icon.png"));
 					}
 					if (modEntitiesReportName != null)
 					{
@@ -359,8 +363,8 @@ public class DataExplorerController extends MolgenisPluginController implements
 					}
 					if (modDiseasematcher)
 					{
-						modulesConfig.add(new ModuleConfig("diseasematcher", "Disease Matcher",
-								"diseasematcher-icon.png"));
+						modulesConfig
+								.add(new ModuleConfig("diseasematcher", "Disease Matcher", "diseasematcher-icon.png"));
 					}
 					if (modEntitiesReportName != null)
 					{
@@ -401,13 +405,12 @@ public class DataExplorerController extends MolgenisPluginController implements
 
 	private boolean isGenomeBrowserEntity(EntityMetaData entityMetaData)
 	{
-		AttributeMetaData attributeStartPosition = genomeConfig.getAttributeMetadataForAttributeNameArray(
-				GenomeConfig.GENOMEBROWSER_POS, entityMetaData);
-		AttributeMetaData attributeChromosome = genomeConfig.getAttributeMetadataForAttributeNameArray(
-				GenomeConfig.GENOMEBROWSER_CHROM, entityMetaData);
+		AttributeMetaData attributeStartPosition = genomeConfig
+				.getAttributeMetadataForAttributeNameArray(GenomeConfig.GENOMEBROWSER_POS, entityMetaData);
+		AttributeMetaData attributeChromosome = genomeConfig
+				.getAttributeMetadataForAttributeNameArray(GenomeConfig.GENOMEBROWSER_CHROM, entityMetaData);
 		return attributeStartPosition != null && attributeChromosome != null;
 	}
-
 
 	@RequestMapping(value = "/action", method = POST)
 	@ResponseBody
@@ -425,36 +428,41 @@ public class DataExplorerController extends MolgenisPluginController implements
 		return actionResponse;
 	}
 
-	/**
-	 * Updates the 'Entities' menu when an entity is deleted.
-	 * 
-	 * @param entityName
-	 */
-	@RequestMapping(value = "/removeEntityFromMenu/{entityName}", method = POST)
-	public void updateMenuOnDeleteEntity(@PathVariable("entityName") String entityName, HttpServletResponse response)
-	{
-		Menu menu = menuManager.getMenu();
-		menu.deleteMenuItem("form." + entityName);
-		menuManager.saveMenu(menu);
-
-	}
-
-	@RequestMapping(value = "/download", method = POST)
 	public void download(@RequestParam("dataRequest") String dataRequestStr, HttpServletResponse response)
 			throws IOException
 	{
+		DataExplorerDownloadHandler download = new DataExplorerDownloadHandler(dataService);
+
 		// Workaround because binding with @RequestBody is not possible:
 		// http://stackoverflow.com/a/9970672
 		dataRequestStr = URLDecoder.decode(dataRequestStr, "UTF-8");
 		LOG.info("Download request: [" + dataRequestStr + "]");
 		DataRequest dataRequest = new GsonHttpMessageConverter().getGson().fromJson(dataRequestStr, DataRequest.class);
 
-		String entityName = dataRequest.getEntityName();
-		String fileName = entityName + '_' + new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + ".csv";
+		String fileName = "";
+		ServletOutputStream outputStream = null;
 
-		response.setContentType("text/csv");
-		response.addHeader("Content-Disposition", "attachment; filename=" + fileName);
-		writeDataRequestCsv(dataRequest, response.getOutputStream(), ',');
+		switch (dataRequest.getDownloadType())
+		{
+			case DOWNLOAD_TYPE_CSV:
+				response.setContentType("text/csv");
+				fileName = dataRequest.getEntityName() + '_'
+						+ new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + ".csv";
+				response.addHeader("Content-Disposition", "attachment; filename=" + fileName);
+
+				outputStream = response.getOutputStream();
+				download.writeToCsv(dataRequest, outputStream, ',');
+				break;
+			case DOWNLOAD_TYPE_XLSX:
+				response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+				fileName = dataRequest.getEntityName() + '_'
+						+ new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()) + ".xlsx";
+				response.addHeader("Content-Disposition", "attachment; filename=" + fileName);
+
+				outputStream = response.getOutputStream();
+				download.writeToExcel(dataRequest, outputStream);
+				break;
+		}
 	}
 
 	@RequestMapping(value = "/galaxy/export", method = POST)
@@ -462,6 +470,8 @@ public class DataExplorerController extends MolgenisPluginController implements
 	public void exportToGalaxy(@Valid @RequestBody GalaxyDataExportRequest galaxyDataExportRequest, Model model)
 			throws IOException
 	{
+		DataExplorerDownloadHandler download = new DataExplorerDownloadHandler(dataService);
+
 		boolean galaxyEnabled = molgenisSettings.getBooleanProperty(KEY_GALAXY_ENABLED, DEFAULT_VAL_GALAXY_ENABLED);
 		if (!galaxyEnabled) throw new MolgenisDataAccessException("Galaxy export disabled");
 
@@ -474,7 +484,7 @@ public class DataExplorerController extends MolgenisPluginController implements
 		File csvFile = File.createTempFile("galaxydata_" + System.currentTimeMillis(), ".tsv");
 		try
 		{
-			writeDataRequestCsv(dataRequest, new FileOutputStream(csvFile), '\t', true);
+			download.writeToCsv(dataRequest, new FileOutputStream(csvFile), '\t', true);
 			galaxyDataSetExporter.export(dataRequest.getEntityName(), csvFile);
 		}
 		finally
@@ -485,55 +495,6 @@ public class DataExplorerController extends MolgenisPluginController implements
 		// store url and api key in session for subsequent galaxy export requests
 		model.addAttribute(ATTR_GALAXY_URL, galaxyUrl);
 		model.addAttribute(ATTR_GALAXY_API_KEY, galaxyApiKey);
-	}
-
-	private void writeDataRequestCsv(DataRequest request, OutputStream outputStream, char separator) throws IOException
-	{
-		writeDataRequestCsv(request, outputStream, separator, false);
-	}
-
-	private void writeDataRequestCsv(DataRequest dataRequest, OutputStream outputStream, char separator,
-			boolean noQuotes) throws IOException
-	{
-		CsvWriter csvWriter = new CsvWriter(outputStream, separator, noQuotes);
-		try
-		{
-			String entityName = dataRequest.getEntityName();
-			EntityMetaData entityMetaData = dataService.getEntityMetaData(entityName);
-			final Set<String> attributeNames = new HashSet<String>(dataRequest.getAttributeNames());
-			Iterable<AttributeMetaData> attributes = Iterables.filter(entityMetaData.getAtomicAttributes(),
-					new Predicate<AttributeMetaData>()
-					{
-						@Override
-						public boolean apply(AttributeMetaData attributeMetaData)
-						{
-							return attributeNames.contains(attributeMetaData.getName());
-						}
-					});
-
-			if (dataRequest.getColNames() == ColNames.ATTRIBUTE_LABELS)
-			{
-				csvWriter.writeAttributes(attributes);
-			}
-			else if (dataRequest.getColNames() == ColNames.ATTRIBUTE_NAMES)
-			{
-				csvWriter.writeAttributeNames(Iterables.transform(attributes, new Function<AttributeMetaData, String>()
-				{
-					@Override
-					public String apply(AttributeMetaData attributeMetaData)
-					{
-						return attributeMetaData.getName();
-					}
-				}));
-			}
-
-			QueryImpl query = dataRequest.getQuery();
-			csvWriter.add(dataService.findAll(entityName, query));
-		}
-		finally
-		{
-			csvWriter.close();
-		}
 	}
 
 	@RequestMapping(value = "/aggregate", method = RequestMethod.POST, produces = "application/json", consumes = "application/json")
@@ -643,27 +604,28 @@ public class DataExplorerController extends MolgenisPluginController implements
 	{
 		model.addAttribute("entity", dataService.getRepository(entityName).findOne(entityId));
 		model.addAttribute("entityMetadata", dataService.getEntityMetaData(entityName));
-		model.addAttribute("viewName", getViewName(entityName));
+		RunAsSystemProxy.runAsSystem(() -> model.addAttribute("viewName", getViewName(entityName)));
 		return "view-entityreport";
 	}
 
 	private String getViewName(String entityName)
 	{
-		//first we check if there are any RuntimeProperty mappings of entity to report template
+		// first we check if there are any RuntimeProperty mappings of entity to report template
 		String rtName = "plugin.dataexplorer.mod.entitiesreport";
 		Entity rt = dataService.getRepository("RuntimeProperty").findOne(new QueryImpl().eq("Name", rtName));
-		if(rt != null){
+		if (rt != null)
+		{
 			String entityMapping = rt.get("Value").toString();
 			String[] mappingSplit = entityMapping.split(",", -1);
-			for(String mapping : mappingSplit)
+			for (String mapping : mappingSplit)
 			{
 				String[] valSplit = mapping.split(":", -1);
-				if(valSplit.length == 2)
+				if (valSplit.length == 2)
 				{
 					String entity = valSplit[0];
 					String reportTemplate = valSplit[1];
-					//if found, match to the current selected entity and return the associated template
-					if(entity.equals(entityName))
+					// if found, match to the current selected entity and return the associated template
+					if (entity.equals(entityName))
 					{
 						final String specificViewname = "view-entityreport-specific-" + reportTemplate;
 						if (viewExists(specificViewname))
@@ -672,13 +634,14 @@ public class DataExplorerController extends MolgenisPluginController implements
 						}
 					}
 				}
-				else{
-					LOG.error("Bad runtime entity "+rtName+" mapping: " + mapping);
+				else
+				{
+					LOG.error("Bad runtime entity " + rtName + " mapping: " + mapping);
 				}
 			}
 		}
 
-		//if there are no RuntimeProperty mappings, execute existing behaviour
+		// if there are no RuntimeProperty mappings, execute existing behaviour
 		final String specificViewname = "view-entityreport-specific-" + entityName;
 		if (viewExists(specificViewname))
 		{
@@ -744,9 +707,9 @@ public class DataExplorerController extends MolgenisPluginController implements
 				DEFAULT_VAL_DATAEXPLORER_ROW_CLICKABLE);
 	}
 
-	private String parseEntitiesReportRuntimeProperty(String entityName)
+	private String parseEntitySpecificRuntimeProperty(String entityName, String property, String defaultValue)
 	{
-		String modEntitiesReportRTP = molgenisSettings.getProperty(KEY_MOD_ENTITIESREPORT, null);
+		String modEntitiesReportRTP = molgenisSettings.getProperty(property, null);
 		if (modEntitiesReportRTP != null)
 		{
 			String[] entitiesReports = modEntitiesReportRTP.split(",");
@@ -762,7 +725,7 @@ public class DataExplorerController extends MolgenisPluginController implements
 				}
 			}
 		}
-		return null;
+		return defaultValue;
 	}
 
 	private Map<String, DataExplorerRegisterRefCellClickEvent> getCellClickHandlers(final String entityName)

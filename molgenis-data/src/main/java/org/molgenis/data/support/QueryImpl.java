@@ -12,7 +12,7 @@ import org.molgenis.data.Query;
 import org.molgenis.data.QueryRule;
 import org.molgenis.data.QueryRule.Operator;
 import org.molgenis.data.Repository;
-import org.springframework.data.domain.Sort;
+import org.molgenis.data.Sort;
 
 public class QueryImpl implements Query
 {
@@ -91,10 +91,17 @@ public class QueryImpl implements Query
 	}
 
 	@Override
+	public Entity findOne()
+	{
+		if (repository == null) throw new RuntimeException("Query failed: repository not set");
+		return repository.findOne(this);
+	}
+
+	@Override
 	public List<QueryRule> getRules()
 	{
-		if (this.rules.size() > 1) throw new MolgenisDataException(
-				"Nested query not closed, use unnest() or unnestAll()");
+		if (this.rules.size() > 1)
+			throw new MolgenisDataException("Nested query not closed, use unnest() or unnestAll()");
 
 		if (this.rules.size() > 0)
 		{
@@ -257,9 +264,7 @@ public class QueryImpl implements Query
 	@Override
 	public Query rng(String field, Object smaller, Object bigger)
 	{
-		this.gt(field, smaller);
-		this.and();
-		this.lt(field, bigger);
+		rules.get(this.rules.size() - 1).add(new QueryRule(field, Operator.RANGE, Arrays.asList(smaller, bigger)));
 		return this;
 	}
 
@@ -278,10 +283,10 @@ public class QueryImpl implements Query
 	}
 
 	@Override
-	public Query sort(Sort.Direction direction, String... fields)
+	public Sort sort()
 	{
-		this.sort(new Sort(direction, fields));
-		return this;
+		this.sort = new Sort();
+		return this.sort;
 	}
 
 	@Override

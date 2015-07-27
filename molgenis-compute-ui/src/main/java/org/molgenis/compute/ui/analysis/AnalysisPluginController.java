@@ -14,8 +14,12 @@ import java.util.Map;
 
 import javax.validation.Valid;
 
+import org.molgenis.compute.CommandLineRunContainer;
+import org.molgenis.compute.ComputeCommandLine;
+import org.molgenis.compute.ComputeProperties;
+import org.molgenis.compute.GeneratedScript;
 import org.molgenis.compute.ui.IdGenerator;
-import org.molgenis.compute.ui.clusterexecutor.ClusterManager;
+import org.molgenis.compute.ui.executor.WorkflowExecutor;
 import org.molgenis.compute.ui.meta.AnalysisJobMetaData;
 import org.molgenis.compute.ui.meta.AnalysisMetaData;
 import org.molgenis.compute.ui.meta.UIBackendMetaData;
@@ -26,10 +30,6 @@ import org.molgenis.compute.ui.model.UIBackend;
 import org.molgenis.compute.ui.model.UIWorkflow;
 import org.molgenis.compute.ui.model.UIWorkflowNode;
 import org.molgenis.compute.ui.model.decorator.UIWorkflowDecorator;
-import org.molgenis.compute5.CommandLineRunContainer;
-import org.molgenis.compute5.ComputeCommandLine;
-import org.molgenis.compute5.ComputeProperties;
-import org.molgenis.compute5.GeneratedScript;
 import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
 import org.molgenis.data.QueryRule;
@@ -57,8 +57,8 @@ import com.google.common.collect.Iterables;
 
 @Controller
 @RequestMapping(AnalysisPluginController.URI)
-public class AnalysisPluginController extends MolgenisPluginController implements
-		DataExplorerRegisterRefCellClickEventHandler
+public class AnalysisPluginController extends MolgenisPluginController
+		implements DataExplorerRegisterRefCellClickEventHandler
 {
 	private static final Logger LOG = LoggerFactory.getLogger(AnalysisPluginController.class);
 
@@ -76,7 +76,7 @@ public class AnalysisPluginController extends MolgenisPluginController implement
 	private final DataService dataService;
 
 	@Autowired
-	private ClusterManager clusterManager;
+	private WorkflowExecutor clusterManager;
 
 	@Autowired
 	public AnalysisPluginController(DataService dataService)
@@ -144,8 +144,8 @@ public class AnalysisPluginController extends MolgenisPluginController implement
 			workflow = dataService.findOne(UIWorkflowMetaData.INSTANCE.getName(), workflowId, UIWorkflow.class);
 			if (workflow == null)
 			{
-				throw new UnknownEntityException("Unknown " + UIWorkflow.class.getSimpleName() + " [" + workflowId
-						+ "]");
+				throw new UnknownEntityException(
+						"Unknown " + UIWorkflow.class.getSimpleName() + " [" + workflowId + "]");
 			}
 
 		}
@@ -234,8 +234,8 @@ public class AnalysisPluginController extends MolgenisPluginController implement
 		final String analysisAttrName = UIWorkflowDecorator.ANALYSIS_ATTRIBUTE.getName();
 
 		// add cloned analysis to targets
-		Iterable<Entity> targets = dataService
-				.findAll(targetEntityName, new QueryImpl().eq(analysisAttrName, analysis));
+		Iterable<Entity> targets = dataService.findAll(targetEntityName,
+				new QueryImpl().eq(analysisAttrName, analysis));
 		dataService.update(targetEntityName, Iterables.transform(targets, new Function<Entity, Entity>()
 		{
 			@Override

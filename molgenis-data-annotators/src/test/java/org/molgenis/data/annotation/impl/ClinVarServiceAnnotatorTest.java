@@ -13,114 +13,35 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.molgenis.MolgenisFieldTypes;
-import org.molgenis.MolgenisFieldTypes.FieldTypeEnum;
-import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.Entity;
-import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.annotation.AnnotationService;
 import org.molgenis.data.annotation.impl.datastructures.ClinvarData;
 import org.molgenis.data.annotation.provider.ClinvarDataProvider;
-import org.molgenis.data.support.DefaultEntityMetaData;
+import org.molgenis.data.annotation.AbstractAnnotatorTest;
 import org.molgenis.data.support.MapEntity;
-import org.molgenis.framework.server.MolgenisSettings;
+import org.molgenis.data.vcf.VcfRepository;
 import org.molgenis.util.ResourceUtils;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-public class ClinVarServiceAnnotatorTest
+public class ClinVarServiceAnnotatorTest extends AbstractAnnotatorTest
 {
-	private DefaultEntityMetaData metaDataCanAnnotate;
-	private EntityMetaData metaDataCantAnnotate;
-	private ClinVarServiceAnnotator annotator;
-	private AttributeMetaData attributeMetaDataChrom;
-	private AttributeMetaData attributeMetaDataPos;
-	private AttributeMetaData attributeMetaDataRef;
-	private AttributeMetaData attributeMetaDataAlt;
-	private AttributeMetaData attributeMetaDataCantAnnotateFeature;
-	private AttributeMetaData attributeMetaDataCantAnnotateChrom;
-	private AttributeMetaData attributeMetaDataCantAnnotatePos;
-	private AttributeMetaData attributeMetaDataCantAnnotateRef;
-	private AttributeMetaData attributeMetaDataCantAnnotateAlt;
-	private Entity entity;
-	private ArrayList<Entity> input;
-
 	@BeforeMethod
 	public void beforeMethod() throws IOException
 	{
-		MolgenisSettings settings = mock(MolgenisSettings.class);
 		when(settings.getProperty(ClinVarServiceAnnotator.CLINVAR_FILE_LOCATION_PROPERTY)).thenReturn(
 				ResourceUtils.getFile(getClass(), "/clinvar_example.txt").getPath());
-
-		metaDataCanAnnotate = new DefaultEntityMetaData("test");
-		attributeMetaDataChrom = mock(AttributeMetaData.class);
-		attributeMetaDataPos = mock(AttributeMetaData.class);
-		attributeMetaDataRef = mock(AttributeMetaData.class);
-		attributeMetaDataAlt = mock(AttributeMetaData.class);
-
-		when(attributeMetaDataChrom.getName()).thenReturn(ClinVarServiceAnnotator.CHROMOSOME);
-		when(attributeMetaDataPos.getName()).thenReturn(ClinVarServiceAnnotator.POSITION);
-		when(attributeMetaDataRef.getName()).thenReturn(ClinVarServiceAnnotator.REFERENCE);
-		when(attributeMetaDataAlt.getName()).thenReturn(ClinVarServiceAnnotator.ALTERNATIVE);
-		when(attributeMetaDataChrom.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.STRING.toString().toLowerCase()));
-		when(attributeMetaDataPos.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.LONG.toString().toLowerCase()));
-		when(attributeMetaDataRef.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.STRING.toString().toLowerCase()));
-		when(attributeMetaDataAlt.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.STRING.toString().toLowerCase()));
-
-		metaDataCanAnnotate.addAttributeMetaData(attributeMetaDataChrom);
-		metaDataCanAnnotate.addAttributeMetaData(attributeMetaDataPos);
-		metaDataCanAnnotate.addAttributeMetaData(attributeMetaDataRef);
-		metaDataCanAnnotate.addAttributeMetaData(attributeMetaDataAlt);
-		metaDataCanAnnotate.setIdAttribute(attributeMetaDataChrom.getName());
-		metaDataCantAnnotate = mock(EntityMetaData.class);
-
-		attributeMetaDataCantAnnotateFeature = mock(AttributeMetaData.class);
-		when(attributeMetaDataCantAnnotateFeature.getName()).thenReturn("otherID");
-		when(attributeMetaDataCantAnnotateFeature.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.STRING.toString().toLowerCase()));
-
-		attributeMetaDataCantAnnotateChrom = mock(AttributeMetaData.class);
-		when(attributeMetaDataCantAnnotateChrom.getName()).thenReturn(DbnsfpVariantServiceAnnotator.CHROMOSOME);
-		when(attributeMetaDataCantAnnotateFeature.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.INT.toString().toLowerCase()));
-
-		attributeMetaDataCantAnnotatePos = mock(AttributeMetaData.class);
-		when(attributeMetaDataCantAnnotatePos.getName()).thenReturn(ClinVarServiceAnnotator.POSITION);
-		when(attributeMetaDataCantAnnotatePos.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.STRING.toString().toLowerCase()));
-
-		attributeMetaDataCantAnnotateRef = mock(AttributeMetaData.class);
-		when(attributeMetaDataCantAnnotateRef.getName()).thenReturn(ClinVarServiceAnnotator.REFERENCE);
-		when(attributeMetaDataCantAnnotateRef.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.INT.toString().toLowerCase()));
-
-		attributeMetaDataCantAnnotateAlt = mock(AttributeMetaData.class);
-		when(attributeMetaDataCantAnnotateAlt.getName()).thenReturn(ClinVarServiceAnnotator.ALTERNATIVE);
-		when(attributeMetaDataCantAnnotateAlt.getDataType()).thenReturn(
-				MolgenisFieldTypes.getType(FieldTypeEnum.INT.toString().toLowerCase()));
-
-		when(metaDataCantAnnotate.getAttribute(ClinVarServiceAnnotator.CHROMOSOME)).thenReturn(attributeMetaDataChrom);
-		when(metaDataCantAnnotate.getAttribute(ClinVarServiceAnnotator.POSITION)).thenReturn(
-				attributeMetaDataCantAnnotatePos);
-		when(metaDataCantAnnotate.getAttribute(ClinVarServiceAnnotator.REFERENCE)).thenReturn(attributeMetaDataRef);
-		when(metaDataCantAnnotate.getAttribute(ClinVarServiceAnnotator.ALTERNATIVE)).thenReturn(attributeMetaDataAlt);
-
-		entity = mock(Entity.class);
 
 		String chrStr = "12";
 		Long chrPos = new Long(57966471);
 		String chrRef = "G";
 		String chrAlt = "A";
-		when(entity.getString(ClinVarServiceAnnotator.CHROMOSOME)).thenReturn(chrStr);
-		when(entity.getLong(ClinVarServiceAnnotator.POSITION)).thenReturn(chrPos);
-		when(entity.getString(ClinVarServiceAnnotator.REFERENCE)).thenReturn(chrRef);
-		when(entity.getString(ClinVarServiceAnnotator.ALTERNATIVE)).thenReturn(chrAlt);
 
-		input = new ArrayList<Entity>();
+		entity.set(VcfRepository.CHROM, chrStr);
+		entity.set(VcfRepository.POS, chrPos);
+		entity.set(VcfRepository.REF, chrRef);
+		entity.set(VcfRepository.ALT, chrAlt);
+
 		input.add(entity);
 
 		ClinvarDataProvider clinvarDataProvider = mock(ClinvarDataProvider.class);
@@ -134,9 +55,8 @@ public class ClinVarServiceAnnotatorTest
 				"71601"));
 
 		when(clinvarDataProvider.getClinvarData()).thenReturn(clinvarDataMap);
-		
-		annotator = new ClinVarServiceAnnotator(settings, annotationService, clinvarDataProvider);
-		when(entity.getEntityMetaData()).thenReturn(metaDataCanAnnotate);
+
+		annotator = new ClinVarServiceAnnotator(settings, clinvarDataProvider);
 	}
 
 	@Test
@@ -224,18 +144,6 @@ public class ClinVarServiceAnnotatorTest
 				expectedEntity.get(ClinVarServiceAnnotator.GUIDELINES));
 		assertEquals(resultEntity.get(ClinVarServiceAnnotator.OTHERIDS),
 				expectedEntity.get(ClinVarServiceAnnotator.OTHERIDS));
-	}
-
-	@Test
-	public void canAnnotateTrueTest()
-	{
-		assertEquals(annotator.canAnnotate(metaDataCanAnnotate), "true");
-	}
-
-	@Test
-	public void canAnnotateFalseTest()
-	{
-		assertEquals(annotator.canAnnotate(metaDataCantAnnotate), "a required attribute has the wrong datatype");
 	}
 
 }

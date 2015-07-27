@@ -8,7 +8,7 @@ import org.molgenis.compute.ui.model.UIWorkflow;
 import org.molgenis.compute.ui.workflow.WorkflowManageService;
 import org.molgenis.data.DataService;
 import org.molgenis.dataexplorer.event.DataExplorerRegisterActionEvent;
-import org.molgenis.security.runas.RunAsSystem;
+import org.molgenis.security.core.runas.RunAsSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.ApplicationEventPublisherAware;
@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
  * Register and deregister workflow action handlers with the data explorer
  */
 @Service
-public class WorkflowHandlerRegistratorServiceImpl implements WorkflowHandlerRegistratorService,
-		ApplicationEventPublisherAware
+public class WorkflowHandlerRegistratorServiceImpl
+		implements WorkflowHandlerRegistratorService, ApplicationEventPublisherAware
 {
 	private final WorkflowManageService workflowManageService;
 	private final DataService dataService;
@@ -51,8 +51,8 @@ public class WorkflowHandlerRegistratorServiceImpl implements WorkflowHandlerReg
 		String uiWorkflowId = uiWorkflow.getIdValue().toString();
 		String uiWorkflowName = uiWorkflow.getName();
 
-		applicationEventPublisher.publishEvent(new DataExplorerRegisterActionEvent(REGISTER, workflowManageService,
-				uiWorkflowId, uiWorkflowName));
+		applicationEventPublisher.publishEvent(
+				new DataExplorerRegisterActionEvent(REGISTER, workflowManageService, uiWorkflowId, uiWorkflowName));
 	}
 
 	@Override
@@ -60,8 +60,8 @@ public class WorkflowHandlerRegistratorServiceImpl implements WorkflowHandlerReg
 	{
 		String uiWorkflowId = uiWorkflow.getIdValue().toString();
 		String uiWorkflowName = uiWorkflow.getName();
-		applicationEventPublisher.publishEvent(new DataExplorerRegisterActionEvent(DEREGISTER, workflowManageService,
-				uiWorkflowId, uiWorkflowName));
+		applicationEventPublisher.publishEvent(
+				new DataExplorerRegisterActionEvent(DEREGISTER, workflowManageService, uiWorkflowId, uiWorkflowName));
 	}
 
 	@Override

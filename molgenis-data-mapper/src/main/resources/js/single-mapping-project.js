@@ -1,10 +1,14 @@
 (function($, molgenis) {	
 	$(function() {
-		$('#attribute-mapping-table').scrollTableBody();
+		var $table = $('table.scroll'),
+			$bodyCells = $table.find('tbody tr:first').children(),
+			colWidth;
+		
+		$('#attribute-mapping-table').scrollTableBody({rowsToDisplay:10});
 		
 		$('.ace.readonly').each(function(){
-			var id = $(this).attr('id');
-			var editor = ace.edit(id);
+			var id = $(this).attr('id'),
+				editor = ace.edit(id);
 			editor.setTheme("ace/theme/eclipse");
 		    editor.getSession().setMode("ace/mode/javascript");
 		    editor.setReadOnly(true);
@@ -30,9 +34,7 @@
 			$('#create-integrated-entity-form').submit();
 		});
 		
-		var $table = $('table.scroll');
-		var $bodyCells = $table.find('tbody tr:first').children();
-	    var colWidth;
+		$('select[name="source"]').select2();
 		
 		// Adjust the width of thead cells when window resizes
 		$(window).resize(function() {

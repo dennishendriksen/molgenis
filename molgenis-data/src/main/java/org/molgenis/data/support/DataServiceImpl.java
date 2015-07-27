@@ -3,9 +3,9 @@ package org.molgenis.data.support;
 import static org.molgenis.security.core.utils.SecurityUtils.currentUserHasRole;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentMap;
 
 import org.molgenis.data.AggregateQuery;
 import org.molgenis.data.AggregateResult;
@@ -23,9 +23,10 @@ import org.molgenis.data.meta.MetaDataService;
 import org.molgenis.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 /**
@@ -36,7 +37,7 @@ public class DataServiceImpl implements DataService
 {
 	private static final Logger LOG = LoggerFactory.getLogger(DataServiceImpl.class);
 
-	private final Map<String, Repository> repositories;
+	private final ConcurrentMap<String, Repository> repositories;
 	private final Set<String> repositoryNames;
 	private MetaDataService metaDataService;
 	private final RepositoryDecoratorFactory repositoryDecoratorFactory;
@@ -48,7 +49,7 @@ public class DataServiceImpl implements DataService
 
 	public DataServiceImpl(RepositoryDecoratorFactory repositoryDecoratorFactory)
 	{
-		this.repositories = Maps.newLinkedHashMap();
+		this.repositories = Maps.newConcurrentMap();
 		this.repositoryNames = new TreeSet<String>();
 		this.repositoryDecoratorFactory = repositoryDecoratorFactory;
 	}
@@ -56,18 +57,19 @@ public class DataServiceImpl implements DataService
 	/**
 	 * For testing purposes
 	 */
-	public void resetRepositories()
+	public synchronized void resetRepositories()
 	{
 		repositories.clear();
 		repositoryNames.clear();
 	}
 
-	public void setMetaDataService(MetaDataService metaDataService)
+	@Override
+	public void setMeta(MetaDataService metaDataService)
 	{
 		this.metaDataService = metaDataService;
 	}
 
-	public void addRepository(Repository newRepository)
+	public synchronized void addRepository(Repository newRepository)
 	{
 		String repositoryName = newRepository.getName();
 		if (repositories.containsKey(repositoryName.toLowerCase()))
@@ -81,7 +83,7 @@ public class DataServiceImpl implements DataService
 		repositories.put(repositoryName.toLowerCase(), decoratedRepo);
 	}
 
-	public void removeRepository(String repositoryName)
+	public synchronized void removeRepository(String repositoryName)
 	{
 		if (null == repositoryName)
 		{
@@ -103,22 +105,17 @@ public class DataServiceImpl implements DataService
 	@Override
 	public EntityMetaData getEntityMetaData(String entityName)
 	{
-		Repository repository = repositories.get(entityName.toLowerCase());
-		if (repository == null) throw new UnknownEntityException("Unknown entity [" + entityName + "]");
+		Repository repository = getRepository(entityName);
 		return repository.getEntityMetaData();
 	}
 
 	@Override
-	public Iterable<String> getEntityNames()
+	public synchronized Iterable<String> getEntityNames()
 	{
-		return Iterables.filter(repositoryNames, new Predicate<String>()
-		{
-			@Override
-			public boolean apply(String entityName)
-			{
-				return currentUserHasRole("ROLE_SU", "ROLE_SYSTEM", "ROLE_ENTITY_COUNT_" + entityName.toUpperCase());
-			}
-		});
+		return Iterables.filter(
+				Lists.newArrayList(repositoryNames),
+				entityName -> currentUserHasRole("ROLE_SU", "ROLE_SYSTEM",
+						"ROLE_ENTITY_COUNT_" + entityName.toUpperCase()));
 	}
 
 	@Override
@@ -164,48 +161,56 @@ public class DataServiceImpl implements DataService
 	}
 
 	@Override
+	@Transactional
 	public void add(String entityName, Entity entity)
 	{
 		getRepository(entityName).add(entity);
 	}
 
 	@Override
+	@Transactional
 	public void add(String entityName, Iterable<? extends Entity> entities)
 	{
 		getRepository(entityName).add(entities);
 	}
 
 	@Override
+	@Transactional
 	public void update(String entityName, Entity entity)
 	{
 		getRepository(entityName).update(entity);
 	}
 
 	@Override
+	@Transactional
 	public void update(String entityName, Iterable<? extends Entity> entities)
 	{
 		getRepository(entityName).update(entities);
 	}
 
 	@Override
+	@Transactional
 	public void delete(String entityName, Entity entity)
 	{
 		getRepository(entityName).delete(entity);
 	}
 
 	@Override
+	@Transactional
 	public void delete(String entityName, Iterable<? extends Entity> entities)
 	{
 		getRepository(entityName).delete(entities);
 	}
 
 	@Override
+	@Transactional
 	public void delete(String entityName, Object id)
 	{
 		getRepository(entityName).deleteById(id);
 	}
 
 	@Override
+	@Transactional
 	public void deleteAll(String entityName)
 	{
 		getRepository(entityName).deleteAll();
@@ -286,9 +291,9 @@ public class DataServiceImpl implements DataService
 	}
 
 	@Override
-	public Iterator<Repository> iterator()
+	public synchronized Iterator<Repository> iterator()
 	{
-		return repositories.values().iterator();
+		return Lists.newArrayList(repositories.values()).iterator();
 	}
 
 	@Override

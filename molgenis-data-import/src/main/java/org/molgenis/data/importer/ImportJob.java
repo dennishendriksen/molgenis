@@ -2,6 +2,7 @@ package org.molgenis.data.importer;
 
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.lang3.StringUtils;
 import org.molgenis.data.DatabaseAction;
 import org.molgenis.data.RepositoryCollection;
 import org.molgenis.framework.db.EntityImportReport;
@@ -20,12 +21,12 @@ public class ImportJob implements Runnable
 	private final DatabaseAction databaseAction;
 	private final String importRunId;
 	private final ImportRunService importRunService;
-	private final ImportPostProcessingService importPostProcessingService;
 	private final HttpSession session;
+	private final String defaultPackage;
 
 	public ImportJob(ImportService importService, SecurityContext securityContext, RepositoryCollection source,
-			DatabaseAction databaseAction, String importRunId, ImportRunService importRunService,
-			ImportPostProcessingService importPostProcessingService, HttpSession session)
+			DatabaseAction databaseAction, String importRunId, ImportRunService importRunService, HttpSession session,
+			String defaultPackage)
 	{
 		this.importService = importService;
 		this.securityContext = securityContext;
@@ -33,8 +34,8 @@ public class ImportJob implements Runnable
 		this.databaseAction = databaseAction;
 		this.importRunId = importRunId;
 		this.importRunService = importRunService;
-		this.importPostProcessingService = importPostProcessingService;
 		this.session = session;
+		this.defaultPackage = defaultPackage;
 	}
 
 	@Override
@@ -47,16 +48,21 @@ public class ImportJob implements Runnable
 
 			SecurityContextHolder.setContext(securityContext);
 
-			EntityImportReport importReport = importService.doImport(source, databaseAction);
-
-			if (!importReport.getNewEntities().isEmpty())
-			{
-				// Add new entities to entities menu if that exists
-				importPostProcessingService.addMenuItems(importReport.getNewEntities());
-			}
+			EntityImportReport importReport = importService.doImport(source, databaseAction, defaultPackage);
 
 			session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
-			importRunService.finishImportRun(importRunId, importReport.toString());
+
+			try
+			{
+				session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
+			}
+			catch (IllegalStateException e)
+			{
+				// session invalidated
+			}
+			
+			importRunService.finishImportRun(importRunId, importReport.toString(),
+					StringUtils.join(importReport.getNewEntities(), ','));
 
 			long t = System.currentTimeMillis();
 			LOG.info("Import finished in " + (t - t0) + " msec.");

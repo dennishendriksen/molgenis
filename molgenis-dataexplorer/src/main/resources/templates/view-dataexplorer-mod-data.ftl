@@ -74,6 +74,30 @@
                             <input type="radio" name="colNames" value="ATTRIBUTE_NAMES">  Attribute Names
                         </label>   
                     </div>
+                    
+                    <span id="helpBlock" class="help-block">As entity values I want:</span>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="entityValues" value="ENTITY_LABELS" checked> Entity labels
+                        </label>
+                    </div>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="entityValues" value="ENTITY_IDS"> Entity ids
+                        </label>   
+                    </div>
+                    
+                    <span id="helpBlock" class="help-block">As download type I want:</span>
+                    <div class="radio">
+	                    <label>
+	                        <input type="radio" name="downloadTypes" value="DOWNLOAD_TYPE_CSV" checked> CSV
+	                    </label>
+                    </div>
+                    <div class="radio">
+                        <label>
+                            <input type="radio" name="downloadTypes" value="DOWNLOAD_TYPE_XLSX">  XLSX
+                        </label>   
+                    </div>
 	      	    </form>
 			</div>
 
@@ -126,14 +150,9 @@
 </div>
 <script>
     molgenis.dataexplorer.setGenomeAttributes('${genomebrowser_start_list?js_string}', '${genomebrowser_chrom_list?js_string}', '${genomebrowser_id_list?js_string}', '${genomebrowser_patient_list?js_string}');
-    <#-- load css dependencies -->
-	if (!$('link[href="<@resource_href '/css/jquery.molgenis.table.css'/>"]').length)
-		$('head').append('<link rel="stylesheet" href="<@resource_href "/css/jquery.molgenis.table.css"/>" type="text/css" />');
 	<#-- load js dependencies -->
 	$.when(
-		$.ajax("<@resource_href "/js/jquery.bootstrap.pager.js"/>", {'cache': true}),
-		$.ajax("<@resource_href "/js/jquery.molgenis.table.js"/>", {'cache': true}),
-		$.ajax("<@resource_href "/js/dalliance-compiled.js"/>", {'cache': true}),
+		$.ajax("<@resource_href "/js/dalliance-compiled.min.js"/>", {'cache': true}),
 		$.ajax("<@resource_href "/js/dataexplorer-data.js"/>", {'cache': true}))
 		.done(function() {
     			molgenis.dataexplorer.data.setGenomeBrowserAttributes('${genomebrowser_start_list?js_string}', '${genomebrowser_chrom_list?js_string}', '${genomebrowser_id_list?js_string}', '${genomebrowser_patient_list?js_string}');
@@ -153,23 +172,7 @@
 		        {
 		            $('#genomebrowser').css('display', 'none');
 		        }
-
-			<#-- create data table -->
-			var rowClickable = ${rowClickable?string('true', 'false')};
-			var tableEditable = ${tableEditable?string('true', 'false')};
-			if (tableEditable) {
-				tableEditable = molgenis.hasWritePermission(molgenis.dataexplorer.getSelectedEntityMeta().name);
-			}
-			
-			<#-- register custom cell click handlers -->
-			var cellClickHandlers = {
-		<#list cellClickHandlers?keys as id>
-			<#assign cellClickHandler=cellClickHandlers[id]>
-			'${cellClickHandler.attributeName?js_string}' : function(attribute, refEntity, refAttribute, rawValue) { window.location = '${cellClickHandler.source.refRedirectUrlTemplate}'.replace('{{id}}', rawValue.href.substring(rawValue.href.lastIndexOf('/') + 1)); }
-		</#list>
-			};
-		
-			molgenis.dataexplorer.data.createDataTable(tableEditable, rowClickable, cellClickHandlers);
+			molgenis.dataexplorer.data.createDataTable();
 		})
 		.fail(function() {
 			molgenis.createAlert([{'message': 'An error occured. Please contact the administrator.'}], 'error');

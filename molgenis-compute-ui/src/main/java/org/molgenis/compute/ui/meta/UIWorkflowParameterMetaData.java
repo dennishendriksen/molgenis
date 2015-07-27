@@ -10,8 +10,8 @@ public class UIWorkflowParameterMetaData extends DefaultEntityMetaData
 	private static final String ENTITY_NAME = "WorkflowParameter";
 
 	public static final String IDENTIFIER = "identifier";
-	public static final String KEY = "key";
-	public static final String VALUES = "values";
+	public static final String KEY = "key_";
+	public static final String VALUES = "values_";
 
 	public UIWorkflowParameterMetaData()
 	{

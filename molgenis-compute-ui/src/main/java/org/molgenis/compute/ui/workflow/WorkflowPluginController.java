@@ -9,9 +9,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
 
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.compute.ComputeProperties;
 import org.molgenis.compute.ui.meta.UIWorkflowMetaData;
 import org.molgenis.compute.ui.model.UIWorkflow;
-import org.molgenis.compute5.ComputeProperties;
 import org.molgenis.data.DataService;
 import org.molgenis.data.Query;
 import org.molgenis.data.meta.MetaDataService;

@@ -30,17 +30,15 @@ public class MysqlRepositoryMrefTest extends MysqlRepositoryAbstractDatatypeTest
 	{
 		DefaultEntityMetaData refEntity = new DefaultEntityMetaData("StringTarget2");
 		refEntity.setLabelAttribute("label");
-		refEntity.setIdAttribute("identifier");
-		refEntity.addAttribute("identifier").setNillable(false);
+		refEntity.addAttribute("identifier").setNillable(false).setIdAttribute(true);
 		refEntity.addAttribute("label");
 
 		DefaultEntityMetaData refEntity2 = new DefaultEntityMetaData("IntTarget2");
-		refEntity2.setIdAttribute("identifier");
-		refEntity2.addAttribute("identifier").setDataType(MolgenisFieldTypes.INT).setNillable(false);
+		refEntity2.addAttribute("identifier").setDataType(MolgenisFieldTypes.INT).setNillable(false)
+				.setIdAttribute(true);
 
 		EditableEntityMetaData varcharMD = new DefaultEntityMetaData("MrefTest").setLabel("ref Test");
-		varcharMD.setIdAttribute("identifier");
-		varcharMD.addAttribute("identifier").setNillable(false);
+		varcharMD.addAttribute("identifier").setNillable(false).setIdAttribute(true);
 		varcharMD.addAttribute("stringRef").setDataType(MolgenisFieldTypes.MREF).setRefEntity(refEntity)
 				.setNillable(false);
 		varcharMD.addAttribute("intRef").setDataType(MolgenisFieldTypes.MREF).setRefEntity(refEntity2)
@@ -128,9 +126,13 @@ public class MysqlRepositoryMrefTest extends MysqlRepositoryAbstractDatatypeTest
 
 		Assert.assertEquals(mrefRepo.count(), 2);
 
-		Assert.assertEquals(
-				mrefRepo.getSelectSql(new QueryImpl(), Lists.newArrayList()),
-				"SELECT this.`identifier`, GROUP_CONCAT(DISTINCT(`stringRef`.`stringRef`)) AS `stringRef`, GROUP_CONCAT(DISTINCT(`intRef`.`intRef`)) AS `intRef` FROM `MrefTest` AS this LEFT JOIN `MrefTest_stringRef` AS `stringRef` ON (this.`identifier` = `stringRef`.`identifier`) LEFT JOIN `MrefTest_intRef` AS `intRef` ON (this.`identifier` = `intRef`.`identifier`) GROUP BY this.`identifier`");
+		Assert.assertEquals(mrefRepo.getSelectSql(new QueryImpl(), Lists.newArrayList()), "SELECT this.`identifier`, "
+				+ "GROUP_CONCAT(DISTINCT(`stringRef`.`stringRef`) ORDER BY `stringRef`.`order`) AS `stringRef`, "
+				+ "GROUP_CONCAT(DISTINCT(`intRef`.`intRef`) ORDER BY `intRef`.`order`) AS `intRef` "
+				+ "FROM `MrefTest` AS this "
+				+ "LEFT JOIN `MrefTest_stringRef` AS `stringRef` ON (this.`identifier` = `stringRef`.`identifier`) "
+				+ "LEFT JOIN `MrefTest_intRef` AS `intRef` ON (this.`identifier` = `intRef`.`identifier`) "
+				+ "GROUP BY this.`identifier`");
 
 		assertEquals(mrefRepo.query().eq("identifier", "one").count(), Long.valueOf(1));
 		for (Entity e : mrefRepo.findAll(new QueryImpl().eq("identifier", "one")))

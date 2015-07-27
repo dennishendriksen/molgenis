@@ -1,3 +1,9 @@
+/**
+ * @deprecated Use /molgenis-core-ui/src/main/resources/js/component/Table.js instead
+ * 
+ * @param $
+ * @param molgenis
+ */
 (function($, molgenis) {
 	"use strict";
 
@@ -7,31 +13,12 @@
 	/**
 	 * @memberOf molgenis.table
 	 */
-	function createTable(settings, callback) {
+	function createTable(settings) {
 		// create elements
 		var items = [];
 		items.push('<div class="row">');
 		items.push('<div class="col-md-12">');
-		if(settings.searchable) {
-			items.push('<div class="row">');
-			items.push('<div class="col-md-offset-3 col-md-6">');
-			items.push('<div class="form-horizontal">');
-			items.push('<div class="form-group">');
-			items.push('<div class="col-md-12">');
-			items.push('<div class="input-group">');
-			items.push('<input type="text" class="form-control table-search" autofocus="autofocus"/>');
-			items.push('<span class="input-group-btn">');
-			items.push('<button class="btn btn-default search-clear-btn" type="button"><span class="glyphicon glyphicon-remove"></span></button>');
-			items.push('<button class="btn btn-default search-btn" type="button"><span class="glyphicon glyphicon-search"></span></button>');
-			items.push('</span>');
-			items.push('</div>');
-			items.push('</div>');   
-			items.push('</div>');
-			items.push('</div>');
-			items.push('</div>');
-			items.push('</div>');	
-		}
-		items.push('<div class="molgenis-table-container">');
+		items.push('<div class="molgenis-table-container" style="min-height: 0%">');  /* workaround for IE9 bug https://github.com/molgenis/molgenis/issues/2755 */
 		if(settings.rowClickable){
 			items.push('<table class="table table-striped table-condensed molgenis-table table-hover"><thead></thead><tbody></tbody></table>');
 		}else{
@@ -55,7 +42,14 @@
 		
 		// add data to elements
 		getTableMetaData(settings, function(attributes, refEntitiesMeta) {
-			settings.colAttributes = attributes;
+			var visibleAttributes = [];
+			for (var i = 0; i < attributes.length; ++i) {
+				if(attributes[i].visible) {
+					visibleAttributes.push(attributes[i]);
+				}
+			}
+			
+			settings.colAttributes = visibleAttributes;
 			settings.refEntitiesMeta = refEntitiesMeta;
 
 			getTableData(settings, function(data) {
@@ -63,7 +57,6 @@
 				createTableBody(data, settings);
 				createTablePager(data, settings);
 				createTableFooter(data, settings);
-				if(callback) callback();
 			});
 		});
 	}
@@ -77,7 +70,7 @@
 			// get meta data for referenced entities
 			var refEntitiesMeta = {};
 			$.each(colAttributes, function(i, attribute) {
-				if(attribute.fieldType === 'XREF' || attribute.fieldType === 'MREF' || attribute.fieldType === 'CATEGORICAL') {
+				if(attribute.fieldType === 'XREF' || attribute.fieldType === 'MREF' || attribute.fieldType === 'CATEGORICAL' || attribute.fieldType === 'CATEGORICAL_MREF') {
 					refEntitiesMeta[attribute.refEntity.href] = null;
 				}
 			});
@@ -96,7 +89,7 @@
 			$.when.apply($, dfds).done(function() {
 				// inject referenced entities meta data in attributes
 				$.each(colAttributes, function(i, attribute) {
-					if(attribute.fieldType === 'XREF' || attribute.fieldType === 'MREF' || attribute.fieldType === 'CATEGORICAL') {
+					if(attribute.fieldType === 'XREF' || attribute.fieldType === 'MREF' || attribute.fieldType === 'CATEGORICAL' || attribute.fieldType === 'CATEGORICAL_MREF') {
 						attribute.refEntity = refEntitiesMeta[attribute.refEntity.href];
 					}
 				});
@@ -112,16 +105,22 @@
 	 */
 	function getTableData(settings, callback) {
 		var attributeNames = $.map(settings.colAttributes, function(attribute) {
-			return attribute.name;
+			if(attribute.visible){
+				return attribute.name;
+			}
 		});
 		var expandAttributeNames = $.map(settings.colAttributes, function(attribute) {
 			if(attribute.expression){
-				return attribute.name;
+				if(attribute.visible){
+					return attribute.name;
+				}
 			}
-			if(attribute.fieldType === 'XREF' || attribute.fieldType === 'CATEGORICAL' ||attribute.fieldType === 'MREF') {
+			if(attribute.fieldType === 'XREF' || attribute.fieldType === 'CATEGORICAL' ||attribute.fieldType === 'MREF' || attribute.fieldType === 'CATEGORICAL_MREF') {
 				// partially expand reference entities (only request label attribute)
 				var refEntity = settings.refEntitiesMeta[attribute.refEntity.href];
-				return attribute.name + '[' + refEntity.labelAttribute + ']';
+				if(attribute.visible){
+					return attribute.name;// + '[' + refEntity.labelAttribute + ']';
+				}
 			}
 			return null;
 		});
@@ -144,29 +143,75 @@
 	/**
 	 * @memberOf molgenis.table
 	 */
+	function calculateNrHeaderRows(attributes) {
+	    var level = 1;
+	    if(attributes) {
+		    var key;
+		    for(key in attributes) {
+		        if (!attributes.hasOwnProperty(key)) continue;
+	
+		        if(typeof attributes[key] === 'object'){
+		            var depth = calculateNrHeaderRows(attributes[key]) + 1;
+		            level = Math.max(depth, level);
+		        }
+		    }
+	    }
+	    return level;
+	}
+	
+	/**
+	 * @memberOf molgenis.table
+	 */
 	function createTableHeader(settings) {
 		var container = $('.molgenis-table thead', settings.container);
 
 		var items = [];
-		if (settings.editenabled || settings.deletable){
-			items.push($('<th>'));
+		if (settings.editenabled) {
+			items.push($('<th>')); // edit row
+			items.push($('<th>')); // delete row
 		}
+		
+		// calculate number of header rows 
+		var nrHeaderRows = calculateNrHeaderRows(settings.expandAttributes);
 		$.each(settings.colAttributes, function(i, attribute) {
-			var header;
-			if (settings.sort && settings.sort.orders[0].property === attribute.name) {
-				if (settings.sort.orders[0].direction === 'ASC') {
-					header = $('<th>' + attribute.label + '<span data-attribute="' + attribute.name
-							+ '" class="ui-icon ui-icon-triangle-1-s down"></span></th>');
+			if(attribute.visible) {
+				var expandCollapseControl;
+				if(attribute.refEntity) {
+					if(settings.expandAttributes && settings.expandAttributes[attribute.name] !== undefined) {
+						expandCollapseControl = '<span data-attribute="' + attribute.name + '"class="collapse-btn glyphicon glyphicon-minus"></span>';	
+					} else {
+						expandCollapseControl = '<span data-attribute="' + attribute.name + '"class="expand-btn glyphicon glyphicon-plus"></span>';
+					}
 				} else {
-					header = $('<th>' + attribute.label + '<span data-attribute="' + attribute.name
-							+ '" class="ui-icon ui-icon-triangle-1-n up"></span></th>');
+					expandCollapseControl = '';
 				}
-			} else {
-				header = $('<th>' + attribute.label + '<span data-attribute="' + attribute.name
-						+ '" class="ui-icon ui-icon-triangle-2-n-s updown"></span></th>');
+
+				function createAttributeHeader(attribute, headerClass) {
+					var header;
+					if (settings.sort && settings.sort.orders[0].property === attribute.name) {
+						if (settings.sort.orders[0].direction === 'ASC') {
+							header = $('<th' + (headerClass ? ' class="' + headerClass + '"' : '') + '>' + attribute.label + '<span data-attribute="' + attribute.name
+									+ '" class="ui-icon ui-icon-triangle-1-s down"></span>' + expandCollapseControl + '</th>');
+						} else {
+							header = $('<th' + (headerClass ? ' class="' + headerClass + '"' : '') + '>' + attribute.label + '<span data-attribute="' + attribute.name
+									+ '" class="ui-icon ui-icon-triangle-1-n up"></span>' + expandCollapseControl + '</th>');
+						}
+					} else {
+						header = $('<th' + (headerClass ? ' class="' + headerClass + '"' : '') + '>' + attribute.label + '<span data-attribute="' + attribute.name
+								+ '" class="ui-icon ui-icon-triangle-2-n-s updown"></span>' + expandCollapseControl + '</th>');
+					}
+					header.data('attr', attribute);
+					items.push(header);
+				}
+				
+				if(settings.expandAttributes && settings.expandAttributes[attribute.name] !== undefined) {
+					$.each(attribute.refEntity.attributes, function(i, refAttribute) {
+						createAttributeHeader(refAttribute, 'ref-attr');	
+					});
+				} else {
+					createAttributeHeader(attribute);
+				}
 			}
-			header.data('attr', attribute);
-			items.push(header);
 		});
 		container.html(items);
 	}
@@ -176,26 +221,45 @@
 	 */
 	function createTableBody(data, settings) {
 		var container = $('.molgenis-table tbody', settings.container);
-
 		var items = [];
 		var tabindex = 1;
 		for (var i = 0; i < data.items.length; ++i) {
 			var entity = data.items[i];
 			var row = $('<tr>').data('entity', entity).data('id', entity.href);
-			if (settings.editenabled || settings.deletable) {
+			if (settings.editenabled) {
+				// edit row button
+				var cell = $('<td class="edit" tabindex="' + tabindex++ + '">');
+				$('<a class="btn btn-xs btn-primary edit-row-btn" href="#" data-toggle="button" title="Edit"><span class="glyphicon glyphicon-edit"></span></button>').appendTo(cell);
+				row.append(cell);
+				
+				// delete row button
 				var cell = $('<td class="trash" tabindex="' + tabindex++ + '">');
 				$('<a class="btn btn-xs btn-danger delete-row-btn" href="#" data-toggle="button" title="Delete"><span class="glyphicon glyphicon-minus"></span></button>').appendTo(cell);
 				row.append(cell);
 			}
 
 			$.each(settings.colAttributes, function(i, attribute) {
-				var cell = $('<td>').data('id', entity.href + '/' + encodeURIComponent(attribute.name));
-				renderCell(cell, entity, attribute, settings);
-				if(settings.editenabled) {
-					cell.attr('tabindex', tabindex++);
+				function renderAttribute(entity, attribute) {
+					var cell = $('<td>').data('id', entity.href + '/' + encodeURIComponent(attribute.name));
+					renderCell(cell, entity, attribute, settings);
+					if(settings.editenabled) {
+						cell.attr('tabindex', tabindex++);
+					}
+					row.append(cell);
 				}
-				row.append(cell);
-			
+				
+				if(settings.expandAttributes && settings.expandAttributes[attribute.name] !== undefined) {
+					$.each(attribute.refEntity.attributes, function(i, refAttribute) {
+						var refEntity = entity[attribute.name];
+						if(refEntity) {
+							renderAttribute(entity[attribute.name], refAttribute);
+						} else {
+							row.append($('<td>'));
+						}
+					});
+				} else {
+					renderAttribute(entity, attribute);
+				}
 			});
 			items.push(row);
 		}
@@ -297,6 +361,7 @@
 				input.addClass('number-input');
 				cell.html(input);
 				break;
+			case 'CATEGORICAL_MREF': // TODO render like CATEGORICAL is rendered for XREF
 			case 'MREF':
 				var refEntityMeta = settings.refEntitiesMeta[attribute.refEntity.href];
 				// TODO do not construct uri from other uri
@@ -397,66 +462,61 @@
 	 */
 	function renderViewCell(cell, entity, attribute, settings) {
 		cell.empty();
-		
 		var rawValue = entity[attribute.name];
-
+		
 		switch(attribute.fieldType) {
 			case 'XREF':
 			case 'MREF':
-            case 'CATEGORICAL':
-                if (rawValue) {
-                	var refEntity = settings.refEntitiesMeta[attribute.refEntity.href];
-                    var refAttribute = refEntity.labelAttribute;
-                	var refValue = refEntity.attributes[refAttribute];
+			case 'CATEGORICAL':
+			case 'CATEGORICAL_MREF':
+				if (undefined === rawValue) {
+					cell.append(formatTableCellValue(undefined, undefined));
+				} else {
+					var refEntity = settings.refEntitiesMeta[attribute.refEntity.href];
+					var refAttribute = refEntity.labelAttribute;
+					var refValue = refEntity.attributes[refAttribute];
 					
-                	if (refValue) {
-                		var refAttributeType = refValue.fieldType;
-                		if (refAttributeType === 'XREF' || refAttributeType === 'MREF' || refAttributeType === 'COMPOUND') {
-                			throw 'unsupported field type ' + refAttributeType;
-                		}
+					if (refValue) {
+						var refAttributeType = refValue.fieldType;
+						if (refAttributeType === 'XREF' || refAttributeType === 'MREF' || refAttributeType === 'CATEGORICAL' || refAttributeType === 'CATEGORICAL_MREF' || refAttributeType === 'COMPOUND') {
+							throw 'unsupported field type ' + refAttributeType;
+						}
 						
-                		switch(attribute.fieldType) {
+						switch(attribute.fieldType) {
 							case 'CATEGORICAL':
 							case 'XREF':
-
 								var $cellValue = $('<a href="#">').append(formatTableCellValue(rawValue[refAttribute], refAttributeType));
 								$cellValue.click(function(event) {
-									if(settings.cellClickHandlers && settings.cellClickHandlers[attribute.name]) {
-										settings.cellClickHandlers[attribute.name](attribute, refEntity, refAttribute, rawValue);
-									} else {
-										// execute default cell click handler
-										openRefAttributeModal(attribute, refEntity, refAttribute, rawValue);
-									}
-
+									openRefAttributeModal(attribute, refEntity, refAttribute, rawValue);
 									event.stopPropagation();
 								});
 								cell.append($cellValue);
 								break;
+							case 'CATEGORICAL_MREF':
 							case 'MREF':
-								$.each(rawValue.items, function(i, rawValue) {
-									var $cellValuePart = $('<a href="#">').append(formatTableCellValue(rawValue[refAttribute], refAttributeType));
-									$cellValuePart.click(function(event) {
-										if(settings.cellClickHandlers && settings.cellClickHandlers[attribute.name]) {
-											settings.cellClickHandlers[attribute.name](attribute, refEntity, refAttribute, rawValue);
-										} else {
-											// execute default cell click handler
+								if(!rawValue.items.length){
+									cell.append(formatTableCellValue(undefined, refAttributeType));
+								}else{
+									$.each(rawValue.items, function(i, rawValue) {
+										var $cellValuePart = $('<a href="#">').append(formatTableCellValue(rawValue[refAttribute], refAttributeType));
+										$cellValuePart.click(function(event) {
 											openRefAttributeModal(attribute, refEntity, refAttribute, rawValue);
-										}
-										event.stopPropagation();
+											event.stopPropagation();
+										});
+										if (i > 0) {cell.append(',');}
+										cell.append($cellValuePart);
 									});
-									if (i > 0) {cell.append(',');}
-									cell.append($cellValuePart);
-								});
+								}
 								break;
 							default:
 								throw 'unexpected field type ' + attribute.fieldType;
-                		}
-                	}
-                }
+						}
+					}
+				}
 				break;
-            case 'BOOL':
+			case 'BOOL':
 				cell.append(formatTableCellValue(rawValue, attribute.fieldType, undefined, attribute.nillable));
-            	break;
+				break;
 			default :
 				cell.append(formatTableCellValue(rawValue, attribute.fieldType));
 				break;
@@ -586,6 +646,7 @@
 					cell.removeClass('edited').addClass('invalid-input');
 				}
 				break;
+			case 'CATEGORICAL_MREF' :
 			case 'MREF':
 				var select = cell.find('input[type=hidden]');
 				var data = select.select2('data');
@@ -740,12 +801,8 @@
 			},
 			'getSort' : function() {
 				return settings.sort;
-			},
-			'getNrItems' : function() {
-				return settings.data.total;
 			}
 		});
-
 
 		createTable(settings, function() {
 			if(settings.onInit) {
@@ -784,11 +841,29 @@
 			});
 		});
 		
+		$(container).on('click', 'thead th .expand-btn', function(e) {
+			var attributeName = $(this).data('attribute');
+			settings.expandAttributes = settings.expandAttributes || {};
+			settings.expandAttributes[attributeName] = null;
+			
+			createTable(settings);
+		});
+		
+		$(container).on('click', 'thead th .collapse-btn', function(e) {
+			var attributeName = $(this).data('attribute');
+			delete settings.expandAttributes[attributeName];
+			
+			createTable(settings);
+		});
+
 		// toggle edit table mode
 		$(container).on('click', '.edit-table-btn', function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			  
+			if( molgenis.ie9 ){
+				bootbox.alert("Sorry. In-place editing is not supported in Internet Explorer 9.<br/>Please use a modern browser instead.");
+				return;
+			}
 			settings.editenabled = !settings.editenabled;
 			createTableHeader(settings);
 			createTableBody(settings.data, settings);
@@ -817,60 +892,37 @@
 		});
 		
 		function getCreateForm(entityMetaData) {
-			$.ajax({
-				type : 'GET',
-				url : '/api/v1/' + entityMetaData.name + '/create',
-				success : function(form) {
-					openFormModal(entityMetaData, form);
+			React.render(molgenis.ui.Form({
+				mode: 'create',
+				showHidden: true,
+				entity : entityMetaData.name,
+				modal: true,
+				onSubmitSuccess: function() {
+					settings.start = 0;
+					refresh(settings);
 				}
-			});
+			}), $('<div>')[0]);
 		}
 		
-		function openFormModal(entityMetaData, form) {
-			// create modal structure
-			var modal = $('#form-modal');
-			if(!modal.length) {
-				var items = [];
-				items.push('<div class="modal" id="form-modal" tabindex="-1" role="dialog" aria-labelledby="form-modal-title" aria-hidden="true">');
-				items.push('<div class="modal-dialog">');
-				items.push('<div class="modal-content">');				
-				items.push('<div class="modal-header">');
-				items.push('<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>');
-				items.push('<h4 class="modal-title"></h4>');
-				items.push('</div>');
-				items.push('<div class="modal-body">');
-				items.push('</div>');
-				items.push('<div class="modal-footer">');
-				items.push('<button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>');
-				items.push('<button type="button" id="submit-form-btn" class="btn btn-primary">Save</button>');
-				items.push('</div>');
-				items.push('</div>');
-				items.push('</div>');
-				items.push('</div>');
-				modal = $(items.join(''));
-			}
+		// edit row
+		$(container).on('click', '.edit-row-btn', function(e) {
+			e.preventDefault();
+			e.stopPropagation();
 			
-			$('.modal-title', modal).html(entityMetaData.label);
-			$('.modal-body', modal).html(form);
-			
-			modal.on('click', '#submit-form-btn', function(e) {
-				e.preventDefault();
-				e.stopPropagation();
-				$('#entity-form').submit();			
-			});
-			
-			// show modal
-			modal.modal({'show': true});
-		}
-		
-		$(document).on('onFormSubmitSuccess', function() {
-			$('#form-modal .modal-body').html('');
-			$('#form-modal').modal('hide');
-			settings.start = 0;
-			refresh(settings);
+			React.render(molgenis.ui.Form({
+				entity : settings.entityMetaData.name,
+				entityInstance: $(this).closest('tr').data('id'),
+				mode: 'edit',
+				showHidden: true,
+				modal: true,
+				onSubmitSuccess : function() {
+					settings.start = 0;
+					refresh(settings);
+				}
+			}), $('<div>')[0]);
 		});
 		
-		// toggle edit table mode
+		// delete row
 		$(container).on('click', '.delete-row-btn', function(e) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -977,51 +1029,6 @@
 			});
 		});
 		
-		function clearSearch() {
-			$('.table-search', settings.container).val('');
-			container.analysisTable('setQuery', settings.originalQuery);
-		}
-		
-		function performSearch() {
-			if(settings.query) {
-				settings.originalQuery = $.extend( true, {}, settings.query );
-			}
-			else
-				settings.originalQuery = null;
-			
-			if(settings.query.q) {
-				if(settings.query.q.length > 0)
-					settings.query.q.push({operator : 'AND'});
-				settings.query.q.push({
-					operator : 'SEARCH',
-					value : $('.table-search', settings.container).val().trim()
-				});	
-			}
-			
-			container.analysisTable('setQuery', settings.query);
-		}
-		
-		$(container).on('click', '.search-btn', function() {
-			performSearch();
-		});
-		
-		$(container).on('click', '.search-clear-btn', function() {
-			clearSearch();
-		});
-		
-		$(container).on('keyup', '.table-search', function(e) {
-			switch(e.which) {
-				case 13: // enter
-					performSearch();
-					break;
-				case 27: // escape
-					clearSearch();
-					break;
-				default:
-					break;
-			}
-		});
-		
 		return this;
 	};
 
@@ -1031,13 +1038,7 @@
 		'maxRows' : 20,
 		'attributes' : null,
 		'query' : null,
-		'editable' : false,  //delete rows allowed, editing rows allowed
-		'deletable' : false, //delete rows allowed, editing rows not allowed
-		'searchable' : false,
-		'rowClickable': false,
-		'onDeleteRow': function(){},
-		'cellClickHandlers' : null,
-		'onInit' : null,
+		'editable' : false,
 		'rowClickable': false,
 		'onDataChange': function(){}
 	};

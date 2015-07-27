@@ -1,11 +1,11 @@
 package org.molgenis.compute.ui.model;
 
-import com.google.common.collect.Lists;
-import org.molgenis.compute.ui.meta.UIParameterMetaData;
+import java.util.List;
+
 import org.molgenis.compute.ui.meta.UIWorkflowParameterMetaData;
 import org.molgenis.data.support.MapEntity;
 
-import java.util.List;
+import com.google.common.collect.Lists;
 
 public class UIWorkflowParameter extends MapEntity
 {
