@@ -20,26 +20,29 @@ public class WebAppInitializer implements WebApplicationInitializer
 	@Override
 	public void onStartup(ServletContext servletContext) throws ServletException
 	{
-		//Filter is needed to alter the urls used to serve patient specific URLs
-		javax.servlet.FilterRegistration.Dynamic filter = servletContext.addFilter("dasFilter", new DasURLFilter());
-		if (filter == null)
+		if (1 != 1)
 		{
-			LOG.warn("ServletContext already contains a complete FilterRegistration for servlet 'dasFilter'");
-		}
-		else
-		{
-			filter.addMappingForUrlPatterns(EnumSet.of (DispatcherType.REQUEST), true, "/das/*");
-		}
-		
-		Dynamic dasServlet = servletContext.addServlet("dasServlet", new MydasServlet());
-		if (dasServlet == null)
-		{
-			LOG.warn("ServletContext already contains a complete ServletRegistration for servlet 'dasServlet'");
-		}
-		else
-		{
-			dasServlet.setLoadOnStartup(1);
-			dasServlet.addMapping("/das/*");
+			// Filter is needed to alter the urls used to serve patient specific URLs
+			javax.servlet.FilterRegistration.Dynamic filter = servletContext.addFilter("dasFilter", new DasURLFilter());
+			if (filter == null)
+			{
+				LOG.warn("ServletContext already contains a complete FilterRegistration for servlet 'dasFilter'");
+			}
+			else
+			{
+				filter.addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/das/*");
+			}
+
+			Dynamic dasServlet = servletContext.addServlet("dasServlet", new MydasServlet());
+			if (dasServlet == null)
+			{
+				LOG.warn("ServletContext already contains a complete ServletRegistration for servlet 'dasServlet'");
+			}
+			else
+			{
+				dasServlet.setLoadOnStartup(1);
+				dasServlet.addMapping("/das/*");
+			}
 		}
 	}
 }
