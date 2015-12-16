@@ -49,8 +49,7 @@ public class ElasticsearchEntityUtils
 
 	public static String toElasticsearchId(Entity entity, EntityMetaData entityMetaData)
 	{
-		String idAttributeName = entityMetaData.getIdAttribute().getName();
-		Object entityId = entity.get(idAttributeName);
+		Object entityId = entity.getIdValue();
 		return toElasticsearchId(entityId);
 	}
 }

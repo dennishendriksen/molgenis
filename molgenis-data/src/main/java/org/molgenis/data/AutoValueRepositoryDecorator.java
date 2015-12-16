@@ -40,7 +40,7 @@ public class AutoValueRepositoryDecorator implements Repository
 		AttributeMetaData idAttr = getEntityMetaData().getIdAttribute();
 		if ((idAttr != null) && idAttr.isAuto() && (idAttr.getDataType() instanceof StringField))
 		{
-			entity.set(idAttr.getName(), idGenerator.generateId());
+			entity.set(idAttr, idGenerator.generateId());
 		}
 
 		decoratedRepository.add(entity);
@@ -245,11 +245,11 @@ public class AutoValueRepositoryDecorator implements Repository
 				FieldTypeEnum type = attr.getDataType().getEnumType();
 				if (type == FieldTypeEnum.DATE)
 				{
-					entity.set(attr.getName(), dateNow);
+					entity.set(attr, dateNow);
 				}
 				else if (type == FieldTypeEnum.DATE_TIME)
 				{
-					entity.set(attr.getName(), dateNow);
+					entity.set(attr, dateNow);
 				}
 				else
 				{

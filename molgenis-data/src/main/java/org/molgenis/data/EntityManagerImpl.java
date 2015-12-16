@@ -121,8 +121,8 @@ public class EntityManagerImpl implements EntityManager
 		SetMultimap<String, Object> lazyRefEntityIdsMap = HashMultimap.<String, Object> create(resolvableAttrs.size(),
 				16);
 		// entity name --> attributes referring to this entity
-		SetMultimap<String, AttributeMetaData> refEntityAttrsMap = HashMultimap.<String, AttributeMetaData> create(
-				resolvableAttrs.size(), 2);
+		SetMultimap<String, AttributeMetaData> refEntityAttrsMap = HashMultimap
+				.<String, AttributeMetaData> create(resolvableAttrs.size(), 2);
 
 		// fill maps
 		for (AttributeMetaData attr : resolvableAttrs)
@@ -134,7 +134,7 @@ public class EntityManagerImpl implements EntityManager
 			{
 				for (Entity entity : entities)
 				{
-					Entity lazyRefEntity = entity.getEntity(attr.getName());
+					Entity lazyRefEntity = entity.getEntity(attr);
 					if (lazyRefEntity != null)
 					{
 						lazyRefEntityIdsMap.put(refEntityName, lazyRefEntity.getIdValue());
@@ -146,7 +146,7 @@ public class EntityManagerImpl implements EntityManager
 			{
 				for (Entity entity : entities)
 				{
-					Iterable<Entity> lazyRefEntities = entity.getEntities(attr.getName());
+					Iterable<Entity> lazyRefEntities = entity.getEntities(attr);
 					for (Entity lazyRefEntity : lazyRefEntities)
 					{
 						lazyRefEntityIdsMap.put(refEntityName, lazyRefEntity.getIdValue());
@@ -170,41 +170,39 @@ public class EntityManagerImpl implements EntityManager
 			// retrieve referenced entities
 			Iterable<Entity> refEntities = dataService.findAll(refEntityName, entry.getValue(), subFetch);
 
-			Map<Object, Entity> refEntitiesIdMap = stream(refEntities.spliterator(), false).collect(
-					Collectors.toMap(Entity::getIdValue, Function.identity()));
+			Map<Object, Entity> refEntitiesIdMap = stream(refEntities.spliterator(), false)
+					.collect(Collectors.toMap(Entity::getIdValue, Function.identity()));
 
 			for (AttributeMetaData attr : attrs)
 			{
 				FieldType attrType = attr.getDataType();
 				if (attrType instanceof XrefField)
 				{
-					String attrName = attr.getName();
 					for (Entity entity : entities)
 					{
-						Entity lazyRefEntity = entity.getEntity(attrName);
+						Entity lazyRefEntity = entity.getEntity(attr);
 						if (lazyRefEntity != null)
 						{
 							// replace lazy entity with real entity
 							Object refEntityId = lazyRefEntity.getIdValue();
 							Entity refEntity = refEntitiesIdMap.get(refEntityId);
-							entity.set(attrName, refEntity);
+							entity.set(attr, refEntity);
 						}
 					}
 				}
 				else if (attrType instanceof MrefField)
 				{
-					String attrName = attr.getName();
 					for (Entity entity : entities)
 					{
 						// replace lazy entities with real entities
-						Iterable<Entity> lazyRefEntities = entity.getEntities(attrName);
+						Iterable<Entity> lazyRefEntities = entity.getEntities(attr);
 						List<Entity> mrefEntities = stream(lazyRefEntities.spliterator(), true).map(lazyRefEntity -> {
 							// replace lazy entity with real entity
-								Object refEntityId = lazyRefEntity.getIdValue();
-								Entity refEntity = refEntitiesIdMap.get(refEntityId);
-								return refEntity;
-							}).collect(Collectors.toList());
-						entity.set(attrName, mrefEntities);
+							Object refEntityId = lazyRefEntity.getIdValue();
+							Entity refEntity = refEntitiesIdMap.get(refEntityId);
+							return refEntity;
+						}).collect(Collectors.toList());
+						entity.set(attr, mrefEntities);
 					}
 				}
 			}
@@ -334,8 +332,8 @@ public class EntityManagerImpl implements EntityManager
 			@Override
 			public Iterator<E> iterator()
 			{
-				return stream(entities.spliterator(), false).map(
-						entity -> EntityUtils.convert(entity, entityClass, dataService)).iterator();
+				return stream(entities.spliterator(), false)
+						.map(entity -> EntityUtils.convert(entity, entityClass, dataService)).iterator();
 			}
 		};
 	}

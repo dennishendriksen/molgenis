@@ -528,7 +528,7 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 			{
 				// Copy to temp transaction index and mark as deleted
 				Entity entity = new MapEntity(entityMetaData);
-				entity.set(entityMetaData.getIdAttribute().getName(), id);
+				entity.set(entityMetaData.getIdAttribute(), id);
 				index(transactionId, Arrays.asList(entity), entityMetaData, CrudType.DELETE, false);
 			}
 			else
@@ -874,9 +874,12 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 		{
 			UuidGenerator uuidg = new UuidGenerator();
 			DefaultEntityMetaData tempEntityMetaData = new DefaultEntityMetaData(uuidg.generateId(), entityMetaData);
-			tempEntityMetaData.setPackage(new PackageImpl("elasticsearch_temporary_entity", "This entity (Original: "
-					+ entityMetaData.getName()
-					+ ") is temporary build to make rebuilding of Elasticsearch entities posible."));
+			tempEntityMetaData
+					.setPackage(
+							new PackageImpl("elasticsearch_temporary_entity",
+									"This entity (Original: " + entityMetaData
+											.getName()
+									+ ") is temporary build to make rebuilding of Elasticsearch entities posible."));
 
 			// Add temporary repository into Elasticsearch
 			Repository tempRepository = dataService.getMeta().addEntityMeta(tempEntityMetaData);
@@ -900,8 +903,7 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 		}
 		else
 		{
-			if (LOG.isDebugEnabled()) LOG
-					.debug("Rebuild index of entity: [" + entityMetaData.getName()
+			if (LOG.isDebugEnabled()) LOG.debug("Rebuild index of entity: [" + entityMetaData.getName()
 					+ "] is skipped because the " + ElasticsearchRepositoryCollection.NAME + " backend is unknown");
 		}
 	}

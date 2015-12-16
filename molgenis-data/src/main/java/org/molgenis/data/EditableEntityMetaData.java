@@ -47,8 +47,9 @@ public interface EditableEntityMetaData extends EntityMetaData
 	/**
 	 * 
 	 * @param defaultAttributeMetaData
+	 * @return
 	 */
-	void addAttributeMetaData(AttributeMetaData attributeMetaData);
+	EditableEntityMetaData addAttributeMetaData(AttributeMetaData attributeMetaData);
 
 	/**
 	 * Add attributes to this entity

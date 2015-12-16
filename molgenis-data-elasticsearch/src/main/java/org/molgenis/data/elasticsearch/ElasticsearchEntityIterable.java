@@ -12,6 +12,8 @@ import static org.molgenis.data.elasticsearch.util.MapperTypeSanitizer.sanitizeM
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.stream.Collectors;
 
 import org.elasticsearch.ElasticsearchException;
@@ -31,6 +33,7 @@ import org.molgenis.data.elasticsearch.ElasticsearchService.CrudType;
 import org.molgenis.data.elasticsearch.request.SearchRequestGenerator;
 import org.molgenis.data.support.BatchingQueryResult;
 import org.molgenis.data.support.EntityMetaDataUtils;
+import org.molgenis.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -170,5 +173,18 @@ class ElasticsearchEntityIterable extends BatchingQueryResult implements EntityC
 						.iterator();
 			}
 		});
+	}
+
+	@Override
+	public EntityMetaData getEntityMetaData()
+	{
+		return entityMeta;
+	}
+
+	@Override
+	public <E extends Entity> Iterator<E> iterator(Class<E> clazz)
+	{
+		return stream(Spliterators.spliteratorUnknownSize(iterator(), Spliterator.ORDERED), false)
+				.map(entity -> EntityUtils.convert(entity, clazz)).iterator();
 	}
 }

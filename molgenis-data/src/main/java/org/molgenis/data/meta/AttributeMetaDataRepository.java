@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.molgenis.MolgenisFieldTypes;
 import org.molgenis.data.AttributeMetaData;
+import org.molgenis.data.DataConverter;
 import org.molgenis.data.Entity;
 import org.molgenis.data.ManageableRepositoryCollection;
 import org.molgenis.data.Range;
@@ -210,7 +211,7 @@ class AttributeMetaDataRepository
 		attributeMetaData.setDescription(entity.getString(DESCRIPTION));
 		attributeMetaData
 				.setAggregateable(entity.getBoolean(AGGREGATEABLE) == null ? false : entity.getBoolean(AGGREGATEABLE));
-		attributeMetaData.setEnumOptions(entity.getList(ENUM_OPTIONS));
+		attributeMetaData.setEnumOptions(DataConverter.toList(entity.get(ENUM_OPTIONS)));
 		attributeMetaData.setLabelAttribute(
 				entity.getBoolean(LABEL_ATTRIBUTE) == null ? false : entity.getBoolean(LABEL_ATTRIBUTE));
 		attributeMetaData.setReadOnly(entity.getBoolean(READ_ONLY) == null ? false : entity.getBoolean(READ_ONLY));

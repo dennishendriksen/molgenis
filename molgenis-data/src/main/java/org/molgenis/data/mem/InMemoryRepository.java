@@ -148,7 +148,7 @@ public class InMemoryRepository implements Repository
 
 	private Object getId(Entity entity)
 	{
-		return entity.get(metadata.getIdAttribute().getName());
+		return entity.get(metadata.getIdAttribute());
 	}
 
 	@Override

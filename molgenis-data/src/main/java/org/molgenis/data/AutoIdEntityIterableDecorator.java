@@ -4,8 +4,8 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * Adds auto generated id to an entity if it does not have an id.
- * Adds auto generated date to entity auto date and datetime attributes.
+ * Adds auto generated id to an entity if it does not have an id. Adds auto generated date to entity auto date and
+ * datetime attributes.
  * 
  * Keeps an index of id by rownr so multiple calls to iterator() returns the same id.
  */
@@ -54,7 +54,7 @@ public class AutoIdEntityIterableDecorator implements Iterable<Entity>
 						ids.put(i, id);
 					}
 
-					entity.set(entityMetaData.getIdAttribute().getName(), id);
+					entity.set(entityMetaData.getIdAttribute(), id);
 				}
 
 				i++;

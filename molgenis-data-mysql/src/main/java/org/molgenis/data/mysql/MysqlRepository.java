@@ -104,8 +104,8 @@ public class MysqlRepository extends AbstractRepository
 		{
 			if (att.getDataType() instanceof MrefField)
 			{
-				DataAccessException e = tryExecute("DROP TABLE IF EXISTS `" + getTableName() + "_" + att.getName()
-						+ "`");
+				DataAccessException e = tryExecute(
+						"DROP TABLE IF EXISTS `" + getTableName() + "_" + att.getName() + "`");
 				remembered = remembered != null ? remembered : e;
 			}
 		}
@@ -346,11 +346,11 @@ public class MysqlRepository extends AbstractRepository
 		StringBuilder sql = new StringBuilder();
 
 		// mysql keys cannot have TEXT value, so change it to VARCHAR when needed
-		String idAttrMysqlType = (idAttribute.getDataType() instanceof StringField ? VARCHAR : idAttribute
-				.getDataType().getMysqlType());
+		String idAttrMysqlType = (idAttribute.getDataType() instanceof StringField ? VARCHAR
+				: idAttribute.getDataType().getMysqlType());
 
-		String refAttrMysqlType = (att.getRefEntity().getIdAttribute().getDataType() instanceof StringField ? VARCHAR : att
-				.getRefEntity().getIdAttribute().getDataType().getMysqlType());
+		String refAttrMysqlType = (att.getRefEntity().getIdAttribute().getDataType() instanceof StringField ? VARCHAR
+				: att.getRefEntity().getIdAttribute().getDataType().getMysqlType());
 
 		sql.append(" CREATE TABLE ").append('`').append(getTableName()).append('_').append(att.getName()).append('`')
 				.append("(`order` INT,`").append(idAttribute.getName()).append('`').append(' ').append(idAttrMysqlType)
@@ -391,11 +391,12 @@ public class MysqlRepository extends AbstractRepository
 
 		if (idAttribute == null) throw new MolgenisDataException("Missing idAttribute for entity [" + getName() + "]");
 
-		if (idAttribute.getDataType() instanceof XrefField || idAttribute.getDataType() instanceof MrefField) throw new RuntimeException(
-				"primary key(" + getTableName() + "." + idAttribute.getName() + ") cannot be XREF or MREF");
+		if (idAttribute.getDataType() instanceof XrefField || idAttribute.getDataType() instanceof MrefField)
+			throw new RuntimeException(
+					"primary key(" + getTableName() + "." + idAttribute.getName() + ") cannot be XREF or MREF");
 
-		if (idAttribute.isNillable() == true) throw new RuntimeException("idAttribute (" + getTableName() + "."
-				+ idAttribute.getName() + ") should not be nillable");
+		if (idAttribute.isNillable() == true) throw new RuntimeException(
+				"idAttribute (" + getTableName() + "." + idAttribute.getName() + ") should not be nillable");
 
 		sql.append("PRIMARY KEY (").append('`').append(getEntityMetaData().getIdAttribute().getName()).append('`')
 				.append(')');
@@ -629,10 +630,8 @@ public class MysqlRepository extends AbstractRepository
 				Object value = mrefs.get(i).get(att.getName());
 				if (value instanceof Entity)
 				{
-					preparedStatement.setObject(
-							3,
-							refEntityIdAttribute.getDataType().convert(
-									((Entity) value).get(refEntityIdAttribute.getName())));
+					preparedStatement.setObject(3,
+							refEntityIdAttribute.getDataType().convert(((Entity) value).get(refEntityIdAttribute)));
 				}
 				else
 				{
@@ -787,8 +786,8 @@ public class MysqlRepository extends AbstractRepository
 							Repository repo = dataService.getRepository(att.getRefEntity().getName());
 							if (repo.getCapabilities().contains(QUERYABLE))
 							{
-								Query refQ = new QueryImpl().like(att.getRefEntity().getLabelAttribute().getName(), r
-										.getValue().toString());
+								Query refQ = new QueryImpl().like(att.getRefEntity().getLabelAttribute().getName(),
+										r.getValue().toString());
 								Iterator<Entity> it = repo.findAll(refQ).iterator();
 								if (it.hasNext())
 								{
@@ -798,8 +797,8 @@ public class MysqlRepository extends AbstractRepository
 									{
 										Entity ref = it.next();
 										search.append("?");
-										parameters.add(att.getDataType().convert(
-												ref.get(att.getRefEntity().getIdAttribute().getName())));
+										parameters.add(att.getDataType()
+												.convert(ref.get(att.getRefEntity().getIdAttribute())));
 										if (it.hasNext())
 										{
 											search.append(",");
@@ -878,8 +877,8 @@ public class MysqlRepository extends AbstractRepository
 						parameters.add(attr.getDataType().convert(values.get(i)));
 					}
 
-					if (attr.getDataType() instanceof MrefField) result.append(attr.getName()).append("_filter")
-							.append(mrefFilterIndex);
+					if (attr.getDataType() instanceof MrefField)
+						result.append(attr.getName()).append("_filter").append(mrefFilterIndex);
 					else result.append("this");
 
 					result.append(".`").append(r.getField()).append("` IN (").append(in).append(')');
@@ -887,8 +886,8 @@ public class MysqlRepository extends AbstractRepository
 				default:
 					// comparable values...
 					FieldType type = attr.getDataType();
-					if (type instanceof MrefField) predicate.append(attr.getName()).append("_filter")
-							.append(mrefFilterIndex);
+					if (type instanceof MrefField)
+						predicate.append(attr.getName()).append("_filter").append(mrefFilterIndex);
 					else predicate.append("this");
 
 					predicate.append(".`").append(r.getField()).append('`');
@@ -917,7 +916,8 @@ public class MysqlRepository extends AbstractRepository
 					parameters.add(attr.getDataType().convert(r.getValue()));
 
 					if (result.length() > 0 && !result.toString().endsWith(" OR ")
-							&& !result.toString().endsWith(" AND ")) result.append(" AND ");
+							&& !result.toString().endsWith(" AND "))
+						result.append(" AND ");
 					result.append(predicate);
 			}
 		}
@@ -1007,20 +1007,20 @@ public class MysqlRepository extends AbstractRepository
 	 */
 	private void resetXrefValuesBySelfReference(Iterable<? extends Entity> entities)
 	{
-		List<String> xrefAttributesWithSelfReference = new ArrayList<String>();
+		List<AttributeMetaData> xrefAttributesWithSelfReference = new ArrayList<>();
 		for (AttributeMetaData attributeMetaData : getEntityMetaData().getAttributes())
 		{
 			if (attributeMetaData.getDataType().getEnumType().equals(FieldTypeEnum.XREF)
 					&& getEntityMetaData().getName().equals(attributeMetaData.getRefEntity().getName()))
 			{
-				xrefAttributesWithSelfReference.add(attributeMetaData.getName());
+				xrefAttributesWithSelfReference.add(attributeMetaData);
 			}
 		}
 
 		final List<Entity> updateBatch = new ArrayList<Entity>();
 		for (Entity e : entities)
 		{
-			for (String attributeName : xrefAttributesWithSelfReference)
+			for (AttributeMetaData attributeName : xrefAttributesWithSelfReference)
 			{
 				Entity en = e.getEntity(attributeName);
 				if (null != en)
@@ -1111,12 +1111,12 @@ public class MysqlRepository extends AbstractRepository
 							if (att.getDataType() instanceof MrefField)
 							{
 								if (mrefs.get(att.getName()) == null) mrefs.put(att.getName(), new ArrayList<>());
-								if (batch.get(rowIndex).get(att.getName()) != null)
+								if (batch.get(rowIndex).get(att) != null)
 								{
-									for (Entity val : batch.get(rowIndex).getEntities(att.getName()))
+									for (Entity val : batch.get(rowIndex).getEntities(att))
 									{
 										Map<String, Object> mref = new HashMap<>();
-										mref.put(idAttribute.getName(), batch.get(rowIndex).get(idAttribute.getName()));
+										mref.put(idAttribute.getName(), batch.get(rowIndex).get(idAttribute));
 										mref.put(att.getName(), val.getIdValue());
 
 										mrefs.get(att.getName()).add(mref);
@@ -1130,7 +1130,7 @@ public class MysqlRepository extends AbstractRepository
 									continue;
 								}
 
-								if (batch.get(rowIndex).get(att.getName()) == null)
+								if (batch.get(rowIndex).get(att) == null)
 								{
 									if (att.isIdAtrribute() && att.isAuto()
 											&& (att.getDataType() instanceof StringField))
@@ -1142,19 +1142,19 @@ public class MysqlRepository extends AbstractRepository
 								}
 								else if (att.getDataType() instanceof XrefField)
 								{
-									Object value = batch.get(rowIndex).get(att.getName());
+									Object value = batch.get(rowIndex).get(att);
 									if (value instanceof Entity)
 									{
-										value = ((Entity) value).get(att.getRefEntity().getIdAttribute().getName());
+										value = ((Entity) value).get(att.getRefEntity().getIdAttribute());
 									}
 
-									preparedStatement.setObject(fieldIndex++, att.getRefEntity().getIdAttribute()
-											.getDataType().convert(value));
+									preparedStatement.setObject(fieldIndex++,
+											att.getRefEntity().getIdAttribute().getDataType().convert(value));
 								}
 								else
 								{
 									preparedStatement.setObject(fieldIndex++,
-											att.getDataType().convert(batch.get(rowIndex).get(att.getName())));
+											att.getDataType().convert(batch.get(rowIndex).get(att)));
 								}
 							}
 						}
@@ -1224,7 +1224,7 @@ public class MysqlRepository extends AbstractRepository
 					LOG.debug("updating: " + e);
 				}
 
-				Object idValue = idAttribute.getDataType().convert(e.get(idAttribute.getName()));
+				Object idValue = idAttribute.getDataType().convert(e.get(idAttribute));
 				ids.add(idValue);
 				int fieldIndex = 1;
 				for (AttributeMetaData att : getEntityMetaData().getAtomicAttributes())
@@ -1233,9 +1233,9 @@ public class MysqlRepository extends AbstractRepository
 					if (att.getDataType() instanceof MrefField)
 					{
 						if (mrefs.get(att.getName()) == null) mrefs.put(att.getName(), new ArrayList<>());
-						if (e.get(att.getName()) != null)
+						if (e.get(att) != null)
 						{
-							List<Entity> vals = Lists.newArrayList(e.getEntities(att.getName()));
+							List<Entity> vals = Lists.newArrayList(e.getEntities(att));
 							if (vals != null)
 							{
 								int i = 0;
@@ -1244,7 +1244,7 @@ public class MysqlRepository extends AbstractRepository
 									Map<String, Object> mref = new HashMap<>();
 									mref.put("order", i++);
 									mref.put(idAttribute.getName(), idValue);
-									mref.put(att.getName(), val.get(att.getRefEntity().getIdAttribute().getName()));
+									mref.put(att.getName(), val.get(att.getRefEntity().getIdAttribute()));
 									mrefs.get(att.getName()).add(mref);
 								}
 							}
@@ -1257,7 +1257,7 @@ public class MysqlRepository extends AbstractRepository
 							// computed attributes are not persisted
 							continue;
 						}
-						if (e.get(att.getName()) == null)
+						if (e.get(att) == null)
 						{
 							// repository should not fill in default value, the form should
 							preparedStatement.setObject(fieldIndex++, null);
@@ -1266,28 +1266,22 @@ public class MysqlRepository extends AbstractRepository
 						{
 							if (att.getDataType() instanceof XrefField)
 							{
-								Object value = e.get(att.getName());
+								Object value = e.get(att);
 								if (value instanceof Entity)
 								{
-									preparedStatement.setObject(
-											fieldIndex++,
-											att.getRefEntity()
-													.getIdAttribute()
-													.getDataType()
-													.convert(
-															((Entity) value).get(att.getRefEntity().getIdAttribute()
-																	.getName())));
+									preparedStatement.setObject(fieldIndex++,
+											att.getRefEntity().getIdAttribute().getDataType().convert(
+													((Entity) value).get(att.getRefEntity().getIdAttribute())));
 								}
 								else
 								{
-									preparedStatement.setObject(fieldIndex++, att.getRefEntity().getIdAttribute()
-											.getDataType().convert(value));
+									preparedStatement.setObject(fieldIndex++,
+											att.getRefEntity().getIdAttribute().getDataType().convert(value));
 								}
 							}
 							else
 							{
-								preparedStatement.setObject(fieldIndex++,
-										att.getDataType().convert(e.get(att.getName())));
+								preparedStatement.setObject(fieldIndex++, att.getDataType().convert(e.get(att)));
 							}
 						}
 					}

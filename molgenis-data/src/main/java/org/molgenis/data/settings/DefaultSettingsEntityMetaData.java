@@ -5,8 +5,8 @@ import static org.molgenis.MolgenisFieldTypes.STRING;
 import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
+import org.molgenis.data.EntityImpl;
 import org.molgenis.data.support.DefaultEntityMetaData;
-import org.molgenis.data.support.MapEntity;
 import org.molgenis.security.core.runas.RunAsSystem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
@@ -17,7 +17,13 @@ import org.springframework.transaction.annotation.Transactional;
 public abstract class DefaultSettingsEntityMetaData extends DefaultEntityMetaData
 		implements ApplicationListener<ContextRefreshedEvent>, Ordered
 {
-	public static final String ATTR_ID = "id";
+	public static final AttributeMetaData ATTR_ID;
+
+	static
+	{
+		ATTR_ID = attribute("id").setIdAttribute(true).setDataType(STRING).setNillable(false).setLabel("Id")
+				.setVisible(false);
+	}
 
 	@Autowired
 	private DataService dataService;
@@ -30,8 +36,7 @@ public abstract class DefaultSettingsEntityMetaData extends DefaultEntityMetaDat
 		super(id);
 		setExtends(settingsEntityMeta);
 		setPackage(SettingsEntityMeta.PACKAGE_SETTINGS);
-		addAttribute(ATTR_ID).setIdAttribute(true).setDataType(STRING).setNillable(false).setLabel("Id")
-				.setVisible(false);
+		addAttributeMetaData(ATTR_ID);
 	}
 
 	@RunAsSystem
@@ -47,16 +52,16 @@ public abstract class DefaultSettingsEntityMetaData extends DefaultEntityMetaDat
 
 	private Entity getDefaultSettings()
 	{
-		MapEntity mapEntity = new MapEntity(this);
+		Entity entity = new EntityImpl(this);
 		for (AttributeMetaData attr : this.getAtomicAttributes())
 		{
 			String defaultValue = attr.getDefaultValue();
 			if (defaultValue != null)
 			{
-				mapEntity.set(attr.getName(), defaultValue);
+				entity.set(attr, defaultValue);
 			}
 		}
-		return mapEntity;
+		return entity;
 	}
 
 	@Transactional

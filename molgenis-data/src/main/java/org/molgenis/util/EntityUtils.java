@@ -1,5 +1,7 @@
 package org.molgenis.util;
 
+import static java.lang.String.format;
+
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,8 +29,9 @@ public class EntityUtils
 	 */
 	public static boolean isEmpty(Entity entity)
 	{
-		for (String attr : entity.getAttributeNames())
+		for (AttributeMetaData attr : entity.getEntityMetaData().getAtomicAttributes())
 		{
+			// FIXME fails for mref
 			if (entity.get(attr) != null)
 			{
 				return false;
@@ -64,14 +67,15 @@ public class EntityUtils
 			// store references
 			if (referencingAttributes != null)
 			{
-				if (referencingEntityMetaData == null) referencingEntityMetaData = new ArrayList<Pair<EntityMetaData, List<AttributeMetaData>>>();
-				referencingEntityMetaData.add(new Pair<EntityMetaData, List<AttributeMetaData>>(otherEntityMetaData,
-						referencingAttributes));
+				if (referencingEntityMetaData == null)
+					referencingEntityMetaData = new ArrayList<Pair<EntityMetaData, List<AttributeMetaData>>>();
+				referencingEntityMetaData.add(
+						new Pair<EntityMetaData, List<AttributeMetaData>>(otherEntityMetaData, referencingAttributes));
 			}
 		}
 
-		return referencingEntityMetaData != null ? referencingEntityMetaData : Collections
-				.<Pair<EntityMetaData, List<AttributeMetaData>>> emptyList();
+		return referencingEntityMetaData != null ? referencingEntityMetaData
+				: Collections.<Pair<EntityMetaData, List<AttributeMetaData>>> emptyList();
 
 	}
 
@@ -96,8 +100,8 @@ public class EntityUtils
 				});
 
 		// compound
-		Iterable<String> compoundAttributes = Iterables.transform(
-				Iterables.filter(entityMetaData.getAttributes(), new Predicate<AttributeMetaData>()
+		Iterable<String> compoundAttributes = Iterables
+				.transform(Iterables.filter(entityMetaData.getAttributes(), new Predicate<AttributeMetaData>()
 				{
 					@Override
 					public boolean apply(AttributeMetaData attributeMetaData)
@@ -144,10 +148,9 @@ public class EntityUtils
 		{
 			// Find arg less constructor
 			ctor = ConstructorUtils.getAccessibleConstructor(entityClass);
-			if (ctor == null) throw new RuntimeException(
-					"No usable constructor found for entity class ["
-							+ entityClass.getName()
-							+ "]. Entity class should have a constructor with dataservice as single arg or a constructor without arguments");
+			if (ctor == null) throw new RuntimeException("No usable constructor found for entity class ["
+					+ entityClass.getName()
+					+ "]. Entity class should have a constructor with dataservice as single arg or a constructor without arguments");
 
 			convertedEntity = BeanUtils.instantiateClass(ctor);
 		}
@@ -155,6 +158,28 @@ public class EntityUtils
 		convertedEntity.set(entity);
 
 		return convertedEntity;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <E extends Entity> E convert(Entity entity, Class<E> entityClass)
+	{
+		E typedEntity;
+		if (entityClass.isAssignableFrom(entity.getClass()))
+		{
+			typedEntity = (E) entity;
+		}
+		else
+		{
+			Constructor<E> ctor = ConstructorUtils.getAccessibleConstructor(entityClass, Entity.class);
+			if (ctor == null)
+			{
+				throw new RuntimeException(
+						format("Entity class [%s] is missing required constructor with single argument of type Entity",
+								entityClass.getName()));
+			}
+			typedEntity = BeanUtils.instantiateClass(ctor, entity);
+		}
+		return typedEntity;
 	}
 
 	/**

@@ -130,7 +130,7 @@ public class MySqlEntityFactory
 								// convert ids to (lazy) entities
 								mrefEntities = entityManager.getReferences(refEntityMeta, mrefObjectIds);
 							}
-							e.set(att.getName(), mrefEntities);
+							e.set(att, mrefEntities);
 						}
 					}
 					else if (att.getDataType() instanceof XrefField)
@@ -140,11 +140,11 @@ public class MySqlEntityFactory
 								.convert(resultSet.getObject(att.getName()));
 
 						Entity xrefEntity = xrefId != null ? entityManager.getReference(refEntityMeta, xrefId) : null;
-						e.set(att.getName(), xrefEntity);
+						e.set(att, xrefEntity);
 					}
 					else
 					{
-						e.set(att.getName(), att.getDataType().convert(resultSet.getObject(att.getName())));
+						e.set(att, att.getDataType().convert(resultSet.getObject(att.getName())));
 					}
 				}
 			}
@@ -163,7 +163,7 @@ public class MySqlEntityFactory
 		{
 			return String.format("SELECT `%s` FROM `%s_%1$s` WHERE `%s` = '%s' ORDER BY `order`", att.getName(),
 					tableName, entityMetaData.getIdAttribute().getName().toLowerCase(),
-					e.get(entityMetaData.getIdAttribute().getName()));
+					e.get(entityMetaData.getIdAttribute()));
 		}
 	}
 }

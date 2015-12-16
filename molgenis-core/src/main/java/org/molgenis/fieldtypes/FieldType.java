@@ -196,4 +196,9 @@ public abstract class FieldType implements Serializable
 	}
 
 	public abstract Object convert(Object value);
+
+	public void validate(Object value)
+	{
+		// FIXME implement
+	}
 }

@@ -23,11 +23,11 @@ import java.util.Map;
 
 import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.Entity;
+import org.molgenis.data.EntityImpl;
 import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.ManageableRepositoryCollection;
 import org.molgenis.data.Repository;
 import org.molgenis.data.support.DefaultEntityMetaData;
-import org.molgenis.data.support.MapEntity;
 import org.molgenis.util.DependencyResolver;
 
 import com.google.common.collect.Lists;
@@ -194,7 +194,7 @@ class EntityMetaDataRepository
 
 	private Entity toEntity(EntityMetaData emd)
 	{
-		Entity entityMetaDataEntity = new MapEntity(META_DATA);
+		Entity entityMetaDataEntity = new EntityImpl(META_DATA);
 		entityMetaDataEntity.set(FULL_NAME, emd.getName());
 		entityMetaDataEntity.set(SIMPLE_NAME, emd.getSimpleName());
 		if (emd.getPackage() != null)

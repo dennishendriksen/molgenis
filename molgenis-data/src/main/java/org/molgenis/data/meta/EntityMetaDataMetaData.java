@@ -5,41 +5,50 @@ import static org.molgenis.MolgenisFieldTypes.MREF;
 import static org.molgenis.MolgenisFieldTypes.TEXT;
 import static org.molgenis.MolgenisFieldTypes.XREF;
 
+import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.support.DefaultEntityMetaData;
 
 public class EntityMetaDataMetaData extends DefaultEntityMetaData
 {
-	public static final String ENTITY_NAME = "entities";
-	public static final String SIMPLE_NAME = "simpleName";
-	public static final String BACKEND = "backend";
-	public static final String FULL_NAME = "fullName";
-	public static final String ID_ATTRIBUTE = "idAttribute";
-	public static final String LABEL_ATTRIBUTE = "labelAttribute";
-	public static final String ABSTRACT = "abstract";
-	public static final String LABEL = "label";
-	public static final String EXTENDS = "extends";
-	public static final String DESCRIPTION = "description";
-	public static final String PACKAGE = "package";
-	public static final String TAGS = "tags";
-	public static final String ATTRIBUTES = "attributes";
-
 	public static final EntityMetaDataMetaData INSTANCE = new EntityMetaDataMetaData();
+
+	public static final String ENTITY_NAME = "entities";
+
+	public static final AttributeMetaData SIMPLE_NAME;
+	public static final AttributeMetaData BACKEND;
+	public static final AttributeMetaData FULL_NAME;
+	public static final AttributeMetaData ID_ATTRIBUTE;
+	public static final AttributeMetaData LABEL_ATTRIBUTE;
+	public static final AttributeMetaData ABSTRACT;
+	public static final AttributeMetaData LABEL;
+	public static final AttributeMetaData EXTENDS;
+	public static final AttributeMetaData DESCRIPTION;
+	public static final AttributeMetaData PACKAGE;
+	public static final AttributeMetaData TAGS;
+	public static final AttributeMetaData ATTRIBUTES;
+
+	static
+	{
+		FULL_NAME = attribute("fullName").setIdAttribute(true).setUnique(true).setNillable(false);
+		SIMPLE_NAME = attribute("simpleName").setNillable(false);
+		BACKEND = attribute("backend");
+		PACKAGE = attribute("package").setDataType(XREF).setRefEntity(PackageRepository.META_DATA);
+		ID_ATTRIBUTE = attribute("idAttribute");
+		LABEL_ATTRIBUTE = attribute("labelAttribute");
+		ABSTRACT = attribute("abstract").setDataType(BOOL);
+		LABEL = attribute("label").setLabelAttribute(true).setLookupAttribute(true);
+		EXTENDS = attribute("extends").setDataType(XREF).setRefEntity(INSTANCE);
+		DESCRIPTION = attribute("description").setDataType(TEXT).setLookupAttribute(false);
+		TAGS = attribute("tags").setDataType(MREF).setRefEntity(TagMetaData.INSTANCE);
+		ATTRIBUTES = attribute("attributes").setDataType(MREF).setRefEntity(AttributeMetaDataMetaData.INSTANCE);
+	}
 
 	private EntityMetaDataMetaData()
 	{
 		super(ENTITY_NAME);
-		addAttribute(FULL_NAME).setIdAttribute(true).setUnique(true).setNillable(false);
-		addAttribute(SIMPLE_NAME).setNillable(false);
-		addAttribute(BACKEND);
-		addAttribute(PACKAGE).setDataType(XREF).setRefEntity(PackageRepository.META_DATA);
-		addAttribute(ID_ATTRIBUTE);
-		addAttribute(LABEL_ATTRIBUTE);
-		addAttribute(ABSTRACT).setDataType(BOOL);
-		addAttribute(LABEL).setLabelAttribute(true).setLookupAttribute(true);
-		addAttribute(EXTENDS).setDataType(XREF).setRefEntity(this);
-		addAttribute(DESCRIPTION).setDataType(TEXT).setLookupAttribute(false);
-		addAttribute(TAGS).setDataType(MREF).setRefEntity(TagMetaData.INSTANCE);
-		addAttribute(ATTRIBUTES).setDataType(MREF).setRefEntity(AttributeMetaDataMetaData.INSTANCE);
+		addAttributeMetaData(FULL_NAME).addAttributeMetaData(SIMPLE_NAME).addAttributeMetaData(BACKEND)
+				.addAttributeMetaData(PACKAGE).addAttributeMetaData(ID_ATTRIBUTE).addAttributeMetaData(LABEL_ATTRIBUTE)
+				.addAttributeMetaData(ABSTRACT).addAttributeMetaData(LABEL).addAttributeMetaData(EXTENDS)
+				.addAttributeMetaData(DESCRIPTION).addAttributeMetaData(TAGS).addAttributeMetaData(ATTRIBUTES);
 	}
-
 }

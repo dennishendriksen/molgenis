@@ -10,9 +10,9 @@ import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.unit.TimeValue;
 import org.molgenis.data.Entity;
+import org.molgenis.data.EntityImpl;
 import org.molgenis.data.elasticsearch.ElasticsearchEntityFactory;
 import org.molgenis.data.elasticsearch.factory.EmbeddedElasticSearchServiceFactory;
-import org.molgenis.data.support.MapEntity;
 import org.molgenis.util.ApplicationContextProvider;
 import org.springframework.context.ApplicationContext;
 
@@ -84,7 +84,7 @@ public class MolgenisAppender extends AppenderBase<ILoggingEvent>
 
 	private Entity toEntity(ILoggingEvent eventObject)
 	{
-		Entity e = new MapEntity(LoggingEventMetaData.IDENTIFIER);
+		Entity e = new EntityImpl(LoggingEventMetaData.INSTANCE);
 		e.set(LoggingEventMetaData.IDENTIFIER, UUID.randomUUID().toString());
 		e.set(LoggingEventMetaData.THREAD, eventObject.getThreadName());
 		if (eventObject.getLevel() != null)

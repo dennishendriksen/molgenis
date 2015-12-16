@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Map;
 
 import org.molgenis.data.Entity;
+import org.molgenis.data.EntityImpl;
 import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.Package;
 import org.molgenis.data.PackageChangeListener;
 import org.molgenis.data.semantic.LabeledResource;
 import org.molgenis.data.semantic.Tag;
-import org.molgenis.data.support.MapEntity;
 
 import com.google.common.collect.Lists;
 
@@ -156,7 +156,7 @@ public class PackageImpl implements Package
 	@Override
 	public Entity toEntity()
 	{
-		Entity result = new MapEntity(PackageMetaData.FULL_NAME);
+		Entity result = new EntityImpl(PackageMetaData.INSTANCE);
 		result.set(PackageMetaData.FULL_NAME, getName());
 		result.set(PackageMetaData.SIMPLE_NAME, simpleName);
 		result.set(PackageMetaData.DESCRIPTION, description);
@@ -166,7 +166,7 @@ public class PackageImpl implements Package
 			List<Entity> tagEntities = Lists.newArrayList();
 			for (Tag<Package, LabeledResource, LabeledResource> tag : tags)
 			{
-				Entity tagEntity = new MapEntity(TagMetaData.IDENTIFIER);
+				Entity tagEntity = new EntityImpl(TagMetaData.INSTANCE);
 				tagEntity.set(TagMetaData.CODE_SYSTEM, tag.getCodeSystem().getIri());
 				tagEntity.set(TagMetaData.IDENTIFIER, tag.getIdentifier());
 				tagEntity.set(TagMetaData.LABEL, tag.getObject().getLabel());

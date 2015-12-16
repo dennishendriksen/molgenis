@@ -263,11 +263,12 @@ public class DefaultEntityMetaData implements EditableEntityMetaData
 	}
 
 	@Override
-	public void addAttributeMetaData(AttributeMetaData attr)
+	public EditableEntityMetaData addAttributeMetaData(AttributeMetaData attr)
 	{
 		attr.addChangeListener(attrChangeListener);
 		attributes.put(attr.getName(), attr);
 		clearCache();
+		return this;
 	}
 
 	@Override
@@ -294,6 +295,11 @@ public class DefaultEntityMetaData implements EditableEntityMetaData
 		DefaultAttributeMetaData result = new DefaultAttributeMetaData(name);
 		this.addAttributeMetaData(result);
 		return result;
+	}
+
+	protected static DefaultAttributeMetaData attribute(String name)
+	{
+		return new DefaultAttributeMetaData(name);
 	}
 
 	@Override

@@ -6,66 +6,82 @@ import static org.molgenis.MolgenisFieldTypes.SCRIPT;
 import static org.molgenis.MolgenisFieldTypes.STRING;
 import static org.molgenis.MolgenisFieldTypes.TEXT;
 
+import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.support.DefaultEntityMetaData;
 import org.molgenis.fieldtypes.LongField;
 
 public class AttributeMetaDataMetaData extends DefaultEntityMetaData
 {
-	public static final String ENTITY_NAME = "attributes";
-	public static final String IDENTIFIER = "identifier";
-	public static final String NAME = "name";
-	public static final String DATA_TYPE = "dataType";
-	public static final String REF_ENTITY = "refEntity";
-	public static final String EXPRESSION = "expression";
-	public static final String NILLABLE = "nillable";
-	public static final String AUTO = "auto";
-	public static final String ID_ATTRIBUTE = "idAttribute";
-	public static final String LOOKUP_ATTRIBUTE = "lookupAttribute";
-	public static final String VISIBLE = "visible";
-	public static final String LABEL = "label";
-	public static final String DESCRIPTION = "description";
-	public static final String AGGREGATEABLE = "aggregateable";
-	public static final String ENUM_OPTIONS = "enumOptions";
-	public static final String RANGE_MIN = "rangeMin";
-	public static final String RANGE_MAX = "rangeMax";
-	public static final String LABEL_ATTRIBUTE = "labelAttribute";
-	public static final String READ_ONLY = "readOnly";
-	public static final String UNIQUE = "unique";
-	public static final String PARTS = "parts";
-	public static final String TAGS = "tags";
-	public static final String VISIBLE_EXPRESSION = "visibleExpression";
-	public static final String VALIDATION_EXPRESSION = "validationExpression";
-	public static final String DEFAULT_VALUE = "defaultValue";
-
 	public static final AttributeMetaDataMetaData INSTANCE = new AttributeMetaDataMetaData();
+
+	public static final String ENTITY_NAME = "attributes";
+
+	public static final AttributeMetaData IDENTIFIER;
+	public static final AttributeMetaData NAME;
+	public static final AttributeMetaData DATA_TYPE;
+	public static final AttributeMetaData REF_ENTITY;
+	public static final AttributeMetaData EXPRESSION;
+	public static final AttributeMetaData NILLABLE;
+	public static final AttributeMetaData AUTO;
+	public static final AttributeMetaData ID_ATTRIBUTE;
+	public static final AttributeMetaData LOOKUP_ATTRIBUTE;
+	public static final AttributeMetaData VISIBLE;
+	public static final AttributeMetaData LABEL;
+	public static final AttributeMetaData DESCRIPTION;
+	public static final AttributeMetaData AGGREGATEABLE;
+	public static final AttributeMetaData ENUM_OPTIONS;
+	public static final AttributeMetaData RANGE_MIN;
+	public static final AttributeMetaData RANGE_MAX;
+	public static final AttributeMetaData LABEL_ATTRIBUTE;
+	public static final AttributeMetaData READ_ONLY;
+	public static final AttributeMetaData UNIQUE;
+	public static final AttributeMetaData PARTS;
+	public static final AttributeMetaData TAGS;
+	public static final AttributeMetaData VISIBLE_EXPRESSION;
+	public static final AttributeMetaData VALIDATION_EXPRESSION;
+	public static final AttributeMetaData DEFAULT_VALUE;
+
+	static
+	{
+		IDENTIFIER = attribute("identifier").setIdAttribute(true).setNillable(false).setDataType(STRING)
+				.setVisible(false);
+		NAME = attribute("name").setNillable(false).setLabelAttribute(true).setLookupAttribute(true);
+		DATA_TYPE = attribute("dataType");
+		PARTS = attribute("parts").setDataType(MREF).setRefEntity(INSTANCE);
+		REF_ENTITY = attribute("refEntity");
+		EXPRESSION = attribute("expression").setNillable(true);
+		NILLABLE = attribute("nillable").setDataType(BOOL).setNillable(false);
+		AUTO = attribute("auto").setDataType(BOOL).setNillable(false);
+		ID_ATTRIBUTE = attribute("idAttribute").setDataType(BOOL).setNillable(false);
+		LOOKUP_ATTRIBUTE = attribute("lookupAttribute").setDataType(BOOL).setNillable(false);
+		VISIBLE = attribute("visible").setDataType(BOOL).setNillable(false);
+		LABEL = attribute("label").setLookupAttribute(true);
+		DESCRIPTION = attribute("description").setDataType(TEXT);
+		AGGREGATEABLE = attribute("aggregateable").setDataType(BOOL).setNillable(false);
+		ENUM_OPTIONS = attribute("enumOptions").setDataType(TEXT);
+		RANGE_MIN = attribute("rangeMin").setDataType(new LongField());
+		RANGE_MAX = attribute("rangeMax").setDataType(new LongField());
+		LABEL_ATTRIBUTE = attribute("labelAttribute").setDataType(BOOL).setNillable(false);
+		READ_ONLY = attribute("readOnly").setDataType(BOOL).setNillable(false);
+		UNIQUE = attribute("unique").setDataType(BOOL).setNillable(false);
+		TAGS = attribute("tags").setDataType(MREF).setRefEntity(TagMetaData.INSTANCE);
+		VISIBLE_EXPRESSION = attribute("visibleExpression").setDataType(SCRIPT).setNillable(true);
+		VALIDATION_EXPRESSION = attribute("validationExpression").setDataType(SCRIPT).setNillable(true);
+		DEFAULT_VALUE = attribute("defaultValue").setDataType(TEXT).setNillable(true);
+	}
 
 	private AttributeMetaDataMetaData()
 	{
 		super(ENTITY_NAME);
 
-		addAttribute(IDENTIFIER).setIdAttribute(true).setNillable(false).setDataType(STRING).setVisible(false);
-		addAttribute(NAME).setNillable(false).setLabelAttribute(true).setLookupAttribute(true);
-		addAttribute(DATA_TYPE);
-		addAttribute(PARTS).setDataType(MREF).setRefEntity(this);
-		addAttribute(REF_ENTITY);
-		addAttribute(EXPRESSION).setNillable(true);
-		addAttribute(NILLABLE).setDataType(BOOL).setNillable(false);
-		addAttribute(AUTO).setDataType(BOOL).setNillable(false);
-		addAttribute(ID_ATTRIBUTE).setDataType(BOOL).setNillable(false);
-		addAttribute(LOOKUP_ATTRIBUTE).setDataType(BOOL).setNillable(false);
-		addAttribute(VISIBLE).setDataType(BOOL).setNillable(false);
-		addAttribute(LABEL).setLookupAttribute(true);
-		addAttribute(DESCRIPTION).setDataType(TEXT);
-		addAttribute(AGGREGATEABLE).setDataType(BOOL).setNillable(false);
-		addAttribute(ENUM_OPTIONS).setDataType(TEXT);
-		addAttribute(RANGE_MIN).setDataType(new LongField());
-		addAttribute(RANGE_MAX).setDataType(new LongField());
-		addAttribute(LABEL_ATTRIBUTE).setDataType(BOOL).setNillable(false);
-		addAttribute(READ_ONLY).setDataType(BOOL).setNillable(false);
-		addAttribute(UNIQUE).setDataType(BOOL).setNillable(false);
-		addAttribute(TAGS).setDataType(MREF).setRefEntity(TagMetaData.INSTANCE);
-		addAttribute(VISIBLE_EXPRESSION).setDataType(SCRIPT).setNillable(true);
-		addAttribute(VALIDATION_EXPRESSION).setDataType(SCRIPT).setNillable(true);
-		addAttribute(DEFAULT_VALUE).setDataType(TEXT).setNillable(true);
+		addAttributeMetaData(IDENTIFIER).addAttributeMetaData(NAME).addAttributeMetaData(DATA_TYPE)
+				.addAttributeMetaData(PARTS).addAttributeMetaData(REF_ENTITY).addAttributeMetaData(EXPRESSION)
+				.addAttributeMetaData(NILLABLE).addAttributeMetaData(AUTO).addAttributeMetaData(ID_ATTRIBUTE)
+				.addAttributeMetaData(LOOKUP_ATTRIBUTE).addAttributeMetaData(VISIBLE).addAttributeMetaData(LABEL)
+				.addAttributeMetaData(DESCRIPTION).addAttributeMetaData(AGGREGATEABLE)
+				.addAttributeMetaData(ENUM_OPTIONS).addAttributeMetaData(RANGE_MIN).addAttributeMetaData(RANGE_MAX)
+				.addAttributeMetaData(LABEL_ATTRIBUTE).addAttributeMetaData(READ_ONLY).addAttributeMetaData(UNIQUE)
+				.addAttributeMetaData(TAGS).addAttributeMetaData(VISIBLE_EXPRESSION)
+				.addAttributeMetaData(VALIDATION_EXPRESSION).addAttributeMetaData(DEFAULT_VALUE);
 	}
 }

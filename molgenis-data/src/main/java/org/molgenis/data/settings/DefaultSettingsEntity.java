@@ -1,11 +1,9 @@
 package org.molgenis.data.settings;
 
-import java.sql.Date;
-import java.sql.Timestamp;
-import java.util.List;
-
+import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
+import org.molgenis.data.EntityCollection;
 import org.molgenis.data.EntityListener;
 import org.molgenis.data.EntityMetaData;
 import org.molgenis.security.core.runas.RunAsSystemProxy;
@@ -39,118 +37,76 @@ public abstract class DefaultSettingsEntity implements Entity
 	}
 
 	@Override
-	public Iterable<String> getAttributeNames()
-	{
-		return getEntity().getAttributeNames();
-	}
-
-	@Override
 	public Object getIdValue()
 	{
 		return getEntity().getIdValue();
 	}
 
 	@Override
-	public String getLabelValue()
+	public Object get(AttributeMetaData attr)
 	{
-		return getEntity().getLabelValue();
+		return getEntity().get(attr);
 	}
 
 	@Override
-	public Object get(String attributeName)
+	public String getString(AttributeMetaData attr)
 	{
-		return getEntity().get(attributeName);
+		return getEntity().getString(attr);
 	}
 
 	@Override
-	public String getString(String attributeName)
+	public Integer getInt(AttributeMetaData attr)
 	{
-		return getEntity().getString(attributeName);
+		return getEntity().getInt(attr);
 	}
 
 	@Override
-	public Integer getInt(String attributeName)
+	public Long getLong(AttributeMetaData attr)
 	{
-		return getEntity().getInt(attributeName);
+		return getEntity().getLong(attr);
 	}
 
 	@Override
-	public Long getLong(String attributeName)
+	public Boolean getBoolean(AttributeMetaData attr)
 	{
-		return getEntity().getLong(attributeName);
+		return getEntity().getBoolean(attr);
 	}
 
 	@Override
-	public Boolean getBoolean(String attributeName)
+	public Double getDouble(AttributeMetaData attr)
 	{
-		return getEntity().getBoolean(attributeName);
+		return getEntity().getDouble(attr);
 	}
 
 	@Override
-	public Double getDouble(String attributeName)
+	public java.util.Date getUtilDate(AttributeMetaData attr)
 	{
-		return getEntity().getDouble(attributeName);
+		return getEntity().getUtilDate(attr);
 	}
 
 	@Override
-	public Date getDate(String attributeName)
+	public Entity getEntity(AttributeMetaData attr)
 	{
-		return getEntity().getDate(attributeName);
+		return getEntity().getEntity(attr);
 	}
 
 	@Override
-	public java.util.Date getUtilDate(String attributeName)
+	public <E extends Entity> E getEntity(AttributeMetaData attr, Class<E> clazz)
 	{
-		return getEntity().getUtilDate(attributeName);
+		return getEntity().getEntity(attr, clazz);
 	}
 
 	@Override
-	public Timestamp getTimestamp(String attributeName)
+	public EntityCollection getEntities(AttributeMetaData attr)
 	{
-		return getEntity().getTimestamp(attributeName);
+		return getEntity().getEntities(attr);
 	}
 
 	@Override
-	public Entity getEntity(String attributeName)
-	{
-		return getEntity().getEntity(attributeName);
-	}
-
-	@Override
-	public <E extends Entity> E getEntity(String attributeName, Class<E> clazz)
-	{
-		return getEntity().getEntity(attributeName, clazz);
-	}
-
-	@Override
-	public Iterable<Entity> getEntities(String attributeName)
-	{
-		return getEntity().getEntities(attributeName);
-	}
-
-	@Override
-	public <E extends Entity> Iterable<E> getEntities(String attributeName, Class<E> clazz)
-	{
-		return getEntity().getEntities(attributeName, clazz);
-	}
-
-	@Override
-	public List<String> getList(String attributeName)
-	{
-		return getEntity().getList(attributeName);
-	}
-
-	@Override
-	public List<Integer> getIntList(String attributeName)
-	{
-		return getEntity().getIntList(attributeName);
-	}
-
-	@Override
-	public void set(String attributeName, Object value)
+	public void set(AttributeMetaData attr, Object value)
 	{
 		Entity entity = getEntity();
-		entity.set(attributeName, value);
+		entity.set(attr, value);
 		updateEntity(entity);
 	}
 

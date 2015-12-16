@@ -1,7 +1,13 @@
 package org.molgenis.data;
 
+import java.util.Iterator;
+
 public interface EntityCollection extends Iterable<Entity>
 {
+	EntityMetaData getEntityMetaData();
+
+	<E extends Entity> Iterator<E> iterator(Class<E> clazz);
+
 	Iterable<String> getAttributeNames();
 
 	/**

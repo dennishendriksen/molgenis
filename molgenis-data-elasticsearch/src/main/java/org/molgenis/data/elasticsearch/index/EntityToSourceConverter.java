@@ -1,6 +1,5 @@
 package org.molgenis.data.elasticsearch.index;
 
-import java.sql.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,16 +69,16 @@ public class EntityToSourceConverter
 		switch (dataType)
 		{
 			case BOOL:
-				value = entity.getBoolean(attrName);
+				value = entity.getBoolean(attributeMetaData);
 				break;
 			case DECIMAL:
-				value = entity.getDouble(attrName);
+				value = entity.getDouble(attributeMetaData);
 				break;
 			case INT:
-				value = entity.getInt(attrName);
+				value = entity.getInt(attributeMetaData);
 				break;
 			case LONG:
-				value = entity.getLong(attrName);
+				value = entity.getLong(attributeMetaData);
 				break;
 			case EMAIL:
 			case ENUM:
@@ -88,21 +87,21 @@ public class EntityToSourceConverter
 			case SCRIPT:
 			case STRING:
 			case TEXT:
-				value = entity.getString(attrName);
+				value = entity.getString(attributeMetaData);
 				break;
 			case DATE:
-				Date date = entity.getDate(attrName);
+				java.util.Date date = entity.getUtilDate(attributeMetaData);
 				value = date != null ? MolgenisDateFormat.getDateFormat().format(date) : null;
 				break;
 			case DATE_TIME:
-				Date dateTime = entity.getDate(attrName);
+				java.util.Date dateTime = entity.getUtilDate(attributeMetaData);
 				value = dateTime != null ? MolgenisDateFormat.getDateTimeFormat().format(dateTime) : null;
 				break;
 			case CATEGORICAL:
 			case XREF:
 			case FILE:
 			{
-				Entity xrefEntity = entity.getEntity(attrName);
+				Entity xrefEntity = entity.getEntity(attributeMetaData);
 				if (xrefEntity != null)
 				{
 					EntityMetaData xrefEntityMetaData = attributeMetaData.getRefEntity();
@@ -124,7 +123,7 @@ public class EntityToSourceConverter
 			case CATEGORICAL_MREF:
 			case MREF:
 			{
-				final Iterable<Entity> refEntities = entity.getEntities(attrName);
+				final Iterable<Entity> refEntities = entity.getEntities(attributeMetaData);
 				if (refEntities != null && !Iterables.isEmpty(refEntities))
 				{
 					final EntityMetaData refEntityMetaData = attributeMetaData.getRefEntity();
