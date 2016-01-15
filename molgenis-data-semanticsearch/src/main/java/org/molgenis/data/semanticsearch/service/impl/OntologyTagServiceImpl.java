@@ -18,6 +18,7 @@ import org.molgenis.data.AttributeMetaData;
 import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
 import org.molgenis.data.EntityMetaData;
+import org.molgenis.data.Fetch;
 import org.molgenis.data.IdGenerator;
 import org.molgenis.data.Package;
 import org.molgenis.data.UnknownEntityException;
@@ -44,8 +45,8 @@ import org.slf4j.LoggerFactory;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
 
 /**
  * Service to tag metadata with ontology terms.
@@ -59,8 +60,8 @@ public class OntologyTagServiceImpl implements OntologyTagService
 
 	private static final Logger LOG = LoggerFactory.getLogger(OntologyTagServiceImpl.class);
 
-	public OntologyTagServiceImpl(DataService dataService, OntologyService ontologyService,
-			TagRepository tagRepository, IdGenerator idGenerator)
+	public OntologyTagServiceImpl(DataService dataService, OntologyService ontologyService, TagRepository tagRepository,
+			IdGenerator idGenerator)
 	{
 		this.dataService = dataService;
 		this.tagRepository = tagRepository;
@@ -188,8 +189,8 @@ public class OntologyTagServiceImpl implements OntologyTagService
 
 	public Entity getTagEntity(Tag<?, OntologyTerm, Ontology> tag)
 	{
-		return tagRepository.getTagEntity(tag.getObject().getIRI(), tag.getObject().getLabel(), tag.getRelation(), tag
-				.getCodeSystem().getIRI());
+		return tagRepository.getTagEntity(tag.getObject().getIRI(), tag.getObject().getLabel(), tag.getRelation(),
+				tag.getCodeSystem().getIRI());
 	}
 
 	@Override
@@ -207,6 +208,7 @@ public class OntologyTagServiceImpl implements OntologyTagService
 		}
 	}
 
+	@Override
 	public Map<String, OntologyTag> tagAttributesInEntity(String entity, Map<AttributeMetaData, OntologyTerm> tags)
 	{
 		Map<String, OntologyTag> result = new LinkedHashMap<>();
@@ -273,9 +275,13 @@ public class OntologyTagServiceImpl implements OntologyTagService
 	@RunAsSystem
 	private Entity findAttributeEntity(String entityName, String attributeName)
 	{
-		Entity entityMetaDataEntity = dataService.findOne(ENTITY_NAME, entityName);
-		Optional<Entity> result = stream(entityMetaDataEntity.getEntities(ATTRIBUTES).spliterator(), false).filter(
-				att -> attributeName.equals(att.getString(AttributeMetaDataMetaData.NAME))).findFirst();
+		Fetch attrFetch = new Fetch().field(AttributeMetaDataMetaData.IDENTIFIER).field(AttributeMetaDataMetaData.NAME);
+		Fetch fetch = new Fetch().field(EntityMetaDataMetaData.FULL_NAME).field(EntityMetaDataMetaData.ATTRIBUTES,
+				attrFetch);
+
+		Entity entityMetaDataEntity = dataService.findOne(ENTITY_NAME, entityName, fetch);
+		Optional<Entity> result = stream(entityMetaDataEntity.getEntities(ATTRIBUTES).spliterator(), false)
+				.filter(att -> attributeName.equals(att.getString(AttributeMetaDataMetaData.NAME))).findFirst();
 		return result.isPresent() ? result.get() : null;
 	}
 
