@@ -166,7 +166,14 @@ public class Fetch implements Iterable<Entry<String, Fetch>>
 			Fetch subFetch = entry.getValue();
 			if (subFetch != null)
 			{
-				toStringRec(builder, subFetch);
+				if (subFetch == fetch)
+				{
+					builder.append("(<parent fetch>");
+				}
+				else
+				{
+					toStringRec(builder, subFetch);
+				}
 			}
 
 			if (it.hasNext())
