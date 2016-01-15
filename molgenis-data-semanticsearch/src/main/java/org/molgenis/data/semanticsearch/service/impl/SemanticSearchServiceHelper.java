@@ -19,6 +19,7 @@ import org.molgenis.MolgenisFieldTypes;
 import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
 import org.molgenis.data.EntityMetaData;
+import org.molgenis.data.Fetch;
 import org.molgenis.data.MolgenisDataAccessException;
 import org.molgenis.data.QueryRule;
 import org.molgenis.data.QueryRule.Operator;
@@ -231,8 +232,16 @@ public class SemanticSearchServiceHelper
 	 */
 	public List<String> getAttributeIdentifiers(EntityMetaData sourceEntityMetaData)
 	{
-		Entity entityMetaDataEntity = dataService.findOne(EntityMetaDataMetaData.ENTITY_NAME,
-				new QueryImpl().eq(EntityMetaDataMetaData.FULL_NAME, sourceEntityMetaData.getName()));
+		// fetch entity id & attributes with identifier, data type and parts
+		Fetch attributesFetch = new Fetch().field(AttributeMetaDataMetaData.IDENTIFIER)
+				.field(AttributeMetaDataMetaData.DATA_TYPE);
+		attributesFetch.field(AttributeMetaDataMetaData.PARTS, attributesFetch);
+
+		Fetch entitiesFetch = new Fetch().field(EntityMetaDataMetaData.FULL_NAME)
+				.field(EntityMetaDataMetaData.ATTRIBUTES, attributesFetch);
+
+		Entity entityMetaDataEntity = dataService.findOne(EntityMetaDataMetaData.ENTITY_NAME, new QueryImpl()
+				.eq(EntityMetaDataMetaData.FULL_NAME, sourceEntityMetaData.getName()).fetch(entitiesFetch));
 
 		if (entityMetaDataEntity == null) throw new MolgenisDataAccessException(
 				"Could not find EntityMetaDataEntity by the name of " + sourceEntityMetaData.getName());
@@ -302,6 +311,7 @@ public class SemanticSearchServiceHelper
 	{
 		Optional<String> findFirst = terms.stream().sorted(new Comparator<String>()
 		{
+			@Override
 			public int compare(String o1, String o2)
 			{
 				return Integer.compare(o1.length(), o2.length());
