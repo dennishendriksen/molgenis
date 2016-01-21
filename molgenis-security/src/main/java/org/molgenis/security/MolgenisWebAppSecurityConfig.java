@@ -10,6 +10,8 @@ import java.util.List;
 
 import javax.servlet.Filter;
 
+import org.jasig.cas.client.validation.Cas20ServiceTicketValidator;
+import org.jasig.cas.client.validation.TicketValidator;
 import org.molgenis.data.DataService;
 import org.molgenis.data.settings.AppSettings;
 import org.molgenis.security.account.AccountController;
@@ -37,6 +39,10 @@ import org.springframework.security.authentication.AnonymousAuthenticationProvid
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.cas.ServiceProperties;
+import org.springframework.security.cas.authentication.CasAuthenticationProvider;
+import org.springframework.security.cas.web.CasAuthenticationEntryPoint;
+import org.springframework.security.cas.web.CasAuthenticationFilter;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -100,7 +106,9 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 		http.addFilterBefore(apiSessionExpirationFilter(), MolgenisAnonymousAuthenticationFilter.class);
 		http.authenticationProvider(tokenAuthenticationProvider());
 
-		http.addFilterBefore(tokenAuthenticationFilter(), ApiSessionExpirationFilter.class);
+		http.addFilterBefore(casAuthenticationFilter(), ApiSessionExpirationFilter.class);
+		http.authenticationProvider(casAuthenticationProvider());
+		http.addFilterBefore(tokenAuthenticationFilter(), CasAuthenticationFilter.class);
 
 		http.addFilterBefore(googleAuthenticationProcessingFilter(), TokenAuthenticationFilter.class);
 
@@ -152,7 +160,7 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 
 				.anyRequest().denyAll().and()
 
-				.httpBasic().authenticationEntryPoint(authenticationEntryPoint()).and()
+				.httpBasic().authenticationEntryPoint(casAuthenticationEntryPoint()).and()
 
 				.formLogin().loginPage("/login").failureUrl("/login?error").and()
 
@@ -173,9 +181,25 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 					logoutSuccessHandler.onLogoutSuccess(req, res, auth);
 				})
 
-				.and()
+				.and().exceptionHandling().authenticationEntryPoint(casAuthenticationEntryPoint()).and().csrf()
+				.disable();
+	}
 
-				.csrf().disable();
+	@Bean
+	public AuthenticationProvider casAuthenticationProvider() throws Exception
+	{
+		CasAuthenticationProvider casAuthenticationProvider = new CasAuthenticationProvider();
+		casAuthenticationProvider.setUserDetailsService(userDetailsService());
+		casAuthenticationProvider.setServiceProperties(serviceProperties());
+		casAuthenticationProvider.setTicketValidator(ticketValidator());
+		casAuthenticationProvider.setKey("MOLGENIS_CAS");
+		return casAuthenticationProvider;
+	}
+
+	@Bean
+	public TicketValidator ticketValidator()
+	{
+		return new Cas20ServiceTicketValidator("https://platform.rd-connect.eu/cas");
 	}
 
 	protected abstract void configureUrlAuthorization(
@@ -231,6 +255,34 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 				googlePublicKeysManager(), dataService, (MolgenisUserDetailsService) userDetailsService(), appSettings);
 		googleAuthenticationProcessingFilter.setAuthenticationManager(authenticationManagerBean());
 		return googleAuthenticationProcessingFilter;
+	}
+
+	@Bean
+	public ServiceProperties serviceProperties() throws Exception
+	{
+		// The service must equal a URL that will be monitored by the CasAuthenticationFilter.
+		ServiceProperties serviceProperties = new ServiceProperties();
+		serviceProperties.setSendRenew(false);
+		serviceProperties.setService("http://localhost:8080/cass/j_spring_cas_security_check"); // FIXME
+		return serviceProperties;
+	}
+
+	@Bean
+	public CasAuthenticationFilter casAuthenticationFilter() throws Exception
+	{
+		CasAuthenticationFilter casAuthenticationFilter = new CasAuthenticationFilter();
+		casAuthenticationFilter.setAuthenticationManager(authenticationManagerBean());
+		casAuthenticationFilter.setFilterProcessesUrl("/cass/j_spring_cas_security_check");
+		return casAuthenticationFilter;
+	}
+
+	@Bean
+	public CasAuthenticationEntryPoint casAuthenticationEntryPoint() throws Exception
+	{
+		CasAuthenticationEntryPoint casAuthenticationEntryPoint = new CasAuthenticationEntryPoint();
+		casAuthenticationEntryPoint.setLoginUrl("https://platform.rd-connect.eu/cas");
+		casAuthenticationEntryPoint.setServiceProperties(serviceProperties());
+		return casAuthenticationEntryPoint;
 	}
 
 	@Bean

@@ -16,6 +16,7 @@ import org.molgenis.auth.UserAuthority;
 import org.molgenis.data.DataService;
 import org.molgenis.data.support.QueryImpl;
 import org.molgenis.security.core.runas.RunAsSystem;
+import org.molgenis.security.core.runas.RunAsSystemProxy;
 import org.molgenis.security.core.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -47,20 +48,23 @@ public class MolgenisUserDetailsService implements UserDetailsService
 	@RunAsSystem
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException
 	{
-		try
-		{
-			MolgenisUser user = dataService.findOne(MolgenisUser.ENTITY_NAME,
-					new QueryImpl().eq(MolgenisUser.USERNAME, username), MolgenisUser.class);
+		return RunAsSystemProxy.runAsSystem(() -> {
+			try
+			{
+				MolgenisUser user = dataService.findOne(MolgenisUser.ENTITY_NAME,
+						new QueryImpl().eq(MolgenisUser.USERNAME, username), MolgenisUser.class);
 
-			if (user == null) throw new UsernameNotFoundException("unknown user '" + username + "'");
+				if (user == null) throw new UsernameNotFoundException("unknown user '" + username + "'");
 
-			Collection<? extends GrantedAuthority> authorities = getAuthorities(user);
-			return new User(user.getUsername(), user.getPassword(), user.getActive(), true, true, true, authorities);
-		}
-		catch (Throwable e)
-		{
-			throw new RuntimeException(e);
-		}
+				Collection<? extends GrantedAuthority> authorities = getAuthorities(user);
+				return new User(user.getUsername(), user.getPassword(), user.getActive(), true, true, true,
+						authorities);
+			}
+			catch (Throwable e)
+			{
+				throw new RuntimeException(e);
+			}
+		});
 	}
 
 	public Collection<? extends GrantedAuthority> getAuthorities(MolgenisUser user)
