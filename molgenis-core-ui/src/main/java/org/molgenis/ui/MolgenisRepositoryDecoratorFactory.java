@@ -9,9 +9,12 @@ import org.molgenis.data.EntityManager;
 import org.molgenis.data.EntityReferenceResolverDecorator;
 import org.molgenis.data.IdGenerator;
 import org.molgenis.data.Repository;
+import org.molgenis.data.RepositoryCapability;
 import org.molgenis.data.RepositoryDecoratorFactory;
 import org.molgenis.data.RepositorySecurityDecorator;
 import org.molgenis.data.SystemEntityMetaDataRegistry;
+import org.molgenis.data.elasticsearch.ElasticsearchRepositoryDecorator;
+import org.molgenis.data.elasticsearch.SearchService;
 import org.molgenis.data.i18n.I18nStringDecorator;
 import org.molgenis.data.i18n.I18nStringMetaData;
 import org.molgenis.data.i18n.LanguageMetaData;
@@ -49,12 +52,13 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 	private final RepositoryDecoratorRegistry repositoryDecoratorRegistry;
 	private final LanguageService languageService;
 	private final SystemEntityMetaDataRegistry systemEntityMetaDataRegistry;
+	private final SearchService searchService;
 
 	public MolgenisRepositoryDecoratorFactory(EntityManager entityManager, TransactionLogService transactionLogService,
 			EntityAttributesValidator entityAttributesValidator, IdGenerator idGenerator, AppSettings appSettings,
 			DataService dataService, ExpressionValidator expressionValidator,
 			RepositoryDecoratorRegistry repositoryDecoratorRegistry, LanguageService languageService,
-			SystemEntityMetaDataRegistry systemEntityMetaDataRegistry)
+			SystemEntityMetaDataRegistry systemEntityMetaDataRegistry, SearchService searchService)
 	{
 		this.entityManager = entityManager;
 		this.transactionLogService = transactionLogService;
@@ -66,6 +70,7 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		this.repositoryDecoratorRegistry = repositoryDecoratorRegistry;
 		this.languageService = languageService;
 		this.systemEntityMetaDataRegistry = systemEntityMetaDataRegistry;
+		this.searchService = searchService;
 	}
 
 	@Override
@@ -116,6 +121,7 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		{
 			decoratedRepository = new MetaDataRepositoryDecorator(decoratedRepository, dataService.getMeta());
 		}
+
 		return decoratedRepository;
 	}
 
@@ -155,6 +161,10 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		else if (repository.getName().equals(TagMetaData.ENTITY_NAME))
 		{
 			// do nothing
+		}
+		else if (repository.getCapabilities().contains(RepositoryCapability.INDEXABLE))
+		{
+			repository = new ElasticsearchRepositoryDecorator(repository, searchService);
 		}
 		return repository;
 	}
