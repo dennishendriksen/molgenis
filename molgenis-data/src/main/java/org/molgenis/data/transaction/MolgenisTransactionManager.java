@@ -1,19 +1,27 @@
 package org.molgenis.data.transaction;
 
-import java.util.ArrayList;
+import static org.molgenis.security.core.runas.RunAsSystemProxy.runAsSystem;
+
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+import javax.sql.DataSource;
 
 import org.apache.commons.logging.LogFactory;
 import org.molgenis.data.IdGenerator;
+import org.molgenis.data.index.MolgenisIndexService;
+import org.molgenis.data.index.MolgenisIndexUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
-
-import javax.sql.DataSource;
 
 /**
  * TransactionManager used by Molgenis.
@@ -24,13 +32,16 @@ import javax.sql.DataSource;
  * Each transaction is given a unique transaction id.
  * 
  */
-public class MolgenisTransactionManager extends DataSourceTransactionManager
+public class MolgenisTransactionManager extends DataSourceTransactionManager implements
+		ApplicationListener<ContextRefreshedEvent>
 {
 	private static final long serialVersionUID = 1L;
 	public static final String TRANSACTION_ID_RESOURCE_NAME = "transactionId";
 	private static final Logger LOG = LoggerFactory.getLogger(MolgenisTransactionManager.class);
 	private final IdGenerator idGenerator;
-	private final List<MolgenisTransactionListener> transactionListeners = new ArrayList<>();
+	private final List<MolgenisTransactionListener> transactionListeners = new CopyOnWriteArrayList<>(); // FIX
+	private MolgenisIndexService dataIndexService;
+	private boolean bootstrapApplicationFinished = false;
 
 	public MolgenisTransactionManager(IdGenerator idGenerator, DataSource dataSource)
 	{
@@ -38,6 +49,23 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager
 		super.logger = LogFactory.getLog(DataSourceTransactionManager.class);
 		setNestedTransactionAllowed(false);
 		this.idGenerator = idGenerator;
+	}
+
+	public void onApplicationEvent(ContextRefreshedEvent event)
+	{
+		bootstrapApplicationFinished = true;
+		ApplicationContext ctx = event.getApplicationContext();
+		runAsSystem(() -> {
+			bootstrapApplication(ctx);
+		});
+		LOG.info("DataIndexService is allocated");
+	}
+
+	private void bootstrapApplication(ApplicationContext ctx)
+	{
+		Map<String, MolgenisIndexService> molgenisIndexServices = ctx.getBeansOfType(MolgenisIndexService.class);
+		dataIndexService = molgenisIndexServices.get("searchService");
+		dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
 	}
 
 	public void addTransactionListener(MolgenisTransactionListener transactionListener)
@@ -90,16 +118,29 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager
 			LOG.debug("Commit transaction [{}]", transaction.getId());
 		}
 
-		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(transaction.getDataSourceTransaction(),
-				status.isNewTransaction(), status.isNewSynchronization(), status.isReadOnly(), status.isDebug(),
-				status.getSuspendedResources());
+		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(
+				transaction.getDataSourceTransaction(), status.isNewTransaction(), status.isNewSynchronization(),
+				status.isReadOnly(), status.isDebug(), status.getSuspendedResources());
 
 		if (!status.isReadOnly())
 		{
 			transactionListeners.forEach(j -> j.commitTransaction(transaction.getId()));
 		}
-
+		
 		super.doCommit(jpaTransactionStatus);
+		
+		// TODO
+		// 1. Implement remove index
+		// 2. Implement rebuild the whole Postgresql index
+
+		if (bootstrapApplicationFinished)
+		{
+			dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexUtil.DEFAULT_INDEX_NAME);
+		}
+		else
+		{
+			LOG.info("Skip refresh index bootstrap application is not finished");
+		}
 	}
 
 	@Override
