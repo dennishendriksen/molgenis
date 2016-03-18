@@ -51,13 +51,14 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 	private final RepositoryDecoratorRegistry repositoryDecoratorRegistry;
 	private final LanguageService languageService;
 	private final SystemEntityMetaDataRegistry systemEntityMetaDataRegistry;
+	private final TransactionEntityCache transactionEntityCache;
 	private final SearchService searchService;
 
 	public MolgenisRepositoryDecoratorFactory(EntityManager entityManager, TransactionLogService transactionLogService,
 			EntityAttributesValidator entityAttributesValidator, IdGenerator idGenerator, AppSettings appSettings,
 			DataService dataService, ExpressionValidator expressionValidator,
 			RepositoryDecoratorRegistry repositoryDecoratorRegistry, LanguageService languageService,
-			SystemEntityMetaDataRegistry systemEntityMetaDataRegistry, SearchService searchService)
+			SystemEntityMetaDataRegistry systemEntityMetaDataRegistry, TransactionEntityCache transactionEntityCache, SearchService searchService)
 	{
 		this.entityManager = entityManager;
 		this.transactionLogService = transactionLogService;
@@ -70,6 +71,7 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		this.languageService = languageService;
 		this.systemEntityMetaDataRegistry = systemEntityMetaDataRegistry;
 		this.searchService = searchService;
+		this.transactionEntityCache = transactionEntityCache;
 	}
 
 	@Override
@@ -105,6 +107,7 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 			decoratedRepository = new MySqlRepositoryExceptionTranslatorDecorator(decoratedRepository);
 		}
 
+		// FIXME enable validation
 		// 3. validation decorator
 		// decoratedRepository = new RepositoryValidationDecorator(dataService, decoratedRepository,
 		// entityAttributesValidator, expressionValidator);
@@ -120,7 +123,9 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		{
 			decoratedRepository = new MetaDataRepositoryDecorator(decoratedRepository, dataService.getMeta());
 		}
-
+		
+		// -1. transaction cache decorator
+		decoratedRepository = new TransactionEntityCacheDecorator(decoratedRepository, transactionEntityCache);
 		return decoratedRepository;
 	}
 

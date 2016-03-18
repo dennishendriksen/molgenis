@@ -143,6 +143,9 @@ public abstract class MolgenisWebAppConfig extends WebMvcConfigurerAdapter
 	@Autowired
 	public DefaultPackage defaultPackage;
 
+	@Autowired
+	public TransactionEntityCache transactionEntityCache;
+
 	@Override
 	public void addResourceHandlers(ResourceHandlerRegistry registry)
 	{
@@ -493,8 +496,8 @@ public abstract class MolgenisWebAppConfig extends WebMvcConfigurerAdapter
 			{
 				return new MolgenisRepositoryDecoratorFactory(entityManager(), transactionLogService,
 						entityAttributesValidator, idGenerator, appSettings, dataService(), expressionValidator,
-						repositoryDecoratorRegistry(), languageService, systemEntityMetaDataRegistry, searchService)
-								.createDecoratedRepository(repository);
+						repositoryDecoratorRegistry(), languageService, systemEntityMetaDataRegistry,
+						transactionEntityCache, searchService).createDecoratedRepository(repository);
 			}
 		};
 	}

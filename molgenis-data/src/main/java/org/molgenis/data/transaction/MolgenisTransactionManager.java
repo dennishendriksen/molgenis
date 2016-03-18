@@ -39,7 +39,7 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 	public static final String TRANSACTION_ID_RESOURCE_NAME = "transactionId";
 	private static final Logger LOG = LoggerFactory.getLogger(MolgenisTransactionManager.class);
 	private final IdGenerator idGenerator;
-	private final List<MolgenisTransactionListener> transactionListeners = new CopyOnWriteArrayList<>(); // FIX
+	private final List<MolgenisTransactionListener> transactionListeners = new CopyOnWriteArrayList<>();
 	private MolgenisIndexService dataIndexService;
 	private boolean bootstrapApplicationFinished = false;
 
@@ -152,9 +152,9 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 			LOG.debug("Rollback transaction [{}]", transaction.getId());
 		}
 
-		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(transaction.getDataSourceTransaction(),
-				status.isNewTransaction(), status.isNewSynchronization(), status.isReadOnly(), status.isDebug(),
-				status.getSuspendedResources());
+		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(
+				transaction.getDataSourceTransaction(), status.isNewTransaction(), status.isNewSynchronization(),
+				status.isReadOnly(), status.isDebug(), status.getSuspendedResources());
 
 		if (!status.isReadOnly())
 		{
@@ -169,9 +169,9 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 	{
 		MolgenisTransaction transaction = (MolgenisTransaction) status.getTransaction();
 
-		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(transaction.getDataSourceTransaction(),
-				status.isNewTransaction(), status.isNewSynchronization(), status.isReadOnly(), status.isDebug(),
-				status.getSuspendedResources());
+		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(
+				transaction.getDataSourceTransaction(), status.isNewTransaction(), status.isNewSynchronization(),
+				status.isReadOnly(), status.isDebug(), status.getSuspendedResources());
 
 		super.doSetRollbackOnly(jpaTransactionStatus);
 	}
