@@ -13,6 +13,8 @@ import org.molgenis.data.RepositoryCapability;
 import org.molgenis.data.RepositoryDecoratorFactory;
 import org.molgenis.data.RepositorySecurityDecorator;
 import org.molgenis.data.SystemEntityMetaDataRegistry;
+import org.molgenis.data.cache.TransactionEntityCache;
+import org.molgenis.data.cache.TransactionEntityCacheDecorator;
 import org.molgenis.data.elasticsearch.IndexedRepositoryQueryAnalyzerDecorator;
 import org.molgenis.data.elasticsearch.SearchService;
 import org.molgenis.data.i18n.I18nStringDecorator;

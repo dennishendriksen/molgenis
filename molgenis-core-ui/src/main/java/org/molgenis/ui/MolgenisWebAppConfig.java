@@ -25,6 +25,7 @@ import org.molgenis.data.RepositoryCollection;
 import org.molgenis.data.RepositoryCollectionRegistry;
 import org.molgenis.data.RepositoryDecoratorFactory;
 import org.molgenis.data.SystemEntityMetaDataRegistry;
+import org.molgenis.data.cache.TransactionEntityCache;
 import org.molgenis.data.convert.DateToStringConverter;
 import org.molgenis.data.convert.StringToDateConverter;
 import org.molgenis.data.elasticsearch.SearchService;
