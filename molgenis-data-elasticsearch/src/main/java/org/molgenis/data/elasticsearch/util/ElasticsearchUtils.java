@@ -7,9 +7,13 @@ import java.util.concurrent.TimeUnit;
 import org.elasticsearch.action.bulk.BulkProcessor;
 import org.elasticsearch.client.Client;
 import org.molgenis.data.MolgenisDataException;
+import org.molgenis.data.index.MolgenisIndexUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ElasticsearchUtils
+public class ElasticsearchUtils implements MolgenisIndexUtil
 {
+	private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchUtils.class);
 	private final Client client;
 
 	public ElasticsearchUtils(Client client)
@@ -35,7 +39,9 @@ public class ElasticsearchUtils
 
 	public void refreshIndex(String index)
 	{
+		LOG.info("Start refresh index [{}]", index);
 		client.admin().indices().refresh(refreshRequest(index)).actionGet();
+		LOG.info("End refresh index [{}]", index);
 	}
 
 	public void waitForCompletion(BulkProcessor bulkProcessor)
