@@ -210,8 +210,7 @@ public class IndexedRepositoryQueryAnalyzerDecorator implements Repository
 	@Override
 	public long count()
 	{
-		// TODO Auto-generated method stub
-		return 0;
+		return decoratedRepo.count();
 	}
 
 	@Override
@@ -223,27 +222,24 @@ public class IndexedRepositoryQueryAnalyzerDecorator implements Repository
 	@Override
 	public void close() throws IOException
 	{
-		// TODO Auto-generated method stub
+		decoratedRepo.close();
 	}
 
 	@Override
 	public String getName()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return decoratedRepo.getName();
 	}
 
 	@Override
 	public Query query()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return decoratedRepo.query();
 	}
 
 	@Override
 	public AggregateResult aggregate(AggregateQuery aggregateQuery)
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return decoratedRepo.aggregate(aggregateQuery);
 	}
 }
