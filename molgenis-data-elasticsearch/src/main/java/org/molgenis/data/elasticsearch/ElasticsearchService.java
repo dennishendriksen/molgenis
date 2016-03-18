@@ -68,6 +68,8 @@ import org.molgenis.data.elasticsearch.response.ResponseParser;
 import org.molgenis.data.elasticsearch.util.ElasticsearchUtils;
 import org.molgenis.data.elasticsearch.util.SearchRequest;
 import org.molgenis.data.elasticsearch.util.SearchResult;
+import org.molgenis.data.index.MolgenisIndexService;
+import org.molgenis.data.index.MolgenisIndexUtil;
 import org.molgenis.data.meta.AttributeMetaDataMetaData;
 import org.molgenis.data.meta.EntityMetaDataMetaData;
 import org.molgenis.data.meta.PackageImpl;
@@ -94,7 +96,7 @@ import com.google.common.collect.Iterables;
  * 
  * @author erwin
  */
-public class ElasticsearchService implements SearchService, MolgenisTransactionListener
+public class ElasticsearchService implements SearchService, MolgenisTransactionListener, MolgenisIndexService
 {
 	private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchService.class);
 
@@ -300,9 +302,10 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 
 	private void refresh(String index)
 	{
-		if (LOG.isTraceEnabled()) LOG.trace("Refreshing Elasticsearch index [{}] ...", index);
-		elasticsearchUtils.refreshIndex(index);
-		if (LOG.isDebugEnabled()) LOG.debug("Refreshed Elasticsearch index [{}]", index);
+		// if (LOG.isTraceEnabled()) LOG.trace("Refreshing Elasticsearch index [{}] ...", index);
+		// elasticsearchUtils.refreshIndex(index); TODO FIXME
+		// if (LOG.isDebugEnabled()) LOG.debug("Refreshed Elasticsearch index [{}]", index);
+		if (LOG.isInfoEnabled()) LOG.info("Refreshing Elasticsearch index [{}] is disabled... FIXME", index);
 	}
 
 	@Override
@@ -1248,5 +1251,11 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 	private boolean storeSource(EntityMetaData entityMeta)
 	{
 		return ElasticsearchRepositoryCollection.NAME.equals(entityMeta.getBackend());
+	}
+
+	@Override
+	public MolgenisIndexUtil getMolgenisIndexUtil()
+	{
+		return elasticsearchUtils;
 	}
 }
