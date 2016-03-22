@@ -304,10 +304,9 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 
 	private void refresh(String index)
 	{
-		if (LOG.isTraceEnabled()) LOG.trace("line 310: elasticsearchUtils.refreshIndex(index); disabled");
-		// if (LOG.isTraceEnabled()) LOG.trace("Refreshing Elasticsearch index [{}] ...", index);
-		// elasticsearchUtils.refreshIndex(index);
-		// if (LOG.isDebugEnabled()) LOG.debug("Refreshed Elasticsearch index [{}]", index);
+		if (LOG.isTraceEnabled()) LOG.trace("Refreshing Elasticsearch index [{}] ...", index);
+		elasticsearchUtils.refreshIndex(index);
+		if (LOG.isDebugEnabled()) LOG.debug("Refreshed Elasticsearch index [{}]", index);
 	}
 
 	@Override
@@ -470,8 +469,8 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 
 		try
 		{
-			if (transactionId != null)
-			{
+			// if (transactionId != null) // TODO JJ
+			// {
 				// store entities in the index related to this transaction even
 				// if the entity should not be stored in
 				// the index, after transaction commit the transaction index is
@@ -479,11 +478,11 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 				// main index mapping the data is (not) stored. The transaction
 				// index is removed after transaction
 				// commit or rollback.
-				if (!hasMapping(transactionId, entityMetaData))
-				{
-					createMappings(transactionId, entityMetaData, true, true, true);
-				}
-			}
+			// if (!hasMapping(transactionId, entityMetaData)) //TODO JJ
+			// {
+			// createMappings(transactionId, entityMetaData, true, true, true);
+			// }
+			// }
 
 			while (it.hasNext())
 			{

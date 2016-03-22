@@ -130,7 +130,7 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 			LOG.debug("Commit transaction [{}]", transaction.getId());
 		}
 
-		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(
+		DefaultTransactionStatus transactionStatus = new DefaultTransactionStatus(
 				transaction.getDataSourceTransaction(), status.isNewTransaction(), status.isNewSynchronization(),
 				status.isReadOnly(), status.isDebug(), status.getSuspendedResources());
 
@@ -139,8 +139,8 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 			transactionListeners.forEach(j -> j.commitTransaction(transaction.getId()));
 		}
 		
-		super.doCommit(jpaTransactionStatus);
-		this.refreshWholeIndex();
+		super.doCommit(transactionStatus);
+		if (status.isNewTransaction()) this.refreshWholeIndex();
 	}
 
 	@SuppressWarnings("deprecation")
