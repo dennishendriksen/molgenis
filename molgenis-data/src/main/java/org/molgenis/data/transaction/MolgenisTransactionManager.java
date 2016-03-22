@@ -61,14 +61,13 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 		runAsSystem(() -> {
 			bootstrapApplication(ctx);
 		});
-		LOG.info("DataIndexService is allocated");
 	}
 
 	private void bootstrapApplication(ApplicationContext ctx)
 	{
 		Map<String, MolgenisIndexService> molgenisIndexServices = ctx.getBeansOfType(MolgenisIndexService.class);
 		dataIndexService = molgenisIndexServices.get("searchService");
-		dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
+		LOG.info("DataIndexService is allocated");
 
 		// Get all expected repositories
 		Map<String, RepositoryCollection> repositoryCollections = ctx.getBeansOfType(RepositoryCollection.class);
@@ -183,6 +182,8 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 					.forEach(
 							e -> dataIndexService.add(mysqlRepositoryCollection.getRepository(e),
 									mysqlRepositoryCollection.getRepository(e).getEntityMetaData()));
+
+			dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
 		}
 		else
 		{
