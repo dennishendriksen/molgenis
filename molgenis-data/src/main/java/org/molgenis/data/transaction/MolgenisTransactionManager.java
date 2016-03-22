@@ -5,13 +5,14 @@ import static org.molgenis.security.core.runas.RunAsSystemProxy.runAsSystem;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.StreamSupport;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.logging.LogFactory;
 import org.molgenis.data.IdGenerator;
+import org.molgenis.data.RepositoryCollection;
 import org.molgenis.data.index.MolgenisIndexService;
-import org.molgenis.data.index.MolgenisIndexUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -41,6 +42,9 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 	private final IdGenerator idGenerator;
 	private final List<MolgenisTransactionListener> transactionListeners = new CopyOnWriteArrayList<>();
 	private MolgenisIndexService dataIndexService;
+	private RepositoryCollection idCardRepositoryCollection;
+	private RepositoryCollection elasticsearchRepositoryCollection;
+	private RepositoryCollection mysqlRepositoryCollection;
 	private boolean bootstrapApplicationFinished = false;
 
 	public MolgenisTransactionManager(IdGenerator idGenerator, DataSource dataSource)
@@ -53,7 +57,6 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 
 	public void onApplicationEvent(ContextRefreshedEvent event)
 	{
-		bootstrapApplicationFinished = true;
 		ApplicationContext ctx = event.getApplicationContext();
 		runAsSystem(() -> {
 			bootstrapApplication(ctx);
@@ -66,6 +69,16 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 		Map<String, MolgenisIndexService> molgenisIndexServices = ctx.getBeansOfType(MolgenisIndexService.class);
 		dataIndexService = molgenisIndexServices.get("searchService");
 		dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
+
+		// Get all expected repositories
+		Map<String, RepositoryCollection> repositoryCollections = ctx.getBeansOfType(RepositoryCollection.class);
+		idCardRepositoryCollection = repositoryCollections.get("idCardRepositoryCollection");
+		elasticsearchRepositoryCollection = repositoryCollections.get("ElasticsearchRepositoryCollection");
+		mysqlRepositoryCollection = repositoryCollections.get("MysqlRepositoryCollection");
+		bootstrapApplicationFinished = true;
+
+		// Rebuild all
+		this.refreshWholeIndex();
 	}
 
 	public void addTransactionListener(MolgenisTransactionListener transactionListener)
@@ -128,19 +141,54 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 		}
 		
 		super.doCommit(jpaTransactionStatus);
-		
-		// TODO
-		// 1. Implement remove index
-		// 2. Implement rebuild the whole Postgresql index
+		this.refreshWholeIndex();
+	}
 
+	@SuppressWarnings("deprecation")
+	private synchronized void refreshWholeIndex()
+	{
+		LOG.info("Start rebuild the whole index");
 		if (bootstrapApplicationFinished)
 		{
-			dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexUtil.DEFAULT_INDEX_NAME);
+			// 1. Remove all
+			StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
+				LOG.info("1. clean index [{}]", e);
+				// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
+					if (mysqlRepositoryCollection.getRepository(e).getEntityMetaData().isAbstract()) return false;
+				return true;
+			}).forEach(e -> dataIndexService.delete(e));
+
+			// 2. Add mapping
+			StreamSupport
+					.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false)
+					.filter(e -> {
+						LOG.info("2. Add mapping into index [{}]", e);
+						// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
+						if (mysqlRepositoryCollection.getRepository(e).getEntityMetaData().isAbstract()) return false;
+						return true;
+					})
+					.forEach(
+							e -> dataIndexService.createMappings(mysqlRepositoryCollection.getRepository(e)
+									.getEntityMetaData()));
+
+			// 3. Add entities
+			StreamSupport
+					.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false)
+					.filter(e -> {
+						LOG.info("3. Add entities into index [{}]", e);
+						// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
+						if (mysqlRepositoryCollection.getRepository(e).getEntityMetaData().isAbstract()) return false;
+						return true;
+					})
+					.forEach(
+							e -> dataIndexService.add(mysqlRepositoryCollection.getRepository(e),
+									mysqlRepositoryCollection.getRepository(e).getEntityMetaData()));
 		}
 		else
 		{
-			LOG.info("Skip refresh index bootstrap application is not finished");
+			LOG.info("Skip rebuildIndex, bootstrap application is not finished");
 		}
+		LOG.info("End rebuild the whole index");
 	}
 
 	@Override

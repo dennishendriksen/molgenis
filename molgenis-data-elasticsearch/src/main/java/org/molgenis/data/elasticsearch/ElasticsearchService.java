@@ -292,20 +292,22 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 		String transactionId = getCurrentTransactionId();
 		if (transactionId != null && !NON_TRANSACTIONAL_ENTITIES.contains(entityMeta.getName()))
 		{
-			refresh(transactionId);
+			if (LOG.isTraceEnabled()) LOG.trace("line 296: refresh(transactionId); disabled");
+			// refresh(transactionId);
 		}
 		else
 		{
-			refresh(indexName);
+			if (LOG.isTraceEnabled()) LOG.trace("line 301: refresh(indexName); disabled");
+			// refresh(indexName);
 		}
 	}
 
 	private void refresh(String index)
 	{
+		if (LOG.isTraceEnabled()) LOG.trace("line 310: elasticsearchUtils.refreshIndex(index); disabled");
 		// if (LOG.isTraceEnabled()) LOG.trace("Refreshing Elasticsearch index [{}] ...", index);
-		// elasticsearchUtils.refreshIndex(index); TODO FIXME
+		// elasticsearchUtils.refreshIndex(index);
 		// if (LOG.isDebugEnabled()) LOG.debug("Refreshed Elasticsearch index [{}]", index);
-		if (LOG.isInfoEnabled()) LOG.info("Refreshing Elasticsearch index [{}] is disabled... FIXME", index);
 	}
 
 	@Override
@@ -1024,6 +1026,41 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 			}
 			createMappings(entityMetaData);
 
+			index(entities, entityMetaData, IndexingMode.ADD);
+		}
+	}
+
+	/**
+	 * Add data into index.
+	 * 
+	 * @param entities
+	 *            entities that will be reindexed.
+	 * @param entityMetaData
+	 *            meta data information about the entities that will be reindexed.
+	 */
+	@Override
+	public void add(Iterable<? extends Entity> entities, EntityMetaData entityMetaData)
+	{
+		if (DependencyResolver.hasSelfReferences(entityMetaData))
+		{
+			Iterable<Entity> iterable = Iterables.transform(entities, new Function<Entity, Entity>()
+			{
+				@Override
+				public Entity apply(Entity input)
+				{
+					return input;
+				}
+			});
+
+			Iterable<Entity> resolved = new DependencyResolver().resolveSelfReferences(iterable, entityMetaData);
+
+			for (Entity e : resolved)
+			{
+				index(e, entityMetaData, IndexingMode.ADD);
+			}
+		}
+		else
+		{
 			index(entities, entityMetaData, IndexingMode.ADD);
 		}
 	}
