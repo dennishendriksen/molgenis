@@ -140,7 +140,9 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 		}
 		
 		super.doCommit(transactionStatus);
-		if (status.isNewTransaction()) this.refreshWholeIndex();
+		// if (status.isNewTransaction()) this.refreshWholeIndex();
+
+		this.refreshWholeIndex();
 	}
 
 	@SuppressWarnings("deprecation")
@@ -149,6 +151,17 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 		LOG.info("Start rebuild the whole index");
 		if (bootstrapApplicationFinished)
 		{
+			try
+			{
+				LOG.info("##################### Thread.sleep(10000L);");
+				Thread.sleep(10000L);
+			}
+			catch (InterruptedException e)
+			{
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 			// 1. Remove all
 			StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
 				LOG.info("1. clean index [{}]", e);
@@ -156,6 +169,8 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 					if (mysqlRepositoryCollection.getRepository(e).getEntityMetaData().isAbstract()) return false;
 				return true;
 			}).forEach(e -> dataIndexService.delete(e));
+
+			// TODO remove all old entities from index not only existing in MySql collection repository
 
 			// 2. Add mapping
 			StreamSupport

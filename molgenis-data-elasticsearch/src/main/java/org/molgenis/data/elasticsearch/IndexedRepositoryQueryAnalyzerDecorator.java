@@ -16,6 +16,8 @@ import org.molgenis.data.EntityMetaData;
 import org.molgenis.data.Fetch;
 import org.molgenis.data.MolgenisDataAccessException;
 import org.molgenis.data.Query;
+import org.molgenis.data.QueryRule.Operator;
+import org.molgenis.data.QueryUtils;
 import org.molgenis.data.Repository;
 import org.molgenis.data.RepositoryCapability;
 import org.springframework.transaction.annotation.Transactional;
@@ -148,6 +150,8 @@ public class IndexedRepositoryQueryAnalyzerDecorator implements Repository
 	@Override
 	public Stream<Entity> findAll(Query q)
 	{
+		if (QueryUtils.containsOperator(q, Operator.SEARCH)) return elasticSearchService.searchAsStream(q,
+				getEntityMetaData());
 		return decoratedRepo.findAll(q);
 	}
 
@@ -216,6 +220,7 @@ public class IndexedRepositoryQueryAnalyzerDecorator implements Repository
 	@Override
 	public long count(Query q)
 	{
+		if (QueryUtils.containsOperator(q, Operator.SEARCH)) return elasticSearchService.count(q, getEntityMetaData());
 		return decoratedRepo.count(q);
 	}
 
