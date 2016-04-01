@@ -168,7 +168,9 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		{
 			// do nothing
 		}
-		else if (repository.getCapabilities().contains(RepositoryCapability.INDEXABLE))
+
+		// Add IndexedRepositoryQueryAnalyzerDecorator to INDEXABLE repositories
+		if (repository.getCapabilities().contains(RepositoryCapability.INDEXABLE))
 		{
 			repository = new IndexedRepositoryQueryAnalyzerDecorator(repository, searchService);
 		}
