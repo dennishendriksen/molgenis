@@ -176,7 +176,7 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 						return true;
 					})
 					.forEach(
-							el -> dataIndexService.createMappings(mysqlRepositoryCollection.getRepository(el)
+							el -> dataIndexService.createMappings(this.dataService.getRepository(el)
 									.getEntityMetaData()));
 
 			// 3. Add entities
