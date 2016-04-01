@@ -422,15 +422,8 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 	@Override
 	public long index(Iterable<? extends Entity> entities, EntityMetaData entityMetaData, IndexingMode indexingMode)
 	{
-		String transactionId = null;
-		if (!NON_TRANSACTIONAL_ENTITIES.contains(entityMetaData.getName()))
-		{
-			transactionId = getCurrentTransactionId();
-		}
-		String index = transactionId != null ? transactionId : indexName;
-
 		CrudType crudType = indexingMode == IndexingMode.ADD ? CrudType.ADD : CrudType.UPDATE;
-		return index(index, entities.iterator(), entityMetaData, crudType, true);
+		return index(indexName, entities.iterator(), entityMetaData, crudType, true);
 	}
 
 	@Override
@@ -457,71 +450,34 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 	{
 		String entityName = entityMetaData.getName();
 		String type = sanitizeMapperType(entityName);
-		String transactionId = null;
-
-		if (!NON_TRANSACTIONAL_ENTITIES.contains(entityMetaData.getName()))
-		{
-			transactionId = getCurrentTransactionId();
-		}
-
 		long nrIndexedEntities = 0;
 		BulkProcessor bulkProcessor = BULK_PROCESSOR_FACTORY.create(client);
 
 		try
 		{
-			// if (transactionId != null) // TODO JJ
-			// {
-				// store entities in the index related to this transaction even
-				// if the entity should not be stored in
-				// the index, after transaction commit the transaction index is
-				// merged with the main index. Based on the
-				// main index mapping the data is (not) stored. The transaction
-				// index is removed after transaction
-				// commit or rollback.
-			// if (!hasMapping(transactionId, entityMetaData)) //TODO JJ
-			// {
-			// createMappings(transactionId, entityMetaData, true, true, true);
-			// }
-			// }
+			if (!hasMapping(entityMetaData))
+			{
+				createMappings(entityMetaData, true, true, true);
+			}
 
 			while (it.hasNext())
 			{
 				Entity entity = it.next();
 				String id = toElasticsearchId(entity, entityMetaData);
 				Map<String, Object> source = elasticsearchEntityFactory.create(entityMetaData, entity);
-				if (transactionId != null)
-				{
-					if (crudType == CrudType.UPDATE)
-					{
-						// updating a document in the transactional index is the same as adding the new updated
-						// document.
-						GetResponse response = client.prepareGet(transactionId, type, id).get();
-						if (LOG.isDebugEnabled())
-						{
-							LOG.debug("Retrieved document type [{}] with id [{}] in index [{}]", type, id,
-									transactionId);
-						}
-						if (response.isExists())
-						{
-							crudType = CrudType.ADD;
-						}
-					}
-					source.put(CRUD_TYPE_FIELD_NAME, crudType.name());
-				}
+				source.put(CRUD_TYPE_FIELD_NAME, crudType.name());
+
 				if (LOG.isDebugEnabled())
 				{
-					LOG.debug("Indexing [{}] with id [{}] in index [{}] mode [{}] ...", type, id, index, crudType);
+					LOG.info("Indexing [{}] with id [{}] in index [{}] mode [{}] ...", type, id, index, crudType);
 				}
 
 				bulkProcessor.add(new IndexRequest().index(index).type(type).id(id).source(source));
 				++nrIndexedEntities;
 
-				// If not in transaction, update references now, if in transaction the
-				// references are updated in
-				// the commitTransaction method
-				if (updateIndex && (crudType == CrudType.UPDATE) && (transactionId == null))
+				if (updateIndex && CrudType.UPDATE.equals(crudType))
 				{
-					// updateReferences(entity, entityMetaData); // FIXME
+					updateReferences(entity, entityMetaData);
 				}
 			}
 		}
