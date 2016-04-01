@@ -150,8 +150,9 @@ public class IndexedRepositoryQueryAnalyzerDecorator implements Repository
 	@Override
 	public Stream<Entity> findAll(Query q)
 	{
-		if (QueryUtils.containsOperator(q, Operator.SEARCH)) return elasticSearchService.searchAsStream(q,
-				getEntityMetaData());
+		if (QueryUtils.containsOperator(q, Operator.SEARCH)) {
+			return elasticSearchService.searchAsStream(q, getEntityMetaData());
+		}
 		return decoratedRepo.findAll(q);
 	}
 
@@ -220,7 +221,10 @@ public class IndexedRepositoryQueryAnalyzerDecorator implements Repository
 	@Override
 	public long count(Query q)
 	{
-		if (QueryUtils.containsOperator(q, Operator.SEARCH)) return elasticSearchService.count(q, getEntityMetaData());
+		if (QueryUtils.containsOperator(q, Operator.SEARCH))
+		{
+			return elasticSearchService.count(q, getEntityMetaData());
+		}
 		return decoratedRepo.count(q);
 	}
 

@@ -10,6 +10,7 @@ import java.util.stream.StreamSupport;
 import javax.sql.DataSource;
 
 import org.apache.commons.logging.LogFactory;
+import org.molgenis.data.DataService;
 import org.molgenis.data.IdGenerator;
 import org.molgenis.data.RepositoryCollection;
 import org.molgenis.data.index.MolgenisIndexService;
@@ -46,6 +47,7 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 	private RepositoryCollection elasticsearchRepositoryCollection;
 	private RepositoryCollection mysqlRepositoryCollection;
 	private boolean bootstrapApplicationFinished = false;
+	private DataService dataService;
 
 	public MolgenisTransactionManager(IdGenerator idGenerator, DataSource dataSource)
 	{
@@ -75,6 +77,9 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 		elasticsearchRepositoryCollection = repositoryCollections.get("ElasticsearchRepositoryCollection");
 		mysqlRepositoryCollection = repositoryCollections.get("MysqlRepositoryCollection");
 		bootstrapApplicationFinished = true;
+
+		Map<String, DataService> dataServices = ctx.getBeansOfType(DataService.class);
+		this.dataService = dataServices.get("dataService");
 
 		// Rebuild all
 		this.refreshWholeIndex();
@@ -148,29 +153,18 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 	@SuppressWarnings("deprecation")
 	private synchronized void refreshWholeIndex()
 	{
-		LOG.info("Start rebuild the whole index");
 		if (bootstrapApplicationFinished)
 		{
-			try
-			{
-				LOG.info("##################### Thread.sleep(10000L);");
-				Thread.sleep(10000L);
-			}
-			catch (InterruptedException e)
-			{
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
+			LOG.info("Start rebuild index");
+			// This code reindex only mysql reposiotries
+			
 			// 1. Remove all
 			StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
 				LOG.info("1. clean index [{}]", e);
 				// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
-					if (mysqlRepositoryCollection.getRepository(e).getEntityMetaData().isAbstract()) return false;
-				return true;
-			}).forEach(e -> dataIndexService.delete(e));
-
-			// TODO remove all old entities from index not only existing in MySql collection repository
+					if (this.dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
+					return true;
+				}).forEach(el -> dataIndexService.delete(el));
 
 			// 2. Add mapping
 			StreamSupport
@@ -178,11 +172,11 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 					.filter(e -> {
 						LOG.info("2. Add mapping into index [{}]", e);
 						// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
-						if (mysqlRepositoryCollection.getRepository(e).getEntityMetaData().isAbstract()) return false;
+						if (this.dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
 						return true;
 					})
 					.forEach(
-							e -> dataIndexService.createMappings(mysqlRepositoryCollection.getRepository(e)
+							el -> dataIndexService.createMappings(mysqlRepositoryCollection.getRepository(el)
 									.getEntityMetaData()));
 
 			// 3. Add entities
@@ -191,20 +185,23 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 					.filter(e -> {
 						LOG.info("3. Add entities into index [{}]", e);
 						// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
-						if (mysqlRepositoryCollection.getRepository(e).getEntityMetaData().isAbstract()) return false;
+						if (this.dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
 						return true;
 					})
 					.forEach(
-							e -> dataIndexService.add(mysqlRepositoryCollection.getRepository(e),
-									mysqlRepositoryCollection.getRepository(e).getEntityMetaData()));
+							el -> {
+								dataIndexService.add(this.dataService.getRepository(el), this.dataService
+										.getRepository(el).getEntityMetaData());
+							});
 
 			dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
+			LOG.info("End rebuild index");
 		}
 		else
 		{
-			LOG.info("Skip rebuildIndex, bootstrap application is not finished");
+			LOG.info("Skip rebuilding index, bootstrap application is not finished");
 		}
-		LOG.info("End rebuild the whole index");
+
 	}
 
 	@Override
