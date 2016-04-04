@@ -138,6 +138,7 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 				LOG.info("### --- Rebuilding index is stoped! --- ###");
 				try
 				{
+					// This part will block application till the run will be stopped.
 					rebuildIndexJob.get();
 				}
 				catch (InterruptedException | ExecutionException e)
