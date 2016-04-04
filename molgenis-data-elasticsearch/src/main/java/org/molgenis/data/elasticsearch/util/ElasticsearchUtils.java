@@ -39,9 +39,8 @@ public class ElasticsearchUtils implements MolgenisIndexUtil
 
 	public void refreshIndex(String index)
 	{
-		LOG.info("Start refresh index [{}]", index);
+		LOG.info("Refresh index [{}]", index);
 		client.admin().indices().refresh(refreshRequest(index)).actionGet();
-		LOG.info("End refresh index [{}]", index);
 	}
 
 	public void waitForCompletion(BulkProcessor bulkProcessor)

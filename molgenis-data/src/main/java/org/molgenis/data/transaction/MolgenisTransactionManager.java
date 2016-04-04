@@ -1,19 +1,12 @@
 package org.molgenis.data.transaction;
 
-import static org.molgenis.security.core.runas.RunAsSystemProxy.runAsSystem;
-
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.StreamSupport;
 
 import javax.sql.DataSource;
 
 import org.apache.commons.logging.LogFactory;
-import org.molgenis.data.DataService;
 import org.molgenis.data.IdGenerator;
-import org.molgenis.data.RepositoryCollection;
-import org.molgenis.data.index.MolgenisIndexService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
@@ -37,17 +30,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 public class MolgenisTransactionManager extends DataSourceTransactionManager implements
 		ApplicationListener<ContextRefreshedEvent>
 {
+	private static final Logger LOG = LoggerFactory.getLogger(MolgenisTransactionManager.class);
 	private static final long serialVersionUID = 1L;
 	public static final String TRANSACTION_ID_RESOURCE_NAME = "transactionId";
-	private static final Logger LOG = LoggerFactory.getLogger(MolgenisTransactionManager.class);
 	private final IdGenerator idGenerator;
 	private final List<MolgenisTransactionListener> transactionListeners = new CopyOnWriteArrayList<>();
-	private MolgenisIndexService dataIndexService;
-	private RepositoryCollection idCardRepositoryCollection;
-	private RepositoryCollection elasticsearchRepositoryCollection;
-	private RepositoryCollection mysqlRepositoryCollection;
-	private boolean bootstrapApplicationFinished = false;
-	private DataService dataService;
+	private ApplicationContext ctx = null;
 
 	public MolgenisTransactionManager(IdGenerator idGenerator, DataSource dataSource)
 	{
@@ -59,30 +47,8 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 
 	public void onApplicationEvent(ContextRefreshedEvent event)
 	{
-		ApplicationContext ctx = event.getApplicationContext();
-		runAsSystem(() -> {
-			bootstrapApplication(ctx);
-		});
-	}
-
-	private void bootstrapApplication(ApplicationContext ctx)
-	{
-		Map<String, MolgenisIndexService> molgenisIndexServices = ctx.getBeansOfType(MolgenisIndexService.class);
-		dataIndexService = molgenisIndexServices.get("searchService");
-		LOG.info("DataIndexService is allocated");
-
-		// Get all expected repositories
-		Map<String, RepositoryCollection> repositoryCollections = ctx.getBeansOfType(RepositoryCollection.class);
-		idCardRepositoryCollection = repositoryCollections.get("idCardRepositoryCollection");
-		elasticsearchRepositoryCollection = repositoryCollections.get("ElasticsearchRepositoryCollection");
-		mysqlRepositoryCollection = repositoryCollections.get("MysqlRepositoryCollection");
-		bootstrapApplicationFinished = true;
-
-		Map<String, DataService> dataServices = ctx.getBeansOfType(DataService.class);
-		this.dataService = dataServices.get("dataService");
-
-		// Rebuild all
-		this.refreshWholeIndex();
+		this.ctx = event.getApplicationContext();
+		this.refreshWholeIndexSychronized(); // Synchronized
 	}
 
 	public void addTransactionListener(MolgenisTransactionListener transactionListener)
@@ -145,63 +111,43 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 		}
 		
 		super.doCommit(transactionStatus);
-		// if (status.isNewTransaction()) this.refreshWholeIndex();
 
-		this.refreshWholeIndex();
+		this.refreshWholeIndexASychronized();
 	}
 
-	@SuppressWarnings("deprecation")
-	private synchronized void refreshWholeIndex()
+	/**
+	 * A-Synchronized
+	 * 
+	 * TODO implement fine grained rebuilding index strategy TODO Implement a mechanism to stop a thread or wait on
+	 * thread to not execute the indexing twice at the same time.
+	 */
+	private void refreshWholeIndexASychronized()
 	{
-		if (bootstrapApplicationFinished)
+		if (null != this.ctx)
 		{
-			LOG.info("Start rebuild index");
-			// This code reindex only mysql reposiotries
-			
-			// 1. Remove all
-			StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
-				LOG.info("1. clean index [{}]", e);
-				// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
-					if (this.dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
-					return true;
-				}).forEach(el -> dataIndexService.delete(el));
-
-			// 2. Add mapping
-			StreamSupport
-					.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false)
-					.filter(e -> {
-						LOG.info("2. Add mapping into index [{}]", e);
-						// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
-						if (this.dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
-						return true;
-					})
-					.forEach(
-							el -> dataIndexService.createMappings(this.dataService.getRepository(el)
-									.getEntityMetaData()));
-
-			// 3. Add entities
-			StreamSupport
-					.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false)
-					.filter(e -> {
-						LOG.info("3. Add entities into index [{}]", e);
-						// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
-						if (this.dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
-						return true;
-					})
-					.forEach(
-							el -> {
-								dataIndexService.add(this.dataService.getRepository(el), this.dataService
-										.getRepository(el).getEntityMetaData());
-							});
-
-			dataIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
-			LOG.info("End rebuild index");
+			new Thread(new RebuildIndex(this.ctx)).start();
 		}
 		else
 		{
 			LOG.info("Skip rebuilding index, bootstrap application is not finished");
 		}
+	}
 
+	/**
+	 * Synchronized
+	 * 
+	 * TODO implement fine grained rebuilding index strategy
+	 */
+	private synchronized void refreshWholeIndexSychronized()
+	{
+		if (null != this.ctx)
+		{
+			new RebuildIndex(this.ctx).run();
+		}
+		else
+		{
+			LOG.info("Skip rebuilding index, bootstrap application is not finished");
+		}
 	}
 
 	@Override
