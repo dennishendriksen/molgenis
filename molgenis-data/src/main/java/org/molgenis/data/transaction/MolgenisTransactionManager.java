@@ -2,6 +2,10 @@ package org.molgenis.data.transaction;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.sql.DataSource;
 
@@ -36,6 +40,9 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 	private final IdGenerator idGenerator;
 	private final List<MolgenisTransactionListener> transactionListeners = new CopyOnWriteArrayList<>();
 	private ApplicationContext ctx = null;
+	private static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
+	private static volatile Future<?> rebuildIndexJob = null;
+	private static volatile RebuildIndex rebuildIndex = null;
 
 	public MolgenisTransactionManager(IdGenerator idGenerator, DataSource dataSource)
 	{
@@ -121,11 +128,26 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager imp
 	 * TODO implement fine grained rebuilding index strategy TODO Implement a mechanism to stop a thread or wait on
 	 * thread to not execute the indexing twice at the same time.
 	 */
-	private void refreshWholeIndexASychronized()
+	private synchronized void refreshWholeIndexASychronized()
 	{
 		if (null != this.ctx)
 		{
-			new Thread(new RebuildIndex(this.ctx)).start();
+			if (rebuildIndexJob != null && !rebuildIndexJob.isDone() && null != rebuildIndex)
+			{
+				rebuildIndex.stop();
+				LOG.info("### --- Rebuilding index is stoped! --- ###");
+				try
+				{
+					rebuildIndexJob.get();
+				}
+				catch (InterruptedException | ExecutionException e)
+				{
+					LOG.info("rebuildIndexJob.get() exception:", e);
+				}
+				LOG.info("### --- Rebuilding index is canceled! --- ###");
+			}
+			rebuildIndex = new RebuildIndex(this.ctx);
+			rebuildIndexJob = EXECUTOR_SERVICE.submit(rebuildIndex);
 		}
 		else
 		{

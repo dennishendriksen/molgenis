@@ -24,6 +24,7 @@ public class RebuildIndex implements Runnable
 {
 	private static final Logger LOG = LoggerFactory.getLogger(RebuildIndex.class);
 	private final ApplicationContext ctx;
+	private boolean stop = false;
 	
 	public RebuildIndex(ApplicationContext ctx)
 	{
@@ -43,62 +44,94 @@ public class RebuildIndex implements Runnable
 		// elasticsearchRepositoryCollection = repositoryCollections.get("ElasticsearchRepositoryCollection"); // Not
 		// used, do not remove
 		runAsSystem(() -> {
-			final RepositoryCollection mysqlRepositoryCollection;
-			Map<String, RepositoryCollection> repositoryCollections = this.ctx
-					.getBeansOfType(RepositoryCollection.class);
-			mysqlRepositoryCollection = repositoryCollections.get("MysqlRepositoryCollection");
-
-			final MolgenisIndexService molgenisIndexService;
-			Map<String, MolgenisIndexService> molgenisIndexServices = ctx.getBeansOfType(MolgenisIndexService.class);
-			molgenisIndexService = molgenisIndexServices.get("searchService");
-
-			final DataService dataService;
-			Map<String, DataService> dataServices = ctx.getBeansOfType(DataService.class);
-			dataService = dataServices.get("dataService");
-
-			LOG.info("Start rebuilding index");
-			// This code reindex only MySql repositories TODO refresh more repositories
-
-			// 1. Remove all
-			StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
-				// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
-					if (dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
-					LOG.info("1. clean index [{}]", e);
-					return true;
-				}).forEach(el -> molgenisIndexService.delete(el));
-
-			// 2. Add mapping
-			StreamSupport
-					.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false)
-					.filter(e -> {
-						// filters abstract entities: "Owned", "authority", "settings_settings" and
-						// "Questionnaire"
-						if (dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
-						LOG.info("2. Add mapping into index [{}]", e);
-						return true;
-					})
-					.forEach(
-							el -> molgenisIndexService
-									.createMappings(dataService.getRepository(el).getEntityMetaData()));
-
-			// 3. Add entities
-			StreamSupport
-					.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false)
-					.filter(e -> {
-						// filters abstract entities: "Owned", "authority", "settings_settings" and
-						// "Questionnaire"
-						if (dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
-						LOG.info("3. Add entities into index [{}]", e);
-						return true;
-					})
-					.forEach(
-							el -> {
-								molgenisIndexService.add(dataService.getRepository(el), dataService.getRepository(el)
-										.getEntityMetaData());
-							});
-
-			molgenisIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
-			LOG.info("End rebuild index");
+			tryTest();
 		});
+	}
+	
+	private void tryTest()
+	{
+		try
+		{
+			test();
+		}
+		catch (Exception e)
+		{
+			LOG.error("ERROR TEST EXCEPTIONS INDX", e);
+		}
+	}
+
+	private void test(){
+		final RepositoryCollection mysqlRepositoryCollection;
+		Map<String, RepositoryCollection> repositoryCollections = this.ctx.getBeansOfType(RepositoryCollection.class);
+		mysqlRepositoryCollection = repositoryCollections.get("MysqlRepositoryCollection");
+
+		final MolgenisIndexService molgenisIndexService;
+		Map<String, MolgenisIndexService> molgenisIndexServices = ctx.getBeansOfType(MolgenisIndexService.class);
+		molgenisIndexService = molgenisIndexServices.get("searchService");
+
+		final DataService dataService;
+		Map<String, DataService> dataServices = ctx.getBeansOfType(DataService.class);
+		dataService = dataServices.get("dataService");
+
+		LOG.info("Start rebuilding index");
+		// This code reindex only MySql repositories TODO refresh more repositories
+
+		// 1. Remove all
+		StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
+			// filters abstract entities: "Owned", "authority", "settings_settings" and "Questionnaire"
+				if (dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
+				LOG.info("1. clean index [{}]", e);
+				return true;
+			}).forEach(el -> molgenisIndexService.delete(el));
+
+		// Safe place to stop the application
+		if (stop)
+		{
+			LOG.info("interrupted after step 1");
+			return;
+		}
+
+		// 2. Add mapping
+		StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
+			// filters abstract entities: "Owned", "authority", "settings_settings" and
+			// "Questionnaire"
+				if (dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
+				LOG.info("2. Add mapping into index [{}]", e);
+				return true;
+			}).forEach(el -> molgenisIndexService.createMappings(dataService.getRepository(el).getEntityMetaData()));
+
+		// Safe place to stop the application
+		if (stop)
+		{
+			LOG.info("interrupted after step 2");
+			return;
+		}
+		// 3. Add entities
+		StreamSupport.stream(mysqlRepositoryCollection.getEntityNames().spliterator(), false).filter(e -> {
+			// filters abstract entities: "Owned", "authority", "settings_settings" and
+			// "Questionnaire"
+				if (dataService.getRepository(e).getEntityMetaData().isAbstract()) return false;
+				LOG.info("3. Add entities into index [{}]", e);
+				return true;
+			}).forEach(el -> {
+			molgenisIndexService.add(dataService.getRepository(el), dataService.getRepository(el).getEntityMetaData());
+		});
+
+		// Safe place to stop the application
+		if (stop)
+		{
+			LOG.info("interrupted after step 3");
+			return;
+		}
+		molgenisIndexService.getMolgenisIndexUtil().refreshIndex(MolgenisIndexService.DEFAULT_INDEX_NAME);
+		LOG.info("End rebuild index");
+	}
+	
+	/**
+	 * The stop flag can be used to be used in the run method to stop running functionality.
+	 */
+	public synchronized void stop()
+	{
+		this.stop = true;
 	}
 }
