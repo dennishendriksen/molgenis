@@ -35,16 +35,12 @@ import org.molgenis.data.meta.PackageMetaData;
 import org.molgenis.data.meta.TagMetaData;
 import org.molgenis.data.support.SystemEntityMetaData;
 import org.molgenis.util.ApplicationContextProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 public abstract class MysqlRepositoryCollection implements RepositoryCollection
 {
-	private static final Logger LOG = LoggerFactory.getLogger(MysqlRepositoryCollection.class);
-
 	public static final String NAME = "MySQL";
 	// private final Map<String, MysqlRepository> repositories = new LinkedHashMap<>();
 

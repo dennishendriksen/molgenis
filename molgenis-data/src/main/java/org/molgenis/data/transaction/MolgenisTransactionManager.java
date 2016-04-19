@@ -2,6 +2,10 @@ package org.molgenis.data.transaction;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import javax.sql.DataSource;
 
@@ -9,6 +13,9 @@ import org.apache.commons.logging.LogFactory;
 import org.molgenis.data.IdGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -24,13 +31,18 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  * Each transaction is given a unique transaction id.
  * 
  */
-public class MolgenisTransactionManager extends DataSourceTransactionManager
+public class MolgenisTransactionManager extends DataSourceTransactionManager implements
+		ApplicationListener<ContextRefreshedEvent>
 {
+	private static final Logger LOG = LoggerFactory.getLogger(MolgenisTransactionManager.class);
 	private static final long serialVersionUID = 1L;
 	public static final String TRANSACTION_ID_RESOURCE_NAME = "transactionId";
-	private static final Logger LOG = LoggerFactory.getLogger(MolgenisTransactionManager.class);
 	private final IdGenerator idGenerator;
 	private final List<MolgenisTransactionListener> transactionListeners = new CopyOnWriteArrayList<>();
+	private ApplicationContext ctx = null;
+	private static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
+	private static volatile Future<?> rebuildIndexJob = null;
+	private static volatile RebuildIndex rebuildIndex = null;
 
 	public MolgenisTransactionManager(IdGenerator idGenerator, DataSource dataSource)
 	{
@@ -38,6 +50,12 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager
 		super.logger = LogFactory.getLog(DataSourceTransactionManager.class);
 		setNestedTransactionAllowed(false);
 		this.idGenerator = idGenerator;
+	}
+
+	public void onApplicationEvent(ContextRefreshedEvent event)
+	{
+		this.ctx = event.getApplicationContext();
+		this.refreshWholeIndexSychronized(); // Synchronized
 	}
 
 	public void addTransactionListener(MolgenisTransactionListener transactionListener)
@@ -90,7 +108,7 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager
 			LOG.debug("Commit transaction [{}]", transaction.getId());
 		}
 
-		DefaultTransactionStatus jpaTransactionStatus = new DefaultTransactionStatus(
+		DefaultTransactionStatus transactionStatus = new DefaultTransactionStatus(
 				transaction.getDataSourceTransaction(), status.isNewTransaction(), status.isNewSynchronization(),
 				status.isReadOnly(), status.isDebug(), status.getSuspendedResources());
 
@@ -98,8 +116,61 @@ public class MolgenisTransactionManager extends DataSourceTransactionManager
 		{
 			transactionListeners.forEach(j -> j.commitTransaction(transaction.getId()));
 		}
+		
+		super.doCommit(transactionStatus);
 
-		super.doCommit(jpaTransactionStatus);
+		this.refreshWholeIndexASychronized();
+	}
+
+	/**
+	 * A-Synchronized
+	 * 
+	 * TODO implement fine grained rebuilding index strategy TODO Implement a mechanism to stop a thread or wait on
+	 * thread to not execute the indexing twice at the same time.
+	 */
+	private synchronized void refreshWholeIndexASychronized()
+	{
+		if (null != this.ctx)
+		{
+			if (rebuildIndexJob != null && !rebuildIndexJob.isDone() && null != rebuildIndex)
+			{
+				rebuildIndex.stop();
+				LOG.info("### --- Rebuilding index is stoped! --- ###");
+				try
+				{
+					// This part will block application till the run will be stopped.
+					rebuildIndexJob.get();
+				}
+				catch (InterruptedException | ExecutionException e)
+				{
+					LOG.info("rebuildIndexJob.get() exception:", e);
+				}
+				LOG.info("### --- Rebuilding index is canceled! --- ###");
+			}
+			rebuildIndex = new RebuildIndex(this.ctx);
+			rebuildIndexJob = EXECUTOR_SERVICE.submit(rebuildIndex);
+		}
+		else
+		{
+			LOG.info("Skip rebuilding index, bootstrap application is not finished");
+		}
+	}
+
+	/**
+	 * Synchronized
+	 * 
+	 * TODO implement fine grained rebuilding index strategy
+	 */
+	private synchronized void refreshWholeIndexSychronized()
+	{
+		if (null != this.ctx)
+		{
+			new RebuildIndex(this.ctx).run();
+		}
+		else
+		{
+			LOG.info("Skip rebuilding index, bootstrap application is not finished");
+		}
 	}
 
 	@Override

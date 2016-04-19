@@ -9,11 +9,14 @@ import org.molgenis.data.EntityManager;
 import org.molgenis.data.EntityReferenceResolverDecorator;
 import org.molgenis.data.IdGenerator;
 import org.molgenis.data.Repository;
+import org.molgenis.data.RepositoryCapability;
 import org.molgenis.data.RepositoryDecoratorFactory;
 import org.molgenis.data.RepositorySecurityDecorator;
 import org.molgenis.data.SystemEntityMetaDataRegistry;
 import org.molgenis.data.cache.TransactionEntityCache;
 import org.molgenis.data.cache.TransactionEntityCacheDecorator;
+import org.molgenis.data.elasticsearch.IndexedRepositoryQueryAnalyzerDecorator;
+import org.molgenis.data.elasticsearch.SearchService;
 import org.molgenis.data.i18n.I18nStringDecorator;
 import org.molgenis.data.i18n.I18nStringMetaData;
 import org.molgenis.data.i18n.LanguageMetaData;
@@ -51,12 +54,13 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 	private final LanguageService languageService;
 	private final SystemEntityMetaDataRegistry systemEntityMetaDataRegistry;
 	private final TransactionEntityCache transactionEntityCache;
+	private final SearchService searchService;
 
 	public MolgenisRepositoryDecoratorFactory(EntityManager entityManager, TransactionLogService transactionLogService,
 			EntityAttributesValidator entityAttributesValidator, IdGenerator idGenerator, AppSettings appSettings,
 			DataService dataService, ExpressionValidator expressionValidator,
 			RepositoryDecoratorRegistry repositoryDecoratorRegistry, LanguageService languageService,
-			SystemEntityMetaDataRegistry systemEntityMetaDataRegistry, TransactionEntityCache transactionEntityCache)
+			SystemEntityMetaDataRegistry systemEntityMetaDataRegistry, TransactionEntityCache transactionEntityCache, SearchService searchService)
 	{
 		this.entityManager = entityManager;
 		this.transactionLogService = transactionLogService;
@@ -68,6 +72,7 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		this.repositoryDecoratorRegistry = repositoryDecoratorRegistry;
 		this.languageService = languageService;
 		this.systemEntityMetaDataRegistry = systemEntityMetaDataRegistry;
+		this.searchService = searchService;
 		this.transactionEntityCache = transactionEntityCache;
 	}
 
@@ -120,10 +125,9 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		{
 			decoratedRepository = new MetaDataRepositoryDecorator(decoratedRepository, dataService.getMeta());
 		}
-
+		
 		// -1. transaction cache decorator
 		decoratedRepository = new TransactionEntityCacheDecorator(decoratedRepository, transactionEntityCache);
-
 		return decoratedRepository;
 	}
 
@@ -163,6 +167,12 @@ public class MolgenisRepositoryDecoratorFactory implements RepositoryDecoratorFa
 		else if (repository.getName().equals(TagMetaData.ENTITY_NAME))
 		{
 			// do nothing
+		}
+
+		// Add IndexedRepositoryQueryAnalyzerDecorator to INDEXABLE repositories
+		if (repository.getCapabilities().contains(RepositoryCapability.INDEXABLE))
+		{
+			repository = new IndexedRepositoryQueryAnalyzerDecorator(repository, searchService);
 		}
 		return repository;
 	}

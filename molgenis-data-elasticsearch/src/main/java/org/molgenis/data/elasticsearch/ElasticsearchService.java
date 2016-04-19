@@ -68,6 +68,8 @@ import org.molgenis.data.elasticsearch.response.ResponseParser;
 import org.molgenis.data.elasticsearch.util.ElasticsearchUtils;
 import org.molgenis.data.elasticsearch.util.SearchRequest;
 import org.molgenis.data.elasticsearch.util.SearchResult;
+import org.molgenis.data.index.MolgenisIndexService;
+import org.molgenis.data.index.MolgenisIndexUtil;
 import org.molgenis.data.meta.AttributeMetaDataMetaData;
 import org.molgenis.data.meta.EntityMetaDataMetaData;
 import org.molgenis.data.meta.PackageImpl;
@@ -94,7 +96,7 @@ import com.google.common.collect.Iterables;
  * 
  * @author erwin
  */
-public class ElasticsearchService implements SearchService, MolgenisTransactionListener
+public class ElasticsearchService implements SearchService, MolgenisTransactionListener, MolgenisIndexService
 {
 	private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchService.class);
 
@@ -290,11 +292,13 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 		String transactionId = getCurrentTransactionId();
 		if (transactionId != null && !NON_TRANSACTIONAL_ENTITIES.contains(entityMeta.getName()))
 		{
-			refresh(transactionId);
+			if (LOG.isTraceEnabled()) LOG.trace("line 296: refresh(transactionId); disabled");
+			// refresh(transactionId);
 		}
 		else
 		{
-			refresh(indexName);
+			if (LOG.isTraceEnabled()) LOG.trace("line 301: refresh(indexName); disabled");
+			// refresh(indexName);
 		}
 	}
 
@@ -418,15 +422,8 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 	@Override
 	public long index(Iterable<? extends Entity> entities, EntityMetaData entityMetaData, IndexingMode indexingMode)
 	{
-		String transactionId = null;
-		if (!NON_TRANSACTIONAL_ENTITIES.contains(entityMetaData.getName()))
-		{
-			transactionId = getCurrentTransactionId();
-		}
-		String index = transactionId != null ? transactionId : indexName;
-
 		CrudType crudType = indexingMode == IndexingMode.ADD ? CrudType.ADD : CrudType.UPDATE;
-		return index(index, entities.iterator(), entityMetaData, crudType, true);
+		return index(indexName, entities.iterator(), entityMetaData, crudType, true);
 	}
 
 	@Override
@@ -453,31 +450,14 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 	{
 		String entityName = entityMetaData.getName();
 		String type = sanitizeMapperType(entityName);
-		String transactionId = null;
-
-		if (!NON_TRANSACTIONAL_ENTITIES.contains(entityMetaData.getName()))
-		{
-			transactionId = getCurrentTransactionId();
-		}
-
 		long nrIndexedEntities = 0;
 		BulkProcessor bulkProcessor = BULK_PROCESSOR_FACTORY.create(client);
 
 		try
 		{
-			if (transactionId != null)
+			if (!hasMapping(entityMetaData))
 			{
-				// store entities in the index related to this transaction even
-				// if the entity should not be stored in
-				// the index, after transaction commit the transaction index is
-				// merged with the main index. Based on the
-				// main index mapping the data is (not) stored. The transaction
-				// index is removed after transaction
-				// commit or rollback.
-				if (!hasMapping(transactionId, entityMetaData))
-				{
-					createMappings(transactionId, entityMetaData, true, true, true);
-				}
+				createMappings(entityMetaData, true, true, true);
 			}
 
 			while (it.hasNext())
@@ -485,39 +465,19 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 				Entity entity = it.next();
 				String id = toElasticsearchId(entity, entityMetaData);
 				Map<String, Object> source = elasticsearchEntityFactory.create(entityMetaData, entity);
-				if (transactionId != null)
-				{
-					if (crudType == CrudType.UPDATE)
-					{
-						// updating a document in the transactional index is the same as adding the new updated
-						// document.
-						GetResponse response = client.prepareGet(transactionId, type, id).get();
-						if (LOG.isDebugEnabled())
-						{
-							LOG.debug("Retrieved document type [{}] with id [{}] in index [{}]", type, id,
-									transactionId);
-						}
-						if (response.isExists())
-						{
-							crudType = CrudType.ADD;
-						}
-					}
-					source.put(CRUD_TYPE_FIELD_NAME, crudType.name());
-				}
+				source.put(CRUD_TYPE_FIELD_NAME, crudType.name());
+
 				if (LOG.isDebugEnabled())
 				{
-					LOG.debug("Indexing [{}] with id [{}] in index [{}] mode [{}] ...", type, id, index, crudType);
+					LOG.info("Indexing [{}] with id [{}] in index [{}] mode [{}] ...", type, id, index, crudType);
 				}
 
 				bulkProcessor.add(new IndexRequest().index(index).type(type).id(id).source(source));
 				++nrIndexedEntities;
 
-				// If not in transaction, update references now, if in transaction the
-				// references are updated in
-				// the commitTransaction method
-				if (updateIndex && (crudType == CrudType.UPDATE) && (transactionId == null))
+				if (updateIndex && CrudType.UPDATE.equals(crudType))
 				{
-					// updateReferences(entity, entityMetaData); // FIXME
+					updateReferences(entity, entityMetaData);
 				}
 			}
 		}
@@ -1025,6 +985,41 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 		}
 	}
 
+	/**
+	 * Add data into index.
+	 * 
+	 * @param entities
+	 *            entities that will be reindexed.
+	 * @param entityMetaData
+	 *            meta data information about the entities that will be reindexed.
+	 */
+	@Override
+	public void add(Iterable<? extends Entity> entities, EntityMetaData entityMetaData)
+	{
+		if (DependencyResolver.hasSelfReferences(entityMetaData))
+		{
+			Iterable<Entity> iterable = Iterables.transform(entities, new Function<Entity, Entity>()
+			{
+				@Override
+				public Entity apply(Entity input)
+				{
+					return input;
+				}
+			});
+
+			Iterable<Entity> resolved = new DependencyResolver().resolveSelfReferences(iterable, entityMetaData);
+
+			for (Entity e : resolved)
+			{
+				index(e, entityMetaData, IndexingMode.ADD);
+			}
+		}
+		else
+		{
+			index(entities, entityMetaData, IndexingMode.ADD);
+		}
+	}
+
 	@Override
 	public void optimizeIndex()
 	{
@@ -1248,5 +1243,11 @@ public class ElasticsearchService implements SearchService, MolgenisTransactionL
 	private boolean storeSource(EntityMetaData entityMeta)
 	{
 		return ElasticsearchRepositoryCollection.NAME.equals(entityMeta.getBackend());
+	}
+
+	@Override
+	public MolgenisIndexUtil getMolgenisIndexUtil()
+	{
+		return elasticsearchUtils;
 	}
 }

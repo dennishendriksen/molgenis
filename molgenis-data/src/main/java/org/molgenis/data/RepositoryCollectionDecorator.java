@@ -48,6 +48,7 @@ class RepositoryCollectionDecorator implements RepositoryCollection
 
 	@SuppressWarnings("deprecation")
 	@Override
+	// TODO change this a repository should be decorated when its made
 	public Repository getRepository(String name)
 	{
 		Repository undecoratedRepo = repoCollection.getRepository(name);
@@ -55,6 +56,7 @@ class RepositoryCollectionDecorator implements RepositoryCollection
 	}
 
 	@Override
+	// TODO change this a repository should be decorated when its made
 	public Repository getRepository(EntityMetaData entityMeta)
 	{
 		Repository undecoratedRepo = repoCollection.getRepository(entityMeta);

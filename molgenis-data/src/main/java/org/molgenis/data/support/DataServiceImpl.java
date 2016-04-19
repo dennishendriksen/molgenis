@@ -95,7 +95,7 @@ public class DataServiceImpl implements DataService
 		}
 		else
 		{
-			throw new MolgenisDataAccessException(); // TODO msg
+			throw new MolgenisDataAccessException("No permissions for entity" + entityName);
 		}
 	}
 

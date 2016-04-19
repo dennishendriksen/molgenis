@@ -70,7 +70,8 @@ public class QueryRule
 	public enum Operator
 	{
 		/**
-		 * 'field' like 'value', searches all fields if field is not defined
+		 * 'field' like 'value', searches all fields if field is not defined MOLGENIS will fetch the data from the index
+		 * layer.
 		 */
 		SEARCH("search"),
 
