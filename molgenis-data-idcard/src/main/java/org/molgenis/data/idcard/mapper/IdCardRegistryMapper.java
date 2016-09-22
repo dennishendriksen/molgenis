@@ -6,22 +6,21 @@
 package org.molgenis.data.idcard.mapper;
 
 import org.molgenis.data.DataService;
-import org.molgenis.data.idcard.model.IdCardBiobank;
+import org.molgenis.data.idcard.model.IdCardRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class IdCardBiobankMapper extends AbtractIdCardEntityMapper<IdCardBiobank> {
+public class IdCardRegistryMapper extends AbtractIdCardEntityMapper<IdCardRegistry> {
 
     @Autowired
-    public IdCardBiobankMapper(DataService dataService) {
+    public IdCardRegistryMapper(DataService dataService) {
         super(dataService);
     }
 
-
     @Override
-    protected IdCardBiobank getInstance() {
-        return new IdCardBiobank(dataService);
+    protected IdCardRegistry getInstance() {
+        return new IdCardRegistry(dataService);
     }
 
 }

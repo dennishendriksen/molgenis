@@ -2,9 +2,9 @@ package org.molgenis.data.idcard.indexer;
 
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-
 import org.molgenis.data.DataService;
-import org.molgenis.data.idcard.IdCardBiobankRepository;
+import org.molgenis.data.idcard.IdCardRepository;
+import org.molgenis.data.idcard.model.IdCardEntity;
 import org.molgenis.data.idcard.model.IdCardIndexingEvent;
 import org.molgenis.data.idcard.model.IdCardIndexingEventStatus;
 import org.molgenis.data.idcard.settings.IdCardIndexerSettings;
@@ -20,16 +20,12 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 
 @DisallowConcurrentExecution
-public class IdCardIndexerJob implements Job
+abstract public class IdCardIndexerJob<E extends IdCardEntity, R extends IdCardRepository<E>> implements Job
 {
 	private static final Logger LOG = LoggerFactory.getLogger(IdCardIndexerJob.class);
 
 	public static final String JOB_USERNAME = "username";
 	public static final String JOB_USERNAME_SYSTEM = "System";
-
-	// Autowire by constructor not possible for Job classes
-	@Autowired
-	private IdCardBiobankRepository idCardBiobankRepository;
 
 	@Autowired
 	private IdCardIndexerSettings idCardIndexerSettings;
@@ -39,6 +35,8 @@ public class IdCardIndexerJob implements Job
 
 	@Autowired
 	private JavaMailSender mailSender;
+
+        abstract protected R getIdCardRepository();
 
 	@Override
 	public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException
@@ -62,7 +60,7 @@ public class IdCardIndexerJob implements Job
 		RuntimeException runtimeException = null;
 		try
 		{
-			idCardBiobankRepository.rebuildIndex();
+			getIdCardRepository().rebuildIndex();
 
 			idCardIndexingEvent.setStatus(IdCardIndexingEventStatus.SUCCESS);
 			idCardIndexingEvent

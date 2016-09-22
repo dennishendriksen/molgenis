@@ -1,14 +1,10 @@
 package org.molgenis.data.idcard.client;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
 import java.util.Iterator;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import org.apache.http.HttpEntity;
@@ -23,87 +19,77 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.molgenis.data.Entity;
 import org.molgenis.data.MolgenisDataException;
-import org.molgenis.data.idcard.mapper.IdCardBiobankMapper;
-import org.molgenis.data.idcard.model.IdCardBiobank;
+import org.molgenis.data.idcard.model.IdCardEntity;
 import org.molgenis.data.idcard.model.IdCardOrganization;
 import org.molgenis.data.idcard.settings.IdCardIndexerSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
 
 import com.google.gson.stream.JsonReader;
 
 import autovalue.shaded.com.google.common.common.primitives.Ints;
+import org.molgenis.data.idcard.mapper.IdCardEntityMapper;
+import static java.util.Objects.requireNonNull;
 
-@Service
-public class IdCardClientImpl implements IdCardClient
+abstract public class AbstractIdCardClient<E extends IdCardEntity> implements IdCardClient<E>
 {
-	private static final Logger LOG = LoggerFactory.getLogger(IdCardClientImpl.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AbstractIdCardClient.class);
 
 	private final HttpClient httpClient;
-	private final IdCardIndexerSettings idCardIndexerSettings;
-	private final IdCardBiobankMapper idCardBiobankMapper;
+	protected final IdCardIndexerSettings idCardIndexerSettings;
+	private final IdCardEntityMapper<E> idCardEntityMapper;
 
-	@Autowired
-	public IdCardClientImpl(HttpClient httpClient, IdCardIndexerSettings idCardIndexerSettings,
-			IdCardBiobankMapper idCardBiobankMapper)
+	protected AbstractIdCardClient(HttpClient httpClient, IdCardIndexerSettings idCardIndexerSettings,
+			IdCardEntityMapper<E> idCardBiobankMapper)
 	{
 		this.httpClient = requireNonNull(httpClient);
 		this.idCardIndexerSettings = requireNonNull(idCardIndexerSettings);
-		this.idCardBiobankMapper = requireNonNull(idCardBiobankMapper);
+		this.idCardEntityMapper = requireNonNull(idCardBiobankMapper);
 	}
 
+        abstract protected String getResourceURI(String id);
+        abstract protected String getCollectionSelectionURI(Iterable<String> ids);
+        abstract protected String getCollectionURI();
+
 	@Override
-	public Entity getIdCardBiobank(String id)
+	public Entity getIdCardEntity(String id)
 	{
-		return getIdCardBiobank(id, idCardIndexerSettings.getApiTimeout());
+		return getIdCardEntity(id, idCardIndexerSettings.getApiTimeout());
 	}
 
 	@Override
-	public Entity getIdCardBiobank(String id, long timeout)
+	public Entity getIdCardEntity(String id, long timeout)
 	{
 		// Construct uri
-		StringBuilder uriBuilder = new StringBuilder().append(idCardIndexerSettings.getApiBaseUri()).append('/')
-				.append(idCardIndexerSettings.getBiobankResource()).append('/').append(id);
+		String uriBuilder = getResourceURI(id);
 
-		return getIdCardResource(uriBuilder.toString(), new JsonResponseHandler<IdCardBiobank>()
+		return getIdCardResource(uriBuilder, new JsonResponseHandler<IdCardEntity>()
 		{
 			@Override
-			public IdCardBiobank deserialize(JsonReader jsonReader) throws IOException
+			public IdCardEntity deserialize(JsonReader jsonReader) throws IOException
 			{
-				return idCardBiobankMapper.toIdCardBiobank(jsonReader);
+				return idCardEntityMapper.toIdCardBiobank(jsonReader);
 			}
 		}, timeout);
 	}
 
 	@Override
-	public Iterable<Entity> getIdCardBiobanks(Iterable<String> ids)
+	public Iterable<Entity> getIdCardEntities(Iterable<String> ids)
 	{
-		return getIdCardBiobanks(ids, idCardIndexerSettings.getApiTimeout());
+		return getIdCardEntities(ids, idCardIndexerSettings.getApiTimeout());
 	}
 
 	@Override
-	public Iterable<Entity> getIdCardBiobanks(Iterable<String> ids, long timeout)
+	public Iterable<Entity> getIdCardEntities(Iterable<String> ids, long timeout)
 	{
-		String value = StreamSupport.stream(ids.spliterator(), false).collect(Collectors.joining(",", "[", "]"));
-		try
-		{
-			value = URLEncoder.encode(value, UTF_8.name());
-		}
-		catch (UnsupportedEncodingException e1)
-		{
-			throw new RuntimeException(e1);
-		}
-		StringBuilder uriBuilder = new StringBuilder().append(idCardIndexerSettings.getApiBaseUri()).append('/')
-				.append(idCardIndexerSettings.getBiobankCollectionSelectionResource()).append('/').append(value);
+		String uriBuilder = getCollectionSelectionURI(ids);
 
-		return getIdCardResource(uriBuilder.toString(), new JsonResponseHandler<Iterable<Entity>>()
+		return getIdCardResource(uriBuilder, new JsonResponseHandler<Iterable<Entity>>()
 		{
 			@Override
 			public Iterable<Entity> deserialize(JsonReader jsonReader) throws IOException
 			{
-				return idCardBiobankMapper.toIdCardBiobanks(jsonReader);
+				return idCardEntityMapper.toIdCardBiobanks(jsonReader);
 			}
 		}, timeout);
 	}
@@ -132,31 +118,30 @@ public class IdCardClientImpl implements IdCardClient
 	}
 
 	@Override
-	public Iterable<Entity> getIdCardBiobanks()
+	public Iterable<Entity> getIdCardEntities()
 	{
-		return getIdCardBiobanks(idCardIndexerSettings.getApiTimeout());
+		return getIdCardEntities(idCardIndexerSettings.getApiTimeout());
 	}
 
 	@Override
-	public Iterable<Entity> getIdCardBiobanks(long timeout)
+	public Iterable<Entity> getIdCardEntities(long timeout)
 	{
 		// Construct uri
-		StringBuilder uriBuilder = new StringBuilder().append(idCardIndexerSettings.getApiBaseUri()).append('/')
-				.append(idCardIndexerSettings.getBiobankCollectionResource());
+		String uriBuilder = getCollectionURI();
 
 		// Retrieve biobank ids
-		Iterable<IdCardOrganization> idCardOrganizations = getIdCardResource(uriBuilder.toString(),
+		Iterable<IdCardOrganization> idCardOrganizations = getIdCardResource(uriBuilder,
 				new JsonResponseHandler<Iterable<IdCardOrganization>>()
 				{
 					@Override
 					public Iterable<IdCardOrganization> deserialize(JsonReader jsonReader) throws IOException
 					{
-						return idCardBiobankMapper.toIdCardOrganizations(jsonReader);
+						return idCardEntityMapper.toIdCardOrganizations(jsonReader);
 					}
 				}, timeout);
 
 		// Retrieve biobanks
-		return this.getIdCardBiobanks(new Iterable<String>()
+		return this.getIdCardEntities(new Iterable<String>()
 		{
 			@Override
 			public Iterator<String> iterator()
@@ -184,14 +169,8 @@ public class IdCardClientImpl implements IdCardClient
 				throw new ClientProtocolException("Response contains no content");
 			}
 
-			JsonReader jsonReader = new JsonReader(new InputStreamReader(entity.getContent(), UTF_8));
-			try
-			{
+			try (JsonReader jsonReader = new JsonReader(new InputStreamReader(entity.getContent(), UTF_8))) {
 				return deserialize(jsonReader);
-			}
-			finally
-			{
-				jsonReader.close();
 			}
 		}
 

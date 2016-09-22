@@ -2,8 +2,9 @@ package org.molgenis.data.idcard.indexer;
 
 import static java.util.Objects.requireNonNull;
 import static org.molgenis.data.idcard.indexer.IdCardIndexerController.URI;
-
 import org.molgenis.data.idcard.model.IdCardBiobank;
+import org.molgenis.data.idcard.model.IdCardRegistry;
+
 import org.molgenis.ui.MolgenisPluginController;
 import org.molgenis.util.ErrorMessageResponse;
 import org.molgenis.util.ErrorMessageResponse.ErrorMessage;
@@ -24,90 +25,88 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @Controller
-@RequestMapping(URI)
-public class IdCardIndexerController extends MolgenisPluginController
-{
-	private static final Logger LOG = LoggerFactory.getLogger(IdCardIndexerController.class);
+@RequestMapping(IdCardIndexerController.URI)
+public class IdCardIndexerController extends MolgenisPluginController {
 
-	public static final String ID = "idcardindexer";
-	public static final String URI = MolgenisPluginController.PLUGIN_URI_PREFIX + ID;
+    private static final Logger LOG = LoggerFactory.getLogger(IdCardIndexerController.class);
 
-	private final IdCardIndexerService idCardIndexerService;
+    public static final String ID = "idcardindexer";
+    public static final String URI = MolgenisPluginController.PLUGIN_URI_PREFIX + ID;
 
-	@Autowired
-	public IdCardIndexerController(IdCardIndexerService idCardIndexerService)
-	{
-		super(URI);
-		this.idCardIndexerService = requireNonNull(idCardIndexerService);
-	}
+    private final IdCardBiobankIndexerService biobankIndexerService;
+    private final IdCardRegistryIndexerService registryIndexerService;
 
-	@RequestMapping(method = RequestMethod.GET)
-	@PreAuthorize("hasAnyRole('ROLE_SU, ROLE_ENTITY_READ_IDCARDINDEXER')")
-	public String init(Model model) throws Exception
-	{
-		model.addAttribute("id_card_biobank_registry_entity_name", IdCardBiobank.ENTITY_NAME);
-		return "view-idcardbiobankindexer";
-	}
+    @Autowired
+    public IdCardIndexerController(IdCardBiobankIndexerService biobankIndexerService, IdCardRegistryIndexerService registryIndexerService) {
+        super(URI);
+        this.biobankIndexerService = requireNonNull(biobankIndexerService);
+        this.registryIndexerService = requireNonNull(registryIndexerService);
+    }
 
-	@RequestMapping(method = RequestMethod.POST, value = "/reindex")
-	@PreAuthorize("hasAnyRole('ROLE_SU, ROLE_ENTITY_WRITE_IDCARDINDEXER')")
-	@ResponseBody
-	public IndexRebuildStatus scheduleIndexRebuild(Model model) throws Exception
-	{
-		TriggerKey triggerKey = idCardIndexerService.scheduleIndexRebuild();
-		TriggerState triggerStatus = idCardIndexerService.getIndexRebuildStatus(triggerKey);
-		return new IndexRebuildStatus(triggerKey, triggerStatus);
-	}
+    @RequestMapping(method = RequestMethod.GET)
+    @PreAuthorize("hasAnyRole('ROLE_SU, ROLE_ENTITY_READ_IDCARDINDEXER')")
+    public String init(Model model) throws Exception {
+        model.addAttribute("id_card_registry_entity_name", IdCardRegistry.ENTITY_NAME);
+        model.addAttribute("id_card_biobank_entity_name", IdCardBiobank.ENTITY_NAME);
+        return "view-idcardbiobankindexer";
+    }
 
-	@RequestMapping(method = RequestMethod.GET, value = "/status/{triggerGroup}/{triggerName}")
-	@PreAuthorize("hasAnyRole('ROLE_SU, ROLE_ENTITY_READ_IDCARDINDEXER')")
-	@ResponseBody
-	public IndexRebuildStatus getIndexRebuildStatus(@PathVariable String triggerGroup, @PathVariable String triggerName)
-			throws Exception
-	{
-		TriggerKey triggerKey = new TriggerKey(triggerName, triggerGroup);
-		TriggerState triggerStatus = idCardIndexerService.getIndexRebuildStatus(triggerKey);
-		return new IndexRebuildStatus(triggerKey, triggerStatus);
-	}
+    @RequestMapping(method = RequestMethod.POST, value = "/reindex")
+    @PreAuthorize("hasAnyRole('ROLE_SU, ROLE_ENTITY_WRITE_IDCARDINDEXER')")
+    @ResponseBody
+    public IndexRebuildStatus scheduleIndexRebuild(Model model) throws Exception {
+        TriggerKey biobankKey = biobankIndexerService.scheduleIndexRebuild();
+        TriggerState biobankStatus = biobankIndexerService.getIndexRebuildStatus(biobankKey);
+        TriggerKey registryKey = registryIndexerService.scheduleIndexRebuild();
+        TriggerState registryStatus = registryIndexerService.getIndexRebuildStatus(registryKey);
+        return new IndexRebuildStatus(biobankKey, biobankStatus);
+    }
 
-	@ExceptionHandler(value = Throwable.class)
-	@ResponseBody
-	@ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-	public ErrorMessageResponse handleThrowable(Throwable t)
-	{
-		LOG.error("", t);
-		return new ErrorMessageResponse(new ErrorMessage(t.getMessage()));
-	}
+    @RequestMapping(method = RequestMethod.GET, value = "/status/{triggerGroup}/{triggerName}")
+    @PreAuthorize("hasAnyRole('ROLE_SU, ROLE_ENTITY_READ_IDCARDINDEXER')")
+    @ResponseBody
+    public IndexRebuildStatus getIndexRebuildStatus(@PathVariable String triggerGroup, @PathVariable String triggerName)
+            throws Exception {
+        TriggerKey biobankKey = new TriggerKey(triggerName, triggerGroup);
+        TriggerState biobankStatus = biobankIndexerService.getIndexRebuildStatus(biobankKey);
+        TriggerKey registryKey = new TriggerKey(triggerName, triggerGroup);
+        TriggerState registryStatus = registryIndexerService.getIndexRebuildStatus(registryKey);
+        return new IndexRebuildStatus(biobankKey, biobankStatus);
+    }
 
-	private static class IndexRebuildStatus
-	{
-		private final String triggerName;
-		private final String triggerGroup;
-		private final String triggerStatus;
+    @ExceptionHandler(value = Throwable.class)
+    @ResponseBody
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorMessageResponse handleThrowable(Throwable t) {
+        LOG.error("", t);
+        return new ErrorMessageResponse(new ErrorMessage(t.getMessage()));
+    }
 
-		public IndexRebuildStatus(TriggerKey triggerKey, TriggerState triggerStatus)
-		{
-			this.triggerName = requireNonNull(triggerKey).getName();
-			this.triggerGroup = requireNonNull(triggerKey).getGroup();
-			this.triggerStatus = requireNonNull(triggerStatus).toString();
-		}
+    private static class IndexRebuildStatus {
 
-		@SuppressWarnings("unused")
-		public String getTriggerName()
-		{
-			return triggerName;
-		}
+        private final String triggerName;
+        private final String triggerGroup;
+        private final String triggerStatus;
 
-		@SuppressWarnings("unused")
-		public String getTriggerGroup()
-		{
-			return triggerGroup;
-		}
+        public IndexRebuildStatus(TriggerKey triggerKey, TriggerState triggerStatus) {
+            this.triggerName = requireNonNull(triggerKey).getName();
+            this.triggerGroup = requireNonNull(triggerKey).getGroup();
+            this.triggerStatus = requireNonNull(triggerStatus).toString();
+        }
 
-		@SuppressWarnings("unused")
-		public String getTriggerStatus()
-		{
-			return triggerStatus;
-		}
-	}
+        @SuppressWarnings("unused")
+        public String getTriggerName() {
+            return triggerName;
+        }
+
+        @SuppressWarnings("unused")
+        public String getTriggerGroup() {
+            return triggerGroup;
+        }
+
+        @SuppressWarnings("unused")
+        public String getTriggerStatus() {
+            return triggerStatus;
+        }
+    }
 }

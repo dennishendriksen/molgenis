@@ -12,10 +12,6 @@ public interface IdCardIndexerSettings
 
 	void setApiTimeout(long timeout);
 
-	String getBiobankResource();
-
-	void setBiobankResource(String idCardBiobankResource);
-
 	String getBiobankCollectionResource();
 
 	void setBiobankCollectionResource(String biobankCollectionResource);
@@ -24,13 +20,25 @@ public interface IdCardIndexerSettings
 
 	void setBiobankCollectionSelectionResource(String biobankCollectionSelectionResource);
 
-	boolean getBiobankIndexingEnabled();
+	String getOrganisationResource();
 
-	void setBiobankIndexingEnabled(boolean biobankIndexing);
+	void setOrganisationResource(String registryResource);
 
-	String getBiobankIndexingFrequency();
+	String getRegistryCollectionResource();
 
-	void setBiobankIndexingFrequency(String cronExpression);
+	void setRegistryCollectionResource(String registryCollectionResource);
+
+	String getRegistryCollectionSelectionResource();
+
+	void setRegistryCollectionSelectionResource(String registryCollectionSelectionResource);
+
+	boolean getIndexingEnabled();
+
+	void setIndexingEnabled(boolean biobankIndexing);
+
+	String getIndexingFrequency();
+
+	void setIndexingFrequency(String cronExpression);
 
 	void addListener(SettingsEntityListener settingsEntityListener);
 

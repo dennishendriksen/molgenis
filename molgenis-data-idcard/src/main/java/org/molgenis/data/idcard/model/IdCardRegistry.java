@@ -12,13 +12,13 @@ import org.molgenis.data.EntityMetaData;
  *
  * @author <a href="mailto:david@allthingsdigital.nl">David van Enckevort</a>
  */
-public class IdCardBiobank extends IdCardEntity {
+public class IdCardRegistry extends IdCardEntity {
 
     private static final long serialVersionUID = 1L;
-    public static final String ENTITY_NAME = "rdconnect_bb";
+    public static final String ENTITY_NAME = "rdconnect_reg";
     public static final EntityMetaData META_DATA = new IdCardBiobankMetaData();
 
-    public IdCardBiobank(DataService dataService) {
+    public IdCardRegistry(final DataService dataService) {
         super(META_DATA, dataService);
     }
 

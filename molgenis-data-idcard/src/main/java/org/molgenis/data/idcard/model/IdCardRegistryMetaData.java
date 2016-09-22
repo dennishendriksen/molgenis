@@ -13,17 +13,17 @@ import org.springframework.stereotype.Component;
  * @author <a href="mailto:david@allthingsdigital.nl">David van Enckevort</a>
  */
 @Component
-public final class IdCardBiobankMetaData extends IdCardEntityMetaData<IdCardBiobank> {
+public final class IdCardRegistryMetaData extends IdCardEntityMetaData<IdCardRegistry> {
 
-    public IdCardBiobankMetaData() {
-        super(IdCardBiobank.ENTITY_NAME, IdCardBiobank.class);
-        setDescription("Biobank data from ID-Card");
-        setLabel("Biobanks");
+    public IdCardRegistryMetaData() {
+        super(IdCardRegistry.ENTITY_NAME, IdCardRegistry.class);
+        setDescription("Registry data from ID-Card");
+        setLabel("Registries");
     }
 
     @Override
     protected String getBackendName() {
-        return IdCardBiobankRepositoryCollection.BASE_NAME + IdCardBiobank.ENTITY_NAME;
+        return IdCardBiobankRepositoryCollection.BASE_NAME + IdCardRegistry.ENTITY_NAME;
     }
 
 }

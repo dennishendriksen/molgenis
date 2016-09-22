@@ -1,8 +1,6 @@
 package org.molgenis.data.idcard.indexer;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
-import static org.molgenis.data.idcard.indexer.IdCardIndexerJob.JOB_USERNAME;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -30,22 +28,21 @@ import org.quartz.impl.triggers.CronTriggerImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.stereotype.Service;
 
 import com.google.common.io.BaseEncoding;
+import org.molgenis.data.idcard.IdCardRepository;
+import org.molgenis.data.idcard.model.IdCardEntity;
+import static java.util.Objects.requireNonNull;
 
-@Service
-public class IdCardIndexerServiceImpl
+abstract public class AbstractIdCardIndexerService<E extends IdCardEntity, R extends IdCardRepository<E>, J extends IdCardIndexerJob<E, R>>
 		implements IdCardIndexerService, DisposableBean, ApplicationListener<ContextRefreshedEvent>
 {
-	private static final Logger LOG = LoggerFactory.getLogger(IdCardIndexerServiceImpl.class);
+	private static final Logger LOG = LoggerFactory.getLogger(AbstractIdCardIndexerService.class);
 
 	private static final String TRIGGER_GROUP = "idcard";
 	private static final String JOB_GROUP = "idcard";
-	private static final String INDEX_REBUILD_JOB_KEY = "indexRebuild";
 
 	private final DataService dataService;
 	private final IdCardIndexerSettings idCardIndexerSettings;
@@ -59,8 +56,11 @@ public class IdCardIndexerServiceImpl
 	 */
 	private final String triggerNameScheduled;
 
-	@Autowired
-	public IdCardIndexerServiceImpl(DataService dataService, IdCardIndexerSettings idCardBiobankIndexerSettings,
+        abstract protected Class<J> getIdCardIndexerJob();
+        abstract protected String getJobKey();
+        abstract protected String getJobName();
+
+	protected AbstractIdCardIndexerService(DataService dataService, IdCardIndexerSettings idCardBiobankIndexerSettings,
 			Scheduler scheduler)
 	{
 		this.dataService = requireNonNull(dataService);
@@ -107,7 +107,7 @@ public class IdCardIndexerServiceImpl
 		if (!scheduler.checkExists(triggerKey))
 		{
 			TriggerBuilder<?> triggerBuilder = TriggerBuilder.newTrigger().withIdentity(triggerKey)
-					.usingJobData(JOB_USERNAME, SecurityUtils.getCurrentUsername()).startNow();
+					.usingJobData(getJobName(), SecurityUtils.getCurrentUsername()).startNow();
 			scheduleIndexRebuildJob(triggerBuilder);
 		}
 		else
@@ -160,7 +160,7 @@ public class IdCardIndexerServiceImpl
 
 	private JobKey getIndexRebuildJobKey()
 	{
-		return new JobKey(INDEX_REBUILD_JOB_KEY, JOB_GROUP);
+		return new JobKey(getJobKey(), JOB_GROUP);
 	}
 
 	private JobKey scheduleIndexRebuildJob(TriggerBuilder<?> triggerBuilder) throws SchedulerException
@@ -169,7 +169,7 @@ public class IdCardIndexerServiceImpl
 		JobDetail jobDetail = scheduler.getJobDetail(jobKey);
 		if (jobDetail == null)
 		{
-			jobDetail = JobBuilder.newJob(IdCardIndexerJob.class).withIdentity(jobKey).build();
+			jobDetail = JobBuilder.newJob(getIdCardIndexerJob()).withIdentity(jobKey).build();
 			scheduler.scheduleJob(jobDetail, triggerBuilder.build());
 		}
 		else
@@ -183,13 +183,13 @@ public class IdCardIndexerServiceImpl
 	private void updateIndexerScheduler(boolean initScheduler) throws SchedulerException
 	{
 		JobKey jobKey = getIndexRebuildJobKey();
-		if (idCardIndexerSettings.getBiobankIndexingEnabled())
+		if (idCardIndexerSettings.getIndexingEnabled())
 		{
-			String biobankIndexingFrequency = idCardIndexerSettings.getBiobankIndexingFrequency();
-			TriggerBuilder<?> triggerBuilder = createCronTrigger(biobankIndexingFrequency);
+			String indexingFrequency = idCardIndexerSettings.getIndexingFrequency();
+			TriggerBuilder<?> triggerBuilder = createCronTrigger(indexingFrequency);
 			if (!scheduler.checkExists(jobKey))
 			{
-				LOG.info("Scheduling index rebuild job with cron [{}]", biobankIndexingFrequency);
+				LOG.info("Scheduling index rebuild job with cron [{}]", indexingFrequency);
 				scheduleIndexRebuildJob(triggerBuilder);
 
 				if (!initScheduler)
@@ -208,12 +208,12 @@ public class IdCardIndexerServiceImpl
 						&& !((CronTriggerImpl) trigger).getCronExpression()
 								.equals(((CronTriggerImpl) oldTrigger).getCronExpression()))
 				{
-					LOG.info("Rescheduling index rebuild job with cron [{}]", biobankIndexingFrequency);
+					LOG.info("Rescheduling index rebuild job with cron [{}]", indexingFrequency);
 					scheduler.rescheduleJob(triggerKey, trigger);
 
 					if (!initScheduler)
 					{
-						String updateMessage = String.format("Indexing schedule update [%s]", biobankIndexingFrequency);
+						String updateMessage = String.format("Indexing schedule update [%s]", indexingFrequency);
 						onIndexConfigurationUpdate(updateMessage);
 					}
 				}
