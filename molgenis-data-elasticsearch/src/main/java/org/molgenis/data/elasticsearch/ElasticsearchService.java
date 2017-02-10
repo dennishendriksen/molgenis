@@ -60,6 +60,7 @@ public class ElasticsearchService implements SearchService
 		ADD, UPDATE
 	}
 
+	private final Client client;
 	private final String indexName;
 	private final DataService dataService;
 	private final ElasticsearchEntityFactory elasticsearchEntityFactory;
@@ -72,6 +73,7 @@ public class ElasticsearchService implements SearchService
 	public ElasticsearchService(Client client, String indexName, DataService dataService,
 			ElasticsearchEntityFactory elasticsearchEntityFactory, DocumentIdGenerator documentIdGenerator)
 	{
+		this.client = client;
 		this.indexName = requireNonNull(indexName);
 		this.dataService = requireNonNull(dataService);
 		this.elasticsearchEntityFactory = requireNonNull(elasticsearchEntityFactory);
@@ -79,6 +81,11 @@ public class ElasticsearchService implements SearchService
 		this.elasticsearchFacade = new ElasticsearchUtils(client);
 		new ElasticsearchIndexCreator(client).createIndexIfNotExists(indexName);
 		this.searchRequestGenerator = new SearchRequestGenerator(documentIdGenerator);
+	}
+
+	public Client getClient()
+	{
+		return client;
 	}
 
 	private SearchResult search(SearchRequest request)
