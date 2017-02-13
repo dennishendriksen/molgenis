@@ -6,13 +6,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.validation.Valid;
 
 import static java.util.Objects.requireNonNull;
 import static org.molgenis.data.elasticsearch.admin.SearchController.URI;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 @Controller
 @RequestMapping(URI)
@@ -30,16 +31,23 @@ public class SearchController extends MolgenisPluginController
 		this.searchService = requireNonNull(searchService);
 	}
 
-	@RequestMapping(method = RequestMethod.GET)
+	@RequestMapping(method = GET)
 	public String init(Model model)
 	{
 		return "view-search";
 	}
 
-	@RequestMapping(method = RequestMethod.POST)
+	@RequestMapping(method = POST)
 	@ResponseBody
 	public SearchResponse search(@Valid @RequestBody SearchRequest searchRequest)
 	{
 		return searchService.search(searchRequest);
+	}
+
+	@RequestMapping(value = "/aggregate", method = POST)
+	@ResponseBody
+	public AggregationResponse aggregate(@Valid @RequestBody AggregateRequest aggregateRequest)
+	{
+		return searchService.aggregate(aggregateRequest);
 	}
 }

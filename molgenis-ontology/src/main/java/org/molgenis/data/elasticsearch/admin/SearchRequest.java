@@ -9,10 +9,12 @@ import javax.annotation.Nullable;
 @AutoGson(autoValueClass = AutoValue_SearchRequest.class)
 public abstract class SearchRequest
 {
-	static SearchRequest create(String query, Long from, Long size)
+	static SearchRequest create(String entityTypeId, String query, Long from, Long size)
 	{
-		return new AutoValue_SearchRequest(query, from, size);
+		return new AutoValue_SearchRequest(entityTypeId, query, from, size);
 	}
+
+	public abstract String entityTypeId();
 
 	public abstract String query();
 
