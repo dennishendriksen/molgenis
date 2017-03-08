@@ -10,6 +10,7 @@ import org.molgenis.data.RepositoryCapability;
 import org.molgenis.data.i18n.LanguageService;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.EntityType;
+import org.molgenis.data.meta.model.Package;
 import org.molgenis.data.support.Href;
 import org.molgenis.security.core.MolgenisPermissionService;
 import org.molgenis.security.core.Permission;
@@ -22,6 +23,7 @@ public class EntityTypeResponse
 	private final String hrefCollection;
 	private final String name;
 	private final String label;
+	private final Map<String, Object> package_;
 	private final String description;
 	private final Map<String, Object> attributes;
 	private final String labelAttribute;
@@ -68,6 +70,15 @@ public class EntityTypeResponse
 			this.description = meta.getDescription(languageService.getCurrentUserLanguageCode());
 		}
 		else this.description = null;
+
+		if (attributesSet == null || attributesSet.contains("package_".toLowerCase()))
+		{
+			this.package_ = toPackageResponse(meta.getPackage());
+		}
+		else
+		{
+			this.package_ = null;
+		}
 
 		if (attributesSet == null || attributesSet.contains("label".toLowerCase()))
 		{
@@ -139,6 +150,20 @@ public class EntityTypeResponse
 		this.writable =
 				permissionService.hasPermissionOnEntity(name, Permission.WRITE) && dataService.getCapabilities(name)
 						.contains(RepositoryCapability.WRITABLE);
+	}
+
+	private Map<String, Object> toPackageResponse(Package aPackage)
+	{
+		if (aPackage == null)
+		{
+			return null;
+		}
+
+		Map<String, Object> packageResponse = new LinkedHashMap<>();
+		packageResponse.put("id", aPackage.getId());
+		packageResponse.put("label", aPackage.getLabel());
+		packageResponse.put("parent", toPackageResponse(aPackage.getParent()));
+		return packageResponse;
 	}
 
 	public String getHref()

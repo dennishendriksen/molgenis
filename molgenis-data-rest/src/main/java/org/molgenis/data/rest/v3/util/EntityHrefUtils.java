@@ -19,6 +19,6 @@ public class EntityHrefUtils
 	public static URI getEntityTypeHref(EntityType entityType)
 	{
 		return ServletUriComponentsBuilder.fromCurrentContextPath().path(RestControllerV3.URI)
-				.path(entityType.getFullyQualifiedName()).build().toUri();
+				.pathSegment(entityType.getFullyQualifiedName()).build().toUri();
 	}
 }
