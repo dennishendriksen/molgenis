@@ -99,7 +99,8 @@ public class EntityTypeResponse
 					{
 						Set<String> subAttributesSet = attributeExpandsSet.get("attributes".toLowerCase());
 						this.attributes.put(attr.getName(), new AttributeResponse(name, meta, attr, subAttributesSet,
-								Collections.singletonMap("refEntity".toLowerCase(), Sets.newHashSet("idattribute")),
+								Collections.singletonMap("refEntity".toLowerCase(),
+										Sets.newHashSet("idattribute", "labelattribute")),
 								permissionService, dataService, languageService));
 					}
 					else
