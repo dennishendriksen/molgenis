@@ -22,6 +22,67 @@ securityDefinitions:
     in: header
     name: x-molgenis-token
 paths:
+  /api/v3/{entity_type_id}:
+    get:
+      tags:
+        - REST API v3
+      summary: Retrieves an entity collection
+      parameters:
+        - name: entity_type_id
+          in: path
+          type: string
+          description: Entity type identifier
+          required: true
+          enum:
+<#list entityTypes as entityType>
+            - ${entityType}
+</#list>
+      produces:
+        - application/json
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        403:
+          description: Forbidden
+        404:
+          description: Not Found
+        500:
+          description: Internal Server Error
+  /api/v3/{entity_type_id}/{entity_id}:
+    get:
+      tags:
+        - REST API v3
+      summary: Retrieves an entity
+      parameters:
+        - name: entity_type_id
+          in: path
+          type: string
+          description: Entity type identifier
+          required: true
+          enum:
+<#list entityTypes as entityType>
+            - ${entityType}
+</#list>
+        - name: entity_id
+          in: path
+          type: string
+          description: Entity identifier
+          required: true
+      produces:
+        - application/json
+      responses:
+        200:
+          description: OK
+        400:
+          description: Bad Request
+        403:
+          description: Forbidden
+        404:
+          description: Not Found
+        500:
+          description: Internal Server Error
   /api/searchall/search:
     get:
       tags:
