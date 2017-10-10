@@ -8,7 +8,7 @@ import org.molgenis.data.TestHarnessConfig;
 import org.molgenis.data.config.EntityBaseTestConfig;
 import org.molgenis.data.convert.StringToDateConverter;
 import org.molgenis.data.convert.StringToDateTimeConverter;
-import org.molgenis.data.elasticsearch.client.ElasticsearchConfig;
+import org.molgenis.data.elasticsearch.ElasticSearchConfig;
 import org.molgenis.data.jobs.JobConfig;
 import org.molgenis.data.jobs.JobExecutionConfig;
 import org.molgenis.data.jobs.JobFactoryRegistrar;
@@ -75,9 +75,9 @@ import static org.molgenis.security.core.runas.SystemSecurityToken.ROLE_SYSTEM;
 		"org.molgenis.security.owned", "org.molgenis.security.user", "org.molgenis.data.validation",
 		"org.molgenis.data.transaction", "org.molgenis.data.importer.emx", "org.molgenis.data.importer.config",
 		"org.molgenis.data.excel", "org.molgenis.util", "org.molgenis.settings", "org.molgenis.data.settings" })
-@Import({ TestHarnessConfig.class, EntityBaseTestConfig.class, DatabaseConfig.class, ElasticsearchConfig.class,
-		PostgreSqlConfiguration.class, RunAsSystemAspect.class, IdGeneratorImpl.class,
-		ExpressionValidator.class, PlatformConfig.class, OntologyTestConfig.class, JobConfig.class,
+@Import({ TestHarnessConfig.class, EntityBaseTestConfig.class, DatabaseConfig.class, ElasticSearchConfig.class,
+		PostgreSqlConfiguration.class, RunAsSystemAspect.class, IdGeneratorImpl.class, ExpressionValidator.class,
+		PlatformConfig.class, OntologyTestConfig.class, JobConfig.class,
 		org.molgenis.data.RepositoryCollectionRegistry.class,
 		org.molgenis.data.RepositoryCollectionDecoratorFactoryImpl.class,
 		org.molgenis.data.RepositoryCollectionBootstrapper.class, org.molgenis.data.EntityFactoryRegistrar.class,

@@ -1,4 +1,4 @@
-package org.molgenis.ontology.controller;
+package org.molgenis.ontology.sorta.controller;
 
 import com.google.common.base.Function;
 import com.google.common.collect.FluentIterable;
@@ -37,13 +37,13 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static org.molgenis.ontology.controller.SortaServiceAnonymousController.URI;
+import static org.molgenis.ontology.sorta.controller.SortaAnonymousController.URI;
 import static org.molgenis.ontology.sorta.meta.OntologyTermHitMetaData.COMBINED_SCORE;
 import static org.molgenis.ontology.sorta.meta.OntologyTermHitMetaData.SCORE;
 
 @Controller
 @RequestMapping(URI)
-public class SortaServiceAnonymousController extends PluginController
+public class SortaAnonymousController extends PluginController
 {
 	@Autowired
 	private SortaService sortaService;
@@ -64,7 +64,7 @@ public class SortaServiceAnonymousController extends PluginController
 	public static final String ID = "sorta_anonymous";
 	public static final String URI = PluginController.PLUGIN_URI_PREFIX + ID;
 
-	public SortaServiceAnonymousController()
+	public SortaAnonymousController()
 	{
 		super(URI);
 	}

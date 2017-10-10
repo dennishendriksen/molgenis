@@ -1,4 +1,4 @@
-package org.molgenis.ontology.controller;
+package org.molgenis.ontology.sorta.controller;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
@@ -72,16 +72,16 @@ import static org.molgenis.data.QueryRule.Operator.*;
 import static org.molgenis.data.Sort.Direction.DESC;
 import static org.molgenis.data.meta.AttributeType.XREF;
 import static org.molgenis.data.meta.model.EntityType.AttributeCopyMode.DEEP_COPY_ATTRS;
-import static org.molgenis.ontology.controller.SortaServiceController.URI;
+import static org.molgenis.ontology.sorta.controller.SortaController.URI;
 import static org.molgenis.ontology.sorta.meta.MatchingTaskContentMetaData.*;
 import static org.molgenis.ontology.sorta.meta.SortaJobExecutionMetaData.SORTA_JOB_EXECUTION;
 import static org.molgenis.ontology.utils.SortaServiceUtil.getEntityAsMap;
 
 @Controller
 @RequestMapping(URI)
-public class SortaServiceController extends PluginController
+public class SortaController extends PluginController
 {
-	private static final Logger LOG = LoggerFactory.getLogger(SortaServiceController.class);
+	private static final Logger LOG = LoggerFactory.getLogger(SortaController.class);
 
 	public static final String ID = "sortaservice";
 	static final String URI = PluginController.PLUGIN_URI_PREFIX + ID;
@@ -110,7 +110,7 @@ public class SortaServiceController extends PluginController
 	private final EntityTypeFactory entityTypeFactory;
 	private final AttributeFactory attrMetaFactory;
 
-	public SortaServiceController(OntologyService ontologyService, SortaService sortaService,
+	public SortaController(OntologyService ontologyService, SortaService sortaService,
 			SortaJobFactory sortaMatchJobFactory, ExecutorService taskExecutor, UserAccountService userAccountService,
 			FileStore fileStore, PermissionService permissionService, DataService dataService,
 			LanguageService languageService, MenuReaderService menuReaderService, IdGenerator idGenerator,
