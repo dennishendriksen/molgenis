@@ -9,17 +9,18 @@ import org.molgenis.data.meta.system.SystemPackageRegistrar;
 import org.molgenis.data.platform.bootstrap.SystemEntityTypeBootstrapper;
 import org.molgenis.data.postgresql.identifier.EntityTypeRegistryPopulator;
 import org.molgenis.data.transaction.TransactionManager;
+import org.molgenis.integrationtest.utils.config.SecurityITConfig;
 import org.molgenis.security.core.runas.RunAsSystemAspect;
+import org.molgenis.security.core.token.TokenService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.web.FilterChainProxy;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,13 +28,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.context.WebApplicationContext;
 import org.testng.annotations.BeforeMethod;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.molgenis.data.postgresql.PostgreSqlRepositoryCollection.POSTGRESQL;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
 
 @WebAppConfiguration
+@TestPropertySource("/conf/molgenis.properties")
 public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpringContextTests
-		implements ApplicationListener<ContextRefreshedEvent>
 {
 
 	private Logger LOG = LoggerFactory.getLogger(AbstractMolgenisIntegrationTests.class);
@@ -45,6 +48,8 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 
 	protected MockMvc mockMvc;
 
+	@Autowired
+	private TokenService tokenService;
 	@Autowired
 	private RepositoryCollectionBootstrapper repoCollectionBootstrapper;
 	@Autowired
@@ -65,25 +70,35 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 	@BeforeMethod
 	public void beforeMethod()
 	{
-		mockMvc = webAppContextSetup(context).addFilter(springSecurityFilterChain).alwaysDo(print()).build();
+
+		mockMvc = webAppContextSetup(context).addFilters(springSecurityFilterChain).alwaysDo(print()).build();
+
+		ContextRefreshedEvent event = mock(ContextRefreshedEvent.class);
+		when(event.getApplicationContext()).thenReturn(context);
+		onApplicationEvent(event);
+
+		beforeSpecificMethod();
+	}
+
+	/**
+	 * Use this method as a beforeMethod in the integration test
+	 */
+	public abstract void beforeSpecificMethod();
+
+	protected String getAdminToken()
+	{
+		return tokenService.generateAndStoreToken(SecurityITConfig.SUPERUSER_NAME, "REST token");
 	}
 
 	@Bean
-	public static PropertySourcesPlaceholderConfigurer properties()
+	public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer()
 	{
-		PropertySourcesPlaceholderConfigurer pspc = new PropertySourcesPlaceholderConfigurer();
-		Resource[] resources = new Resource[] { new ClassPathResource("/conf/molgenis.properties") };
-		pspc.setLocations(resources);
-		pspc.setFileEncoding("UTF-8");
-		pspc.setIgnoreUnresolvablePlaceholders(true);
-		pspc.setIgnoreResourceNotFound(true);
-		pspc.setNullValue("@null");
-		return pspc;
+		return new PropertySourcesPlaceholderConfigurer();
 	}
 
 	// FIXME The bootstrapping of the data platform should be delegated to a specific bootstrapper so that updates
 	// are reflected in the test
-	@Override
+	@WithMockUser
 	public void onApplicationEvent(ContextRefreshedEvent event)
 	{
 		TransactionTemplate transactionTemplate = new TransactionTemplate();

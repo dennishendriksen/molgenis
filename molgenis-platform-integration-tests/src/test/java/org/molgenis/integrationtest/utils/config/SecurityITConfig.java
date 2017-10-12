@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 @Import({ PermissionServiceImpl.class, DataServiceTokenService.class, TokenGenerator.class, TokenFactory.class,
 		TokenMetaData.class, SecurityPackage.class, UserMetaData.class, OwnedEntityType.class,
 		UserAccountServiceImpl.class, UserServiceImpl.class, BCryptPasswordEncoder.class,
-		PermissionSystemServiceImpl.class, UserAuthorityFactory.class, UserAuthorityMetaData.class,
+		PermissionSystemServiceImpl.class, UserAuthorityFactory.class, UserAuthorityMetaData.class, UserFactory.class,
 		AuthorityMetaData.class, AggregationTestConfig.class })
 public class SecurityITConfig
 {
