@@ -38,6 +38,7 @@ public class SecurityITConfig
 
 	public final static String SUPERUSER_NAME = "admin";
 	public final static String SUPERUSER_ROLE = "SU";
+	public final static String TOKEN_DESCRIPTION = "REST token";
 
 	@Bean
 	public RoleHierarchy roleHierarchy()

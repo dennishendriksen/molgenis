@@ -88,8 +88,8 @@ public class SortaController extends PluginController
 
 	private static final int BATCH_SIZE = 1000;
 	private static final String MODEL_KEY_MESSAGE = "message";
-	private static final String MATCH_VIEW_NAME = "sorta-match-view";
-	private static final double DEFAULT_THRESHOLD = 100.0;
+	public static final String MATCH_VIEW_NAME = "sorta-match-view";
+	public static final double DEFAULT_THRESHOLD = 100.0;
 
 	private final OntologyService ontologyService;
 	private final SortaService sortaService;
