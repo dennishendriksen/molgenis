@@ -4,6 +4,7 @@ import org.molgenis.integrationtest.utils.config.BootstrapTestUtils;
 import org.molgenis.integrationtest.utils.config.SecurityITConfig;
 import org.molgenis.security.core.token.TokenService;
 import org.molgenis.security.token.DataServiceTokenService;
+import org.molgenis.util.ApplicationContextProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,7 +47,6 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 	{
 		initMocks(this);
 		mockMvc = webAppContextSetup(context).apply(springSecurity()).alwaysDo(print()).build();
-
 		ContextRefreshedEvent event = mock(ContextRefreshedEvent.class);
 		when(event.getApplicationContext()).thenReturn(context);
 
@@ -71,6 +71,14 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 	public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer()
 	{
 		return new PropertySourcesPlaceholderConfigurer();
+	}
+
+	@Bean
+	public ApplicationContextProvider applicationContextProvider()
+	{
+		ApplicationContextProvider provider = new ApplicationContextProvider();
+		provider.setApplicationContext(context);
+		return provider;
 	}
 
 	@Configuration

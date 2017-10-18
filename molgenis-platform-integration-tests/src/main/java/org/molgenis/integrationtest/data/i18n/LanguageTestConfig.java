@@ -1,4 +1,4 @@
-package org.molgenis.integrationtest.data;
+package org.molgenis.integrationtest.data.i18n;
 
 import org.molgenis.data.i18n.LanguageService;
 import org.molgenis.data.i18n.LocalizationService;

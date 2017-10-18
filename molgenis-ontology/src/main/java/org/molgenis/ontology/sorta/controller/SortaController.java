@@ -47,10 +47,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Part;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -353,8 +353,9 @@ public class SortaController extends PluginController
 
 	@PostMapping(value = "/match/upload", headers = "Content-Type=multipart/form-data")
 	public String upload(@RequestParam(value = "taskName") String jobName,
-			@RequestParam(value = "selectOntologies") String ontologyIri, @RequestParam(value = "file") Part file,
-			Model model, HttpServletRequest httpServletRequest) throws IOException
+			@RequestParam(value = "selectOntologies") String ontologyIri,
+			@RequestParam(value = "file") MultipartFile file, Model model, HttpServletRequest httpServletRequest)
+			throws IOException
 	{
 		if (isEmpty(ontologyIri) || file == null) return init(model);
 		InputStream inputStream = file.getInputStream();
