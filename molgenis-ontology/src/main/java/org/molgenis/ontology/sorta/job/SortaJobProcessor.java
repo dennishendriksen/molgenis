@@ -95,7 +95,7 @@ public class SortaJobProcessor
 				}
 				else
 				{
-					resultEntity.set(MatchingTaskContentMetaData.SCORE, 0);
+					resultEntity.set(MatchingTaskContentMetaData.SCORE, 0.0);
 				}
 
 				// Add entity in batch

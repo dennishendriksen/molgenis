@@ -84,7 +84,7 @@ public class SortaController extends PluginController
 	private static final Logger LOG = LoggerFactory.getLogger(SortaController.class);
 
 	public static final String ID = "sortaservice";
-	static final String URI = PluginController.PLUGIN_URI_PREFIX + ID;
+	public static final String URI = PluginController.PLUGIN_URI_PREFIX + ID;
 
 	private static final int BATCH_SIZE = 1000;
 	private static final String MODEL_KEY_MESSAGE = "message";

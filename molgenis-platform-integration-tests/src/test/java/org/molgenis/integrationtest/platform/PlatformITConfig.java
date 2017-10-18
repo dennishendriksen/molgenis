@@ -66,7 +66,7 @@ import static org.molgenis.security.core.runas.SystemSecurityToken.ROLE_SYSTEM;
 		"org.molgenis.data.meta.model", "org.molgenis.data.meta.util", "org.molgenis.data.system.model",
 		"org.molgenis.data.cache", "org.molgenis.data.i18n", "org.molgenis.data.postgresql", "org.molgenis.file.model",
 		"org.molgenis.security.owned", "org.molgenis.security.user", "org.molgenis.data.validation",
-		"org.molgenis.data.transaction", "org.molgenis.data.importer.emx", "org.molgenis.data.importer.config",
+		"org.molgenis.data.transaction", "org.molgenis.data.importer.emx", "org.molgenis.data.importer",
 		"org.molgenis.data.excel", "org.molgenis.util", "org.molgenis.settings", "org.molgenis.data.settings" })
 @Import({ TestHarnessConfig.class, EntityBaseTestConfig.class, DatabaseConfig.class, ElasticSearchConfig.class,
 		PostgreSqlConfiguration.class, RunAsSystemAspect.class, IdGeneratorImpl.class, ExpressionValidator.class,

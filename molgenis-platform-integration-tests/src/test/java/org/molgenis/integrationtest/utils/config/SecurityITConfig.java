@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyAuthoritiesMapper;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,7 +33,8 @@ import static org.mockito.Mockito.when;
 		TokenMetaData.class, SecurityPackage.class, UserMetaData.class, OwnedEntityType.class,
 		UserAccountServiceImpl.class, UserServiceImpl.class, BCryptPasswordEncoder.class,
 		PermissionSystemServiceImpl.class, UserAuthorityFactory.class, UserAuthorityMetaData.class, UserFactory.class,
-		AuthorityMetaData.class, AggregationTestConfig.class })
+		AuthorityMetaData.class, AggregationTestConfig.class, RoleHierarchyAuthoritiesMapper.class,
+		GroupAuthorityFactory.class, GroupAuthorityMetaData.class, GroupMetaData.class })
 public class SecurityITConfig
 {
 

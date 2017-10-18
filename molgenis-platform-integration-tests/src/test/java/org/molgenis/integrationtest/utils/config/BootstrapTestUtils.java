@@ -10,7 +10,6 @@ import org.molgenis.data.platform.bootstrap.SystemEntityTypeBootstrapper;
 import org.molgenis.data.postgresql.identifier.EntityTypeRegistryPopulator;
 import org.molgenis.data.settings.SettingsPopulator;
 import org.molgenis.data.transaction.TransactionManager;
-import org.molgenis.integrationtest.utils.AbstractMolgenisIntegrationTests;
 import org.molgenis.security.core.runas.RunAsSystemAspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +24,7 @@ import static org.molgenis.data.postgresql.PostgreSqlRepositoryCollection.POSTGR
 public class BootstrapTestUtils
 {
 
-	private Logger LOG = LoggerFactory.getLogger(AbstractMolgenisIntegrationTests.class);
+	private Logger LOG = LoggerFactory.getLogger(BootstrapTestUtils.class);
 
 	@Autowired
 	private RepositoryCollectionBootstrapper repoCollectionBootstrapper;
@@ -85,6 +84,11 @@ public class BootstrapTestUtils
 					LOG.trace("Registering job factories ...");
 					jobFactoryRegistrar.register(event);
 					LOG.trace("Registered job factories");
+
+					// Settings to database instead of using TestAppSettings
+					LOG.trace("Populating settings entities ...");
+					settingsPopulator.initialize(event);
+					LOG.trace("Populated settings entities");
 
 					LOG.trace("Populating settings entities ...");
 					settingsPopulator.initialize(event);

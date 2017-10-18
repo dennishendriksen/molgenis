@@ -10,7 +10,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.testng.AbstractTestNGSpringContextTests;
@@ -67,25 +66,18 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 		return tokenService.generateAndStoreToken(SecurityITConfig.SUPERUSER_NAME, SecurityITConfig.TOKEN_DESCRIPTION);
 	}
 
-	@Bean
-	public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer()
-	{
-		return new PropertySourcesPlaceholderConfigurer();
-	}
-
-	@Bean
-	public ApplicationContextProvider applicationContextProvider()
-	{
-		ApplicationContextProvider provider = new ApplicationContextProvider();
-		provider.setApplicationContext(context);
-		return provider;
-	}
-
+	/**
+	 * <p>The {@link ApplicationContextProvider} must be in this configuration because of the autowiring from context</p>
+	 */
 	@Configuration
 	@Import({ BootstrapTestUtils.class, DataServiceTokenService.class })
 	static class Config
 	{
-
+		@Bean
+		public ApplicationContextProvider applicationContextProvider()
+		{
+			return new ApplicationContextProvider();
+		}
 	}
 
 }

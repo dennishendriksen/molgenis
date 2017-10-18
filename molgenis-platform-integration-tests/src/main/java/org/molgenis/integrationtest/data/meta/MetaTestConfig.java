@@ -6,6 +6,7 @@ import org.molgenis.data.EntityFactoryRegistry;
 import org.molgenis.data.EntityManagerImpl;
 import org.molgenis.data.i18n.SystemEntityTypeI18nInitializer;
 import org.molgenis.data.listeners.EntityListenersService;
+import org.molgenis.data.meta.DefaultPackage;
 import org.molgenis.data.meta.EntityTypeDependencyResolver;
 import org.molgenis.data.meta.MetaDataService;
 import org.molgenis.data.meta.MetaDataServiceImpl;
@@ -28,7 +29,7 @@ import javax.annotation.PostConstruct;
 		AttributeFactory.class, SystemEntityTypeRegistryImpl.class, EntityTypeDependencyResolver.class,
 		SystemPackageRegistry.class, PackagePersister.class, SystemEntityTypePersister.class,
 		SystemEntityTypeRegistrar.class, SystemPackageRegistrar.class, EntityFactoryRegistrar.class,
-		SystemEntityTypeInitializer.class, SystemEntityTypeI18nInitializer.class })
+		SystemEntityTypeInitializer.class, SystemEntityTypeI18nInitializer.class, DefaultPackage.class })
 @ComponentScan("org.molgenis.data.meta.model")
 public class MetaTestConfig
 {
