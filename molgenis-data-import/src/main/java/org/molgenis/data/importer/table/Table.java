@@ -13,7 +13,7 @@ public interface Table
 	/**
 	 * @throws java.io.UncheckedIOException when an I/O exception occurred
 	 */
-	List<String> getHeaders();
+	List<String> getHeaders(); // TODO return List<Header> instead of List<String> with Header.type and Header.id
 
 	/**
 	 * @throws java.io.UncheckedIOException when an I/O exception occurred
