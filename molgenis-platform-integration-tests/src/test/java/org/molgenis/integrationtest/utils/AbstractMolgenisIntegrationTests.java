@@ -1,6 +1,5 @@
 package org.molgenis.integrationtest.utils;
 
-import org.molgenis.integrationtest.utils.config.BootstrapTestUtils;
 import org.molgenis.integrationtest.utils.config.SecurityITConfig;
 import org.molgenis.integrationtest.utils.config.WebAppITConfig;
 import org.molgenis.security.core.token.TokenService;
@@ -42,6 +41,8 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 	@Autowired
 	private TokenService tokenService;
 
+	private String adminToken;
+
 	@BeforeMethod
 	public void beforeMethodSetup()
 	{
@@ -68,14 +69,19 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 
 	protected String getAdminToken()
 	{
-		return tokenService.generateAndStoreToken(SecurityITConfig.SUPERUSER_NAME, SecurityITConfig.TOKEN_DESCRIPTION);
+		if (adminToken == null)
+		{
+			adminToken = tokenService.generateAndStoreToken(SecurityITConfig.SUPERUSER_NAME,
+					SecurityITConfig.TOKEN_DESCRIPTION);
+		}
+		return adminToken;
 	}
 
 	/**
 	 * <p>The {@link ApplicationContextProvider} must be in this configuration because of the autowiring from context</p>
 	 */
 	@Configuration
-	@Import({ BootstrapTestUtils.class, DataServiceTokenService.class, WebAppITConfig.class })
+	@Import({ BootstrapTestUtils.class, DataServiceTokenService.class, WebAppITConfig.class, SecurityITConfig.class })
 	static class Config
 	{
 		@Bean

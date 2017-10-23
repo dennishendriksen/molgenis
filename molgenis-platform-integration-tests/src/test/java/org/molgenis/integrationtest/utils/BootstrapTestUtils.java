@@ -1,4 +1,4 @@
-package org.molgenis.integrationtest.utils.config;
+package org.molgenis.integrationtest.utils;
 
 import org.molgenis.data.EntityFactoryRegistrar;
 import org.molgenis.data.RepositoryCollectionBootstrapper;

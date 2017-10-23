@@ -20,7 +20,7 @@ import org.molgenis.data.settings.AppSettings;
 import org.molgenis.data.transaction.TransactionManager;
 import org.molgenis.data.validation.ExpressionValidator;
 import org.molgenis.integrationtest.data.TestAppSettings;
-import org.molgenis.integrationtest.utils.config.BootstrapTestUtils;
+import org.molgenis.integrationtest.utils.BootstrapTestUtils;
 import org.molgenis.ontology.core.config.OntologyConfig;
 import org.molgenis.ontology.core.config.OntologyTestConfig;
 import org.molgenis.security.MolgenisRoleHierarchy;

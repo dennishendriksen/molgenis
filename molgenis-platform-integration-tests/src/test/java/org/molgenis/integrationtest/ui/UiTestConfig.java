@@ -4,16 +4,19 @@ import org.molgenis.data.settings.AppSettings;
 import org.molgenis.ui.menu.MenuReaderService;
 import org.molgenis.ui.menu.MenuReaderServiceImpl;
 import org.molgenis.ui.menumanager.MenuManagerServiceImpl;
-import org.molgenis.ui.style.StyleServiceImpl;
-import org.molgenis.ui.style.StyleSheetFactory;
-import org.molgenis.ui.style.StyleSheetMetadata;
+import org.molgenis.ui.style.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import java.io.IOException;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @Configuration
-@Import({ MenuManagerServiceImpl.class, StyleServiceImpl.class, StyleSheetFactory.class, StyleSheetMetadata.class })
+@Import({ MenuManagerServiceImpl.class, StyleSheetFactory.class, StyleSheetMetadata.class })
 public class UiTestConfig
 {
 
@@ -24,6 +27,28 @@ public class UiTestConfig
 	public MenuReaderService menuReaderService()
 	{
 		return new MenuReaderServiceImpl(appSettings);
+	}
+
+	@Bean
+	public StyleService styleService()
+	{
+		return mock(StyleService.class);
+	}
+
+	@Bean
+	public ThemeFingerprintRegistry themeFingerprintRegistry()
+	{
+
+		ThemeFingerprintRegistry themeFingerprintRegistry = mock(ThemeFingerprintRegistry.class);
+		try
+		{
+			when(themeFingerprintRegistry.getFingerprint("")).thenReturn("");
+		}
+		catch (IOException | MolgenisStyleException err)
+		{
+
+		}
+		return themeFingerprintRegistry;
 	}
 
 }
