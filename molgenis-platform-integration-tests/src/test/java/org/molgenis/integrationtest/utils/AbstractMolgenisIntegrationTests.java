@@ -21,6 +21,8 @@ import org.testng.annotations.BeforeMethod;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.molgenis.integrationtest.utils.config.SecurityITConfig.SUPERUSER_NAME;
+import static org.molgenis.integrationtest.utils.config.SecurityITConfig.TOKEN_DESCRIPTION;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup;
@@ -71,8 +73,7 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 	{
 		if (adminToken == null)
 		{
-			adminToken = tokenService.generateAndStoreToken(SecurityITConfig.SUPERUSER_NAME,
-					SecurityITConfig.TOKEN_DESCRIPTION);
+			adminToken = tokenService.generateAndStoreToken(SUPERUSER_NAME, TOKEN_DESCRIPTION);
 		}
 		return adminToken;
 	}

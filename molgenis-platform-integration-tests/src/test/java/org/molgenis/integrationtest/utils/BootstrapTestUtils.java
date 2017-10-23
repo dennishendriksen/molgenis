@@ -10,7 +10,6 @@ import org.molgenis.data.platform.bootstrap.SystemEntityTypeBootstrapper;
 import org.molgenis.data.postgresql.identifier.EntityTypeRegistryPopulator;
 import org.molgenis.data.settings.SettingsPopulator;
 import org.molgenis.data.transaction.TransactionManager;
-import org.molgenis.security.core.runas.RunAsSystemAspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.molgenis.data.postgresql.PostgreSqlRepositoryCollection.POSTGRESQL;
+import static org.molgenis.security.core.runas.RunAsSystemAspect.runAsSystem;
 
 @Component
 public class BootstrapTestUtils
@@ -53,7 +53,7 @@ public class BootstrapTestUtils
 		{
 			try
 			{
-				RunAsSystemAspect.runAsSystem(() ->
+				runAsSystem(() ->
 				{
 					LOG.info("Bootstrapping registries ...");
 					LOG.trace("Registering repository collections ...");

@@ -1,6 +1,7 @@
 package org.molgenis.integrationtest.ui;
 
 import org.molgenis.data.settings.AppSettings;
+import org.molgenis.ui.jobs.JobsController;
 import org.molgenis.ui.menu.MenuReaderService;
 import org.molgenis.ui.menu.MenuReaderServiceImpl;
 import org.molgenis.ui.menumanager.MenuManagerServiceImpl;
@@ -16,7 +17,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @Configuration
-@Import({ MenuManagerServiceImpl.class, StyleSheetFactory.class, StyleSheetMetadata.class })
+@Import({ JobsController.class, MenuManagerServiceImpl.class, StyleSheetFactory.class, StyleSheetMetadata.class })
 public class UiTestConfig
 {
 
