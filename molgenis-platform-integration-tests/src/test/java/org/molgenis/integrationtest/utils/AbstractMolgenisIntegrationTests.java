@@ -2,6 +2,7 @@ package org.molgenis.integrationtest.utils;
 
 import org.molgenis.integrationtest.utils.config.BootstrapTestUtils;
 import org.molgenis.integrationtest.utils.config.SecurityITConfig;
+import org.molgenis.integrationtest.utils.config.WebAppITConfig;
 import org.molgenis.security.core.token.TokenService;
 import org.molgenis.security.token.DataServiceTokenService;
 import org.molgenis.util.ApplicationContextProvider;
@@ -42,24 +43,28 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 	private TokenService tokenService;
 
 	@BeforeMethod
-	public void beforeMethod()
+	public void beforeMethodSetup()
 	{
 		initMocks(this);
-		mockMvc = webAppContextSetup(context).apply(springSecurity()).alwaysDo(print()).build();
-		ContextRefreshedEvent event = mock(ContextRefreshedEvent.class);
-		when(event.getApplicationContext()).thenReturn(context);
+		if (mockMvc == null)
+		{
+			mockMvc = webAppContextSetup(context).apply(springSecurity()).alwaysDo(print()).build();
+			ContextRefreshedEvent event = mock(ContextRefreshedEvent.class);
+			when(event.getApplicationContext()).thenReturn(context);
 
-		// FIXME The bootstrapping of the data platform should be delegated to a specific bootstrapper so that updates
-		// are reflected in the test
-		bootstrapTestUtils.bootstrap(event);
+			// FIXME The bootstrapping of the data platform should be delegated to a specific bootstrapper so that updates
+			// are reflected in the test
+			bootstrapTestUtils.bootstrap(event);
+		}
 
-		beforeITMethod();
+		beforeMethod();
 	}
 
 	/**
-	 * Use this method as a beforeMethod in the integration test
+	 * <p>Use this method as a beforeMethod in the integration test</p>
+	 * <p>Do not annotate this method to ensure this method is called in the <code>beforeMethodSetup</code></p>
 	 */
-	public abstract void beforeITMethod();
+	public abstract void beforeMethod();
 
 	protected String getAdminToken()
 	{
@@ -70,7 +75,7 @@ public abstract class AbstractMolgenisIntegrationTests extends AbstractTestNGSpr
 	 * <p>The {@link ApplicationContextProvider} must be in this configuration because of the autowiring from context</p>
 	 */
 	@Configuration
-	@Import({ BootstrapTestUtils.class, DataServiceTokenService.class })
+	@Import({ BootstrapTestUtils.class, DataServiceTokenService.class, WebAppITConfig.class })
 	static class Config
 	{
 		@Bean

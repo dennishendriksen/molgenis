@@ -6,6 +6,7 @@ import org.molgenis.security.core.utils.SecurityUtils;
 import org.molgenis.security.owned.OwnedEntityType;
 import org.molgenis.security.permission.PermissionServiceImpl;
 import org.molgenis.security.permission.PermissionSystemServiceImpl;
+import org.molgenis.security.settings.AuthenticationSettingsImpl;
 import org.molgenis.security.token.DataServiceTokenService;
 import org.molgenis.security.token.TokenGenerator;
 import org.molgenis.security.user.UserAccountServiceImpl;
@@ -34,7 +35,8 @@ import static org.mockito.Mockito.when;
 		UserAccountServiceImpl.class, UserServiceImpl.class, BCryptPasswordEncoder.class,
 		PermissionSystemServiceImpl.class, UserAuthorityFactory.class, UserAuthorityMetaData.class, UserFactory.class,
 		AuthorityMetaData.class, AggregationTestConfig.class, RoleHierarchyAuthoritiesMapper.class,
-		GroupAuthorityFactory.class, GroupAuthorityMetaData.class, GroupMetaData.class })
+		GroupAuthorityFactory.class, GroupAuthorityMetaData.class, GroupMetaData.class,
+		AuthenticationSettingsImpl.class })
 public class SecurityITConfig
 {
 

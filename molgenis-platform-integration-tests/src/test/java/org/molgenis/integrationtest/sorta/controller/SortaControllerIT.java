@@ -34,7 +34,6 @@ import org.molgenis.ontology.sorta.job.SortaJobExecutionFactory;
 import org.molgenis.ontology.sorta.meta.MatchingTaskContentMetaData;
 import org.molgenis.ontology.sorta.meta.SortaJobExecutionMetaData;
 import org.molgenis.security.core.utils.SecurityUtils;
-import org.molgenis.util.GsonConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,7 +99,7 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 	@Autowired
 	private AppSettings appSettings;
 
-	public void beforeITMethod()
+	public void beforeMethod()
 	{
 		addUserIfExists();
 		appSettings.setMenu(
@@ -153,7 +152,7 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 	public void testUploadMatchingFile() throws Exception
 	{
 		addOntologies();
-		
+
 		URL resourceUrl = Resources.getResource(SortaControllerIT.class, "/txt/sorta_test.txt");
 		File file = new File(new URI(resourceUrl.toString()).getPath());
 
@@ -169,26 +168,17 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 																		 .param("selectOntologies",
 																				 "http://www.biobankconnect.org/ontologies/2014/2/custom_ontology"))
 			   .andExpect(status().is3xxRedirection())
-			   .andExpect(content().string(""));
+			   .andExpect(view().name("redirect:/menu/main/" + SortaController.ID));
 	}
 
 	@Test(dependsOnMethods = "testUploadMatchingFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
 	public void testGetJobs() throws Exception
 	{
-		mockMvc.perform(get(SortaController.URI + "/jobs").header(TOKEN_HEADER, getAdminToken()))
+		mockMvc.perform(get(SortaController.URI + "/jobs"))
 			   .andExpect(status().isOk())
 			   .andExpect(content().contentType(APPLICATION_JSON_UTF8_VALUE))
 			   .andExpect(content().string("[]"));
-	}
-
-	@Test
-	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
-	public void testInit() throws Exception
-	{
-		mockMvc.perform(get(SortaController.URI).header(TOKEN_HEADER, getAdminToken()))
-			   .andExpect(status().isOk())
-			   .andExpect(view().name(MATCH_VIEW_NAME));
 	}
 
 	@Test
@@ -264,10 +254,9 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 	@Configuration
 	@EnableTransactionManagement(proxyTargetClass = true)
 	@EnableAspectJAutoProxy
-	@Import({ SortaTestConfig.class, OntologyTestConfig.class, GsonConfig.class, ScriptConfig.class,
-			FileTestConfig.class, SettingsTestConfig.class, UiTestConfig.class, UtilTestConfig.class,
-			JsTestConfig.class, DatabaseConfig.class, PostgreSqlConfiguration.class, DataTestConfig.class,
-			SecurityITConfig.class })
+	@Import({ SortaTestConfig.class, OntologyTestConfig.class, ScriptConfig.class, FileTestConfig.class,
+			SettingsTestConfig.class, UiTestConfig.class, UtilTestConfig.class, JsTestConfig.class,
+			DatabaseConfig.class, PostgreSqlConfiguration.class, DataTestConfig.class, SecurityITConfig.class })
 	public static class Config
 	{
 	}
