@@ -8,20 +8,16 @@ import org.molgenis.auth.UserFactory;
 import org.molgenis.auth.UserMetaData;
 import org.molgenis.data.DataService;
 import org.molgenis.data.DatabaseAction;
-import org.molgenis.data.meta.model.AttributeFactory;
-import org.molgenis.data.meta.model.EntityType;
-import org.molgenis.data.populate.IdGenerator;
 import org.molgenis.data.postgresql.PostgreSqlConfiguration;
 import org.molgenis.data.settings.AppSettings;
 import org.molgenis.integrationtest.data.DataTestConfig;
-import org.molgenis.integrationtest.data.settings.SettingsTestConfig;
 import org.molgenis.integrationtest.file.FileTestConfig;
 import org.molgenis.integrationtest.js.JsTestConfig;
 import org.molgenis.integrationtest.ontology.sorta.SortaTestConfig;
 import org.molgenis.integrationtest.script.ScriptConfig;
-import org.molgenis.integrationtest.ui.UiTestConfig;
 import org.molgenis.integrationtest.util.UtilTestConfig;
 import org.molgenis.integrationtest.utils.AbstractMolgenisIntegrationTests;
+import org.molgenis.integrationtest.utils.StringArgumentCaptor;
 import org.molgenis.integrationtest.utils.config.SecurityITConfig;
 import org.molgenis.ontology.core.config.OntologyTestConfig;
 import org.molgenis.ontology.core.meta.OntologyMetaData;
@@ -29,11 +25,7 @@ import org.molgenis.ontology.core.meta.OntologyTermMetaData;
 import org.molgenis.ontology.importer.OntologyImportService;
 import org.molgenis.ontology.importer.repository.OntologyRepositoryCollection;
 import org.molgenis.ontology.sorta.controller.SortaController;
-import org.molgenis.ontology.sorta.job.SortaJobExecution;
-import org.molgenis.ontology.sorta.job.SortaJobExecutionFactory;
-import org.molgenis.ontology.sorta.meta.MatchingTaskContentMetaData;
 import org.molgenis.ontology.sorta.meta.SortaJobExecutionMetaData;
-import org.molgenis.security.core.utils.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,14 +48,12 @@ import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import static org.molgenis.data.meta.AttributeType.XREF;
-import static org.molgenis.data.meta.model.EntityType.AttributeCopyMode.DEEP_COPY_ATTRS;
 import static org.molgenis.integrationtest.utils.config.SecurityITConfig.SUPERUSER_NAME;
-import static org.molgenis.ontology.sorta.controller.SortaController.*;
-import static org.molgenis.ontology.sorta.meta.MatchingTaskContentMetaData.INPUT_TERM;
+import static org.molgenis.ontology.sorta.controller.SortaController.DEFAULT_THRESHOLD;
+import static org.molgenis.ontology.sorta.controller.SortaController.MATCH_VIEW_NAME;
 import static org.molgenis.security.core.runas.RunAsSystemAspect.runAsSystem;
 import static org.molgenis.security.token.TokenExtractor.TOKEN_HEADER;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -78,16 +68,6 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 
 	@Autowired
 	private AutowireCapableBeanFactory autowireCapableBeanFactory;
-
-	@Autowired
-	private SortaJobExecutionFactory sortaJobExecutionFactory;
-	@Autowired
-	private IdGenerator idGenerator;
-
-	@Autowired
-	private MatchingTaskContentMetaData matchingTaskContentMetaData;
-	@Autowired
-	private AttributeFactory attributeFactory;
 
 	@Autowired
 	private DataService dataService;
@@ -144,10 +124,25 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 				LOG.error("Error occurred during specific before method. ", err);
 			}
 		});
-
 	}
 
-	@Test
+	/**
+	 * <p>Get jobid from system.</p>
+	 *
+	 * @return job id
+	 * @throws Exception
+	 */
+	private String getJobId() throws Exception
+	{
+		StringArgumentCaptor argumentCaptor = new StringArgumentCaptor();
+
+		mockMvc.perform(get(SortaController.URI + "/jobs").header(TOKEN_HEADER, getAdminToken()))
+			   .andExpect(jsonPath("$[0].identifier").value(argumentCaptor));
+
+		return argumentCaptor.capture();
+	}
+
+	@Test(groups = "withData")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
 	public void testUploadMatchingFile() throws Exception
 	{
@@ -171,66 +166,64 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 			   .andExpect(view().name("redirect:/menu/main/" + SortaController.ID));
 	}
 
-	@Test(dependsOnMethods = "testUploadMatchingFile")
+	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
 	public void testGetJobs() throws Exception
 	{
 		mockMvc.perform(get(SortaController.URI + "/jobs"))
 			   .andExpect(status().isOk())
-			   .andExpect(content().contentType(APPLICATION_JSON_UTF8_VALUE))
-			   .andExpect(content().string("[]"));
+			   .andExpect(content().contentType(APPLICATION_JSON_VALUE))
+			   .andExpect(jsonPath("$[0].name").value("sortaTest"));
+
 	}
 
-	@Test
-	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
-	public void testMatchTask() throws Exception
-	{
-		mockMvc.perform(get(SortaController.URI + "/newtask").header(TOKEN_HEADER, getAdminToken()))
-			   .andExpect(status().isOk())
-			   .andExpect(view().name("sorta-match-view"));
-	}
-
-	@Test
+	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
 	public void testMatchResult() throws Exception
 	{
-		mockMvc.perform(get(SortaController.URI + "/result/1").header(TOKEN_HEADER, getAdminToken()))
+		mockMvc.perform(get(SortaController.URI + "/result/" + getJobId()).header(TOKEN_HEADER, getAdminToken()))
 			   .andExpect(status().isOk())
-			   .andExpect(view().name("sorta-match-view"));
+			   .andExpect(view().name(SortaController.MATCH_VIEW_NAME));
+
 	}
 
-	@Test
+	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
 	public void testCountMatchResult() throws Exception
 	{
-		addSortJobExecution();
-
-		mockMvc.perform(get(SortaController.URI + "/count/1").header(TOKEN_HEADER, getAdminToken()))
+		mockMvc.perform(get(SortaController.URI + "/count/" + getJobId()).header(TOKEN_HEADER, getAdminToken()))
 			   .andExpect(status().isOk())
-			   .andExpect(content().string("{\"numberOfMatched\":0,\"numberOfUnmatched\":0}"));
+			   .andExpect(content().string("{\"numberOfMatched\":0,\"numberOfUnmatched\":45}"));
 	}
 
-	@Test
-	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
-	public void testDeleteResult() throws Exception
-	{
-		mockMvc.perform(post(SortaController.URI + "/delete/1").header(TOKEN_HEADER, getAdminToken()).with(csrf()))
-			   .andExpect(status().isOk())
-			   .andExpect(view().name("sorta-match-view"));
-	}
-
-	@Test
+	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
 	public void testUpdateThreshold() throws Exception
 	{
-		addSortJobExecution();
 
-		mockMvc.perform(post(SortaController.URI + "/threshold/1").param("threshold", String.valueOf(DEFAULT_THRESHOLD))
-																  .header(TOKEN_HEADER, getAdminToken())
-																  .with(csrf()))
+		mockMvc.perform(post(SortaController.URI + "/threshold/" + getJobId()).param("threshold",
+				String.valueOf(DEFAULT_THRESHOLD)).header(TOKEN_HEADER, getAdminToken()).with(csrf()))
 			   .andExpect(status().isOk())
-			   .andExpect(view().name(MATCH_VIEW_NAME))
-			   .andExpect(content().string(""));
+			   .andExpect(view().name(MATCH_VIEW_NAME));
+	}
+
+	@Test(groups = { "withData" }, dependsOnMethods = "testUploadMatchingFile")
+	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
+	public void testDownloadResult() throws Exception
+	{
+		mockMvc.perform(get(SortaController.URI + "/match/download/" + getJobId()).header(TOKEN_HEADER, getAdminToken())
+																				  .with(csrf()))
+			   .andExpect(status().isOk());
+	}
+
+	@Test(dependsOnGroups = "withData")
+	@WithMockUser(username = SUPERUSER_NAME, roles = SecurityITConfig.SUPERUSER_ROLE)
+	public void testDeleteResult() throws Exception
+	{
+		mockMvc.perform(
+				post(SortaController.URI + "/delete/" + getJobId()).header(TOKEN_HEADER, getAdminToken()).with(csrf()))
+			   .andExpect(status().isOk())
+			   .andExpect(view().name(SortaController.MATCH_VIEW_NAME));
 	}
 
 	@AfterClass
@@ -255,41 +248,10 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 	@EnableTransactionManagement(proxyTargetClass = true)
 	@EnableAspectJAutoProxy
 	@Import({ SortaTestConfig.class, OntologyTestConfig.class, ScriptConfig.class, FileTestConfig.class,
-			SettingsTestConfig.class, UiTestConfig.class, UtilTestConfig.class, JsTestConfig.class,
-			DatabaseConfig.class, PostgreSqlConfiguration.class, DataTestConfig.class, SecurityITConfig.class })
+			UtilTestConfig.class, JsTestConfig.class, DatabaseConfig.class, PostgreSqlConfiguration.class,
+			DataTestConfig.class })
 	public static class Config
 	{
-	}
-
-	private void addSortJobExecution()
-	{
-		String jobName = "testSortaJobExecution";
-		String resultEntityName = idGenerator.generateId();
-		SortaJobExecution execution = sortaJobExecutionFactory.create();
-		execution.setName(jobName);
-		execution.setIdentifier("1");
-		execution.setSourceEntityName(SortaJobExecutionMetaData.SORTA_JOB_EXECUTION);
-		execution.setResultEntityName(resultEntityName);
-		execution.setOntologyIri("ontologyIri");
-		execution.setDeleteUrl(ID + "/delete");
-		execution.setThreshold(DEFAULT_THRESHOLD);
-		execution.setUser(SecurityUtils.getCurrentUsername());
-
-		dataService.add(SortaJobExecutionMetaData.SORTA_JOB_EXECUTION, execution);
-
-		EntityType resultEntityType = EntityType.newInstance(matchingTaskContentMetaData, DEEP_COPY_ATTRS,
-				attributeFactory);
-		resultEntityType.setId(resultEntityName);
-		resultEntityType.setPackage(null);
-		resultEntityType.setAbstract(false);
-		resultEntityType.addAttribute(attributeFactory.create()
-													  .setName(INPUT_TERM)
-													  .setDataType(XREF)
-													  .setRefEntity(sortaJobExecutionFactory.getEntityType())
-													  .setDescription("Reference to the input term")
-													  .setNillable(false));
-		resultEntityType.setLabel(jobName + " output");
-		dataService.getMeta().addEntityType(resultEntityType);
 	}
 
 }
