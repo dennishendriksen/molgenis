@@ -7,10 +7,7 @@ import org.molgenis.data.importer.generic.mapper.MappedEntityType;
 import org.molgenis.data.importer.generic.mapper.RowToEntityMapper;
 import org.molgenis.data.importer.generic.mapper.TableToEntityTypeMapper;
 import org.molgenis.data.importer.generic.meta.MetadataImprover;
-import org.molgenis.data.importer.table.Row;
-import org.molgenis.data.importer.table.Table;
-import org.molgenis.data.importer.table.TableCollection;
-import org.molgenis.data.importer.table.TableCollectionFactory;
+import org.molgenis.data.importer.table.*;
 import org.molgenis.data.jobs.Progress;
 import org.molgenis.data.meta.model.EntityType;
 import org.molgenis.file.FileStore;
@@ -90,7 +87,7 @@ public class ImportServiceImpl implements ImportService
 			try (Stream<Row> rowStream = table.getRowStream())
 			{
 				repository.add(rowStream.filter(this::isImportableRow)
-						.map(row -> rowToEntityMapper.create(row, mappedEntityType)));
+										.map(row -> rowToEntityMapper.create(row, mappedEntityType)));
 			}
 		}
 		catch (IOException e)
@@ -107,6 +104,9 @@ public class ImportServiceImpl implements ImportService
 
 	private boolean isImportableRow(Row row)
 	{
-		return row.getValues().stream().anyMatch(value -> value != null && !value.isEmpty());
+		return row.getValues()
+				  .anyMatch(
+						  cell -> cell != null && !(cell.getType() == CellType.STRING && (cell.getStringValue() == null
+								  || cell.getStringValue().isEmpty())));
 	}
 }

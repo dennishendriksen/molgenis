@@ -15,6 +15,7 @@ class CsvRowIterator implements Iterator<Row>
 	private final CSVReader csvReader;
 	private boolean getNext = true;
 	private Row next;
+	private long index = 0L;
 
 	CsvRowIterator(CSVReader csvReader)
 	{
@@ -53,7 +54,8 @@ class CsvRowIterator implements Iterator<Row>
 				throw new UncheckedIOException(e);
 			}
 
-			next = tokens != null ? new CsvRow(tokens) : null;
+			next = tokens != null ? new CsvRow(tokens, index) : null;
+			index++;
 			getNext = false;
 		}
 		return next;

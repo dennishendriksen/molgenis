@@ -1,31 +1,40 @@
 package org.molgenis.data.importer.table.csv;
 
+import com.google.common.base.Preconditions;
+import org.molgenis.data.importer.table.Cell;
 import org.molgenis.data.importer.table.Row;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
-import static java.util.Arrays.asList;
 import static java.util.Objects.requireNonNull;
 
-public class CsvRow implements Row
+class CsvRow implements Row
 {
 	private final String[] tokens;
+	private final long rowIndex;
 
-	CsvRow(String[] tokens)
+	CsvRow(String[] tokens, long rowIndex)
 	{
+		Preconditions.checkArgument(rowIndex >= 0);
 		this.tokens = requireNonNull(tokens);
+		this.rowIndex = requireNonNull(rowIndex);
 	}
 
 	@Override
-	public String getValue(int i)
+	public Stream<Cell> getValues()
 	{
-		return tokens[i];
+		return IntStream.range(0, tokens.length).mapToObj(i -> toCell(tokens[i], i));
 	}
 
 	@Override
-	public List<String> getValues()
+	public long getIndex()
 	{
-		return Collections.unmodifiableList(asList(tokens));
+		return rowIndex;
+	}
+
+	private Cell toCell(String token, int columnIndex)
+	{
+		return token != null ? new CsvCell(token, rowIndex, columnIndex) : null;
 	}
 }

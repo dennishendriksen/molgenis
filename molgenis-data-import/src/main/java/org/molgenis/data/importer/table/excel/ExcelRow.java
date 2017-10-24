@@ -1,47 +1,38 @@
 package org.molgenis.data.importer.table.excel;
 
-import org.apache.poi.ss.usermodel.Cell;
+import org.molgenis.data.importer.table.Cell;
 import org.molgenis.data.importer.table.Row;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Spliterator.ORDERED;
+import static java.util.Spliterators.spliteratorUnknownSize;
+import static java.util.stream.StreamSupport.stream;
 
-public class ExcelRow implements Row
+class ExcelRow implements Row
 {
 	private final org.apache.poi.ss.usermodel.Row row;
-	private final List<String> headers;
 
-	ExcelRow(org.apache.poi.ss.usermodel.Row row, List<String> headers)
+	ExcelRow(org.apache.poi.ss.usermodel.Row row)
 	{
 		this.row = requireNonNull(row);
-		this.headers = requireNonNull(headers);
 	}
 
 	@Override
-	public String getValue(int i)
+	public Stream<Cell> getValues()
 	{
-		if (i >= headers.size())
-		{
-			throw new NoSuchElementException();
-		}
-
-		Cell cell = row.getCell(i);
-		return cell != null ? ExcelCellUtils.getStringCellValue(cell) : null;
+		return stream(spliteratorUnknownSize(row.cellIterator(), ORDERED), false).map(this::toCell);
 	}
 
 	@Override
-	public List<String> getValues()
+	public long getIndex()
 	{
-		List<String> values = new ArrayList<>(headers.size());
-		for (int i = 0; i < headers.size(); ++i)
-		{
-			Cell cell = row.getCell(i);
-			String strValue = cell != null ? ExcelCellUtils.getStringCellValue(cell) : null;
-			values.add(strValue);
-		}
-		return values;
+		return row.getRowNum();
+	}
+
+	private Cell toCell(org.apache.poi.ss.usermodel.Cell cell)
+	{
+		return cell != null ? new ExcelCell(cell) : null;
 	}
 }

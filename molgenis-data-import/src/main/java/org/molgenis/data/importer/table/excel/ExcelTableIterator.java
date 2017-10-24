@@ -8,7 +8,7 @@ import java.util.Iterator;
 
 import static java.util.Objects.requireNonNull;
 
-public class ExcelTableIterator implements Iterator<Table>
+class ExcelTableIterator implements Iterator<Table>
 {
 	private final Workbook workbook;
 	private int workbookIndex = 0;

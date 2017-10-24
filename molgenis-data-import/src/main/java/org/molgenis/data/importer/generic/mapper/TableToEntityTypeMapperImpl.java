@@ -30,7 +30,7 @@ public class TableToEntityTypeMapperImpl implements TableToEntityTypeMapper
 	public MappedEntityType create(Table table)
 	{
 		String entityName = "entity" + System.nanoTime();
-		ImmutableList<MappedAttribute> mappedAttributes = create(table.getHeaders());
+		ImmutableList<MappedAttribute> mappedAttributes = create(table.getColumnHeaderStream());
 
 		EntityType entityType = entityTypeFactory.create();
 		entityType.setLabel(table.getName());
