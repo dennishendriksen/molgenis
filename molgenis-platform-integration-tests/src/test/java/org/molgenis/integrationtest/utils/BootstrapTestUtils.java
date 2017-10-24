@@ -49,12 +49,13 @@ public class BootstrapTestUtils
 	{
 		TransactionTemplate transactionTemplate = new TransactionTemplate();
 		transactionTemplate.setTransactionManager(transactionManager);
-		transactionTemplate.execute((action) ->
+		try
 		{
-			try
+			runAsSystem(() ->
 			{
-				runAsSystem(() ->
+				transactionTemplate.execute((action) ->
 				{
+
 					LOG.info("Bootstrapping registries ...");
 					LOG.trace("Registering repository collections ...");
 					repoCollectionBootstrapper.bootstrap(event, POSTGRESQL);
@@ -95,15 +96,15 @@ public class BootstrapTestUtils
 					LOG.trace("Populated settings entities");
 
 					event.getApplicationContext().getBean(EntityTypeRegistryPopulator.class).populate();
+					return (Void) null;
 				});
-			}
-			catch (Exception unexpected)
-			{
-				LOG.error("Error bootstrapping tests!", unexpected);
-				throw new RuntimeException(unexpected);
-			}
-			return (Void) null;
-		});
-	}
+			});
+		}
+		catch (Exception unexpected)
+		{
+			LOG.error("Error bootstrapping tests!", unexpected);
+			throw new RuntimeException(unexpected);
+		}
 
+	}
 }
