@@ -368,14 +368,13 @@ public class SortaController extends PluginController
 	{
 		// TODO: less obfuscated request object, let Spring do the matching
 		if (request.containsKey("sortaJobExecutionId") && !isEmpty(request.get("sortaJobExecutionId").toString())
-				&& request.containsKey(MatchingTaskContentMetaData.IDENTIFIER) && !isEmpty(
-				request.get(MatchingTaskContentMetaData.IDENTIFIER).toString()))
+				&& request.containsKey(IDENTIFIER) && !isEmpty(request.get(IDENTIFIER).toString()))
 		{
 			String sortaJobExecutionId = request.get("sortaJobExecutionId").toString();
 			SortaJobExecution sortaJobExecution = findSortaJobExecution(sortaJobExecutionId);
 			if (sortaJobExecution == null) return new SortaServiceResponse("sortaJobExecutionId is invalid!");
 
-			String inputTermIdentifier = request.get(MatchingTaskContentMetaData.IDENTIFIER).toString();
+			String inputTermIdentifier = request.get(IDENTIFIER).toString();
 			Entity inputEntity = dataService.findOneById(sortaJobExecution.getSourceEntityName(), inputTermIdentifier);
 
 			if (inputEntity == null) return new SortaServiceResponse("inputTerm identifier is invalid!");

@@ -44,6 +44,7 @@ import static org.molgenis.integrationtest.utils.config.SecurityITConfig.SUPERUS
 import static org.molgenis.integrationtest.utils.config.SecurityITConfig.SUPERUSER_ROLE;
 import static org.molgenis.ontology.sorta.controller.SortaController.DEFAULT_THRESHOLD;
 import static org.molgenis.ontology.sorta.controller.SortaController.MATCH_VIEW_NAME;
+import static org.molgenis.ontology.sorta.meta.MatchingTaskContentMetaData.IDENTIFIER;
 import static org.molgenis.security.token.TokenExtractor.TOKEN_HEADER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE;
@@ -94,7 +95,7 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 
 	@Test(groups = "withData")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
-	public void testUploadMatchingFile() throws Exception
+	public void testUploadFile() throws Exception
 	{
 		sortaITUtils.addOntologies();
 
@@ -116,7 +117,7 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 			   .andExpect(view().name("redirect:/menu/main/" + SortaController.ID));
 	}
 
-	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
 	public void testGetJobs() throws Exception
 	{
@@ -127,7 +128,7 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 
 	}
 
-	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
 	public void testMatchResult() throws Exception
 	{
@@ -139,9 +140,9 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 
 	}
 
-	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
-	public void testCountMatchResult() throws Exception
+	public void testMatchCount() throws Exception
 	{
 		mockMvc.perform(
 				get(SortaController.URI + "/count/" + getValueFromJobsResponse("identifier")).header(TOKEN_HEADER,
@@ -150,9 +151,9 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 			   .andExpect(content().string("{\"numberOfMatched\":0,\"numberOfUnmatched\":45}"));
 	}
 
-	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
-	public void testRetrieveMatch() throws Exception
+	public void testMatchRetrieve() throws Exception
 	{
 
 		String jobId = getValueFromJobsResponse("identifier");
@@ -171,7 +172,33 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 			   .andExpect(status().isOk());
 	}
 
-	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
+	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
+	public void testMathEntity() throws Exception
+	{
+
+		Map<String, Object> request = new HashMap<>();
+		request.put("sortaJobExecutionId", getValueFromJobsResponse("identifier"));
+		request.put(IDENTIFIER, getValueFromJobsResponse("sourceEntity"));
+
+		mockMvc.perform(post(SortaController.URI + "/match/entity/").content(new Gson().toJson(request))
+																	.
+																			header(TOKEN_HEADER, getAdminToken())
+																	.with(csrf())
+																	.contentType(APPLICATION_JSON_VALUE)
+																	.accept(APPLICATION_JSON_VALUE))
+			   .andExpect(status().isOk());
+	}
+
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
+	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
+	public void testMatchDownload() throws Exception
+	{
+		mockMvc.perform(get(SortaController.URI + "/match/download/" + getValueFromJobsResponse("identifier")).header(
+				TOKEN_HEADER, getAdminToken()).with(csrf())).andExpect(status().isOk());
+	}
+
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
 	public void testUpdateThreshold() throws Exception
 	{
@@ -183,9 +210,9 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 			   .andExpect(view().name(MATCH_VIEW_NAME));
 	}
 
-	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
+	@Test(groups = "withData", dependsOnMethods = "testUploadFile")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
-	public void testSearchResult() throws Exception
+	public void testSearch() throws Exception
 	{
 
 		Map<String, Object> request = new HashMap<>();
@@ -199,17 +226,9 @@ public class SortaControllerIT extends AbstractMolgenisIntegrationTests
 															  .with(csrf())).andExpect(status().isOk());
 	}
 
-	@Test(groups = "withData", dependsOnMethods = "testUploadMatchingFile")
-	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
-	public void testDownloadResult() throws Exception
-	{
-		mockMvc.perform(get(SortaController.URI + "/match/download/" + getValueFromJobsResponse("identifier")).header(
-				TOKEN_HEADER, getAdminToken()).with(csrf())).andExpect(status().isOk());
-	}
-
 	@Test(dependsOnGroups = "withData")
 	@WithMockUser(username = SUPERUSER_NAME, roles = SUPERUSER_ROLE)
-	public void testDeleteResult() throws Exception
+	public void testDelete() throws Exception
 	{
 		mockMvc.perform(
 				post(SortaController.URI + "/delete/" + getValueFromJobsResponse("identifier")).header(TOKEN_HEADER,
