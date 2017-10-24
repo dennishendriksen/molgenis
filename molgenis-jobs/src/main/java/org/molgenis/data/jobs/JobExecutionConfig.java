@@ -3,6 +3,10 @@ package org.molgenis.data.jobs;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.molgenis.data.DataService;
 import org.molgenis.data.EntityManager;
+import org.molgenis.settings.mail.MailSettingsImpl;
+import org.molgenis.util.mail.JavaMailSenderFactory;
+import org.molgenis.util.mail.MailSenderImpl;
+import org.molgenis.util.mail.MailSettings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,8 +18,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Import(JobFactoryRegistry.class)
 @Configuration
+@Import({ JobFactoryRegistry.class, JobExecutionUpdaterImpl.class, JobFactoryRegistrar.class })
 public class JobExecutionConfig
 {
 	@Autowired
@@ -26,8 +30,6 @@ public class JobExecutionConfig
 	private UserDetailsService userDetailsService;
 	@Autowired
 	private JobExecutionUpdater jobExecutionUpdater;
-	@Autowired
-	private MailSender mailSender;
 	@Autowired
 	private ExecutorService executorService;
 	@Autowired
@@ -43,7 +45,26 @@ public class JobExecutionConfig
 	@Bean
 	public JobExecutor jobExecutor()
 	{
-		return new JobExecutor(dataService, entityManager, userDetailsService, jobExecutionUpdater, mailSender,
+		return new JobExecutor(dataService, entityManager, userDetailsService, jobExecutionUpdater, mailSender(),
 				executorService, jobFactoryRegistry);
+	}
+
+	@Bean
+	public JavaMailSenderFactory javaMailSenderFactory()
+	{
+		return new JavaMailSenderFactory();
+	}
+
+	@Bean
+	public MailSettings mailSettings()
+	{
+		return new MailSettingsImpl();
+	}
+
+	@Bean
+
+	public MailSender mailSender()
+	{
+		return new MailSenderImpl(mailSettings(), javaMailSenderFactory());
 	}
 }

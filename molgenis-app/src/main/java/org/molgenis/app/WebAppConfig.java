@@ -3,7 +3,7 @@ package org.molgenis.app;
 import org.molgenis.DatabaseConfig;
 import org.molgenis.data.DataService;
 import org.molgenis.data.config.HttpClientConfig;
-import org.molgenis.data.elasticsearch.client.ElasticsearchConfig;
+import org.molgenis.data.elasticsearch.client.ElasticSearchClientConfig;
 import org.molgenis.ui.MolgenisWebAppConfig;
 import org.molgenis.ui.freemarker.RepositoryTemplateLoader;
 import org.molgenis.util.GsonConfig;
@@ -23,7 +23,7 @@ import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 @EnableWebMvc
 @EnableAsync
 @ComponentScan(basePackages = "org.molgenis")
-@Import({ WebAppSecurityConfig.class, DatabaseConfig.class, HttpClientConfig.class, ElasticsearchConfig.class,
+@Import({ WebAppSecurityConfig.class, DatabaseConfig.class, HttpClientConfig.class, ElasticSearchClientConfig.class,
 		GsonConfig.class })
 public class WebAppConfig extends MolgenisWebAppConfig
 {

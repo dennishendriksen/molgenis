@@ -16,14 +16,14 @@ import static java.util.stream.Collectors.toList;
 
 /**
  * Spring config for Elasticsearch server. Use this in your own app by importing this in your spring config:
- * <code> @Import(ElasticsearchConfig.class)</code>
+ * <code> @Import({@link org.molgenis.data.elasticsearch.ElasticSearchConfig}.class)</code>
  *
  * @author erwin
  */
 @Configuration
 @EnableScheduling
 @Import({ IndexConfig.class })
-public class ElasticsearchConfig
+public class ElasticSearchClientConfig
 {
 	@Value("${elasticsearch.cluster.name:molgenis}")
 	private String clusterName;
@@ -44,8 +44,8 @@ public class ElasticsearchConfig
 		}
 
 		List<InetSocketAddress> ipSocketAddresses = toIpSocketAddresses(transportAddresses);
-		Client client = ClientFactory
-				.createClient(clusterName, ipSocketAddresses, new PreBuiltTransportClientFactory());
+		Client client = ClientFactory.createClient(clusterName, ipSocketAddresses,
+				new PreBuiltTransportClientFactory());
 		return new ClientFacade(client);
 	}
 
