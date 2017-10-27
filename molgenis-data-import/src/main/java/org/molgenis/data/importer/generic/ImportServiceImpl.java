@@ -56,7 +56,7 @@ public class ImportServiceImpl implements ImportService
 	{
 		File file = fileStore.getFile(fileMeta.getId());
 		TableCollection tableCollection = tableCollectionFactory.createTableCollection(file.toPath(), fileMeta);
-		int progressMax = toIntExact(tableCollection.getNrTables());
+		int progressMax = getNrTables(tableCollection);
 		progress.setProgressMax(progressMax);
 
 		AtomicInteger progressIdx = new AtomicInteger(0);
@@ -75,6 +75,16 @@ public class ImportServiceImpl implements ImportService
 		List<EntityType> improvedEntityTypes = metadataImprover.improveMetadata(entityTypes);
 		progress.progress(progressMax, "Finished importing");
 		return ImportResult.create(improvedEntityTypes);
+	}
+
+	public int getNrTables(TableCollection tableCollection)
+	{
+		long nrTables;
+		try (Stream<Table> tableStream = tableCollection.getTableStream())
+		{
+			nrTables = tableStream.count();
+		}
+		return toIntExact(nrTables);
 	}
 
 	private EntityType importTable(Table table)
@@ -104,7 +114,7 @@ public class ImportServiceImpl implements ImportService
 
 	private boolean isImportableRow(Row row)
 	{
-		return row.getValues()
+		return row.getCellStream()
 				  .anyMatch(
 						  cell -> cell != null && !(cell.getType() == CellType.STRING && (cell.getStringValue() == null
 								  || cell.getStringValue().isEmpty())));

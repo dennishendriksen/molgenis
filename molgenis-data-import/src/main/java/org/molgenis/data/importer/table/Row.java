@@ -7,7 +7,7 @@ public interface Row
 	/**
 	 * @throws java.io.UncheckedIOException when an I/O exception occurred
 	 */
-	Stream<Cell> getValues();
+	Stream<Cell> getCellStream();
 
 	long getIndex();
 }

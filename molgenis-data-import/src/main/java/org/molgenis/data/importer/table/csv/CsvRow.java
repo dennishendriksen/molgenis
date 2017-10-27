@@ -22,7 +22,7 @@ class CsvRow implements Row
 	}
 
 	@Override
-	public Stream<Cell> getValues()
+	public Stream<Cell> getCellStream()
 	{
 		return IntStream.range(0, tokens.length).mapToObj(i -> toCell(tokens[i], i));
 	}

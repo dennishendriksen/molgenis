@@ -1,7 +1,7 @@
 package org.molgenis.data.importer.table.csv;
 
-import org.molgenis.data.importer.table.AbstractTableCollection;
 import org.molgenis.data.importer.table.Table;
+import org.molgenis.data.importer.table.TableCollection;
 import org.molgenis.file.model.FileMeta;
 
 import java.nio.file.Path;
@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 
-public class CsvTableCollection extends AbstractTableCollection
+public class CsvTableCollection implements TableCollection
 {
 	private final Path path;
 	private final FileMeta fileMeta;
@@ -23,12 +23,6 @@ public class CsvTableCollection extends AbstractTableCollection
 	{
 		this.path = requireNonNull(path);
 		this.fileMeta = fileMeta;
-	}
-
-	@Override
-	public long getNrTables()
-	{
-		return 1L;
 	}
 
 	@Override

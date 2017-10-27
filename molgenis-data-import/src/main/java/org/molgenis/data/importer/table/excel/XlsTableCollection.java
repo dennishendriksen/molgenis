@@ -3,8 +3,8 @@ package org.molgenis.data.importer.table.excel;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.poifs.filesystem.NPOIFSFileSystem;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.molgenis.data.importer.table.AbstractTableCollection;
 import org.molgenis.data.importer.table.Table;
+import org.molgenis.data.importer.table.TableCollection;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,7 +18,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public class XlsTableCollection extends AbstractTableCollection
+public class XlsTableCollection implements TableCollection
 {
 	private final Path path;
 

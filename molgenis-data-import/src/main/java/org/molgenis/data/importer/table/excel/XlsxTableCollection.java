@@ -4,8 +4,8 @@ import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.molgenis.data.importer.table.AbstractTableCollection;
 import org.molgenis.data.importer.table.Table;
+import org.molgenis.data.importer.table.TableCollection;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -19,7 +19,7 @@ import static java.util.Spliterator.ORDERED;
 import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.stream.StreamSupport.stream;
 
-public class XlsxTableCollection extends AbstractTableCollection
+public class XlsxTableCollection implements TableCollection
 {
 	private final Path path;
 

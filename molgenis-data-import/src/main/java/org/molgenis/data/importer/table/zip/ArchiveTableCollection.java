@@ -1,7 +1,7 @@
 package org.molgenis.data.importer.table.zip;
 
-import org.molgenis.data.importer.table.AbstractTableCollection;
 import org.molgenis.data.importer.table.Table;
+import org.molgenis.data.importer.table.TableCollection;
 import org.molgenis.data.importer.table.TableCollectionFactory;
 
 import java.io.IOException;
@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.StreamSupport.stream;
 
-public class ArchiveTableCollection extends AbstractTableCollection
+public class ArchiveTableCollection implements TableCollection
 {
 	private final Path path;
 	private final TableCollectionFactory tableCollectionFactory;

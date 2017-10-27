@@ -20,7 +20,7 @@ class ExcelRow implements Row
 	}
 
 	@Override
-	public Stream<Cell> getValues()
+	public Stream<Cell> getCellStream()
 	{
 		return stream(spliteratorUnknownSize(row.cellIterator(), ORDERED), false).map(this::toCell);
 	}
