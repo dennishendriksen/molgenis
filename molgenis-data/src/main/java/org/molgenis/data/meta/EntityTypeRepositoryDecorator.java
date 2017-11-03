@@ -238,8 +238,7 @@ public class EntityTypeRepositoryDecorator extends AbstractRepositoryDecorator<E
 
 	private void deleteEntityRepository(EntityType entityType)
 	{
-		String backend = entityType.getBackend();
-		dataService.getMeta().getBackend(backend).deleteRepository(entityType);
+		dataService.getMeta().getBackend(entityType).deleteRepository(entityType);
 	}
 
 	private static class AttributeTreeTraverser extends TreeTraverser<Attribute>

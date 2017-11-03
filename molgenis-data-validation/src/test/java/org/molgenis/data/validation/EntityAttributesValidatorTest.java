@@ -1,6 +1,7 @@
 package org.molgenis.data.validation;
 
 import org.mockito.Mock;
+import org.mockito.quality.Strictness;
 import org.molgenis.data.Entity;
 import org.molgenis.data.Range;
 import org.molgenis.data.meta.AttributeType;
@@ -36,12 +37,19 @@ public class EntityAttributesValidatorTest extends AbstractMockitoTest
 	private EntityType intRangeMinMeta;
 	private EntityType intRangeMaxMeta;
 
+	public EntityAttributesValidatorTest()
+	{
+		super(Strictness.WARN);
+	}
+
 	@BeforeMethod
 	public void setUpBeforeMethod()
 	{
-		expressionValidator = mock(ExpressionValidator.class);
 		entityAttributesValidator = new EntityAttributesValidator(expressionValidator);
+	}
 
+	private void init()
+	{
 		Attribute idAttr = when(mock(Attribute.class).getName()).thenReturn("id").getMock();
 		when(idAttr.getDataType()).thenReturn(STRING);
 		Attribute intRangeMinAttr = when(mock(Attribute.class).getName()).thenReturn("intrangemin").getMock();
@@ -67,6 +75,8 @@ public class EntityAttributesValidatorTest extends AbstractMockitoTest
 	@Test
 	public void checkRangeMinOnly()
 	{
+		init();
+
 		Entity entity = new DynamicEntity(intRangeMinMeta);
 		entity.set("id", "123");
 		entity.set("intrangemin", 2);
@@ -77,6 +87,8 @@ public class EntityAttributesValidatorTest extends AbstractMockitoTest
 	@Test
 	public void checkRangeMinOnlyInvalid()
 	{
+		init();
+
 		Entity entity = new DynamicEntity(intRangeMinMeta);
 		entity.set("id", "123");
 		entity.set("intrangemin", -1);
@@ -87,6 +99,8 @@ public class EntityAttributesValidatorTest extends AbstractMockitoTest
 	@Test
 	public void checkRangeMaxOnly()
 	{
+		init();
+
 		Entity entity = new DynamicEntity(intRangeMaxMeta);
 		entity.set("id", "123");
 		entity.set("intrangemin", 0);

@@ -198,11 +198,6 @@ public class DynamicEntity implements Entity
 	 */
 	protected void validateValueType(String attrName, Object value)
 	{
-		if (value == null)
-		{
-			return;
-		}
-
 		Attribute attr = entityType.getAttribute(attrName);
 		if (attr == null)
 		{
@@ -213,7 +208,7 @@ public class DynamicEntity implements Entity
 		switch (dataType)
 		{
 			case BOOL:
-				if (!(value instanceof Boolean))
+				if (value != null && !(value instanceof Boolean))
 				{
 					throw new MolgenisDataException(
 							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),
@@ -224,7 +219,7 @@ public class DynamicEntity implements Entity
 				// expected type is FileMeta. validation is not possible because molgenis-data does not depend on molgenis-file
 			case FILE:
 			case XREF:
-				if (!(value instanceof Entity))
+				if (value != null && !(value instanceof Entity))
 				{
 					throw new MolgenisDataException(
 							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),
@@ -245,7 +240,7 @@ public class DynamicEntity implements Entity
 				throw new IllegalArgumentException(
 						format("Unexpected data type [%s] for attribute: [%s]", dataType.toString(), attrName));
 			case DATE:
-				if (!(value instanceof LocalDate))
+				if (value != null && !(value instanceof LocalDate))
 				{
 					throw new MolgenisDataException(
 							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),
@@ -253,7 +248,7 @@ public class DynamicEntity implements Entity
 				}
 				break;
 			case DATE_TIME:
-				if (!(value instanceof Instant))
+				if (value != null && !(value instanceof Instant))
 				{
 					throw new MolgenisDataException(
 							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),
@@ -261,17 +256,21 @@ public class DynamicEntity implements Entity
 				}
 				break;
 			case DECIMAL:
-				if (!(value instanceof Double))
+				if (value != null)
 				{
-					throw new MolgenisDataException(
-							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),
-									value.getClass().getSimpleName(), Double.class.getSimpleName(), attrName));
-				}
-				if (((Double) value).isNaN())
-				{
-					throw new MolgenisDataException(
-							format("Value [%s] for type [%s] is not allowed for attribute: [%s]", value.toString(),
-									Double.class.getSimpleName(), attrName));
+					if (!(value instanceof Double))
+					{
+						throw new MolgenisDataException(
+								format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]",
+										value.toString(), value.getClass().getSimpleName(),
+										Double.class.getSimpleName(), attrName));
+					}
+					if (((Double) value).isNaN())
+					{
+						throw new MolgenisDataException(
+								format("Value [%s] for type [%s] is not allowed for attribute: [%s]", value.toString(),
+										Double.class.getSimpleName(), attrName));
+					}
 				}
 				break;
 			case EMAIL:
@@ -281,7 +280,7 @@ public class DynamicEntity implements Entity
 			case SCRIPT:
 			case STRING:
 			case TEXT:
-				if (!(value instanceof String))
+				if (value != null && !(value instanceof String))
 				{
 					throw new MolgenisDataException(
 							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),
@@ -289,7 +288,7 @@ public class DynamicEntity implements Entity
 				}
 				break;
 			case INT:
-				if (!(value instanceof Integer))
+				if (value != null && !(value instanceof Integer))
 				{
 					throw new MolgenisDataException(
 							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),
@@ -297,7 +296,7 @@ public class DynamicEntity implements Entity
 				}
 				break;
 			case LONG:
-				if (!(value instanceof Long))
+				if (value != null && !(value instanceof Long))
 				{
 					throw new MolgenisDataException(
 							format("Value [%s] is of type [%s] instead of [%s] for attribute: [%s]", value.toString(),

@@ -70,13 +70,13 @@ public class LanguageRepositoryDecoratorTest extends AbstractMockitoTest
 	@Test(expectedExceptions = MolgenisDataException.class, expectedExceptionsMessageRegExp = MESSAGE_DELETE_NOT_ALLOWED)
 	public void testDelete()
 	{
-		languageRepositoryDecorator.delete(getMockLanguage(LANGUAGE_CODE_NL));
+		languageRepositoryDecorator.delete(mock(Language.class));
 	}
 
 	@Test(expectedExceptions = MolgenisDataException.class, expectedExceptionsMessageRegExp = MESSAGE_DELETE_NOT_ALLOWED)
 	public void testDeleteById()
 	{
-		Language language = getMockLanguage(LANGUAGE_CODE_NL);
+		Language language = mock(Language.class);
 		when(delegateRepository.findOneById(LANGUAGE_CODE_NL)).thenReturn(language);
 		languageRepositoryDecorator.deleteById(LANGUAGE_CODE_NL);
 	}
@@ -84,7 +84,7 @@ public class LanguageRepositoryDecoratorTest extends AbstractMockitoTest
 	@Test(expectedExceptions = MolgenisDataException.class, expectedExceptionsMessageRegExp = MESSAGE_DELETE_NOT_ALLOWED)
 	public void testDeleteStream()
 	{
-		languageRepositoryDecorator.delete(Stream.of(getMockLanguage(LANGUAGE_CODE_NL)));
+		languageRepositoryDecorator.delete(Stream.of(mock(Language.class)));
 	}
 
 	private Language getMockLanguage(String languageCode)

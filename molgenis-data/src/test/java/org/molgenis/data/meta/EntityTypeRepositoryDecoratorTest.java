@@ -10,7 +10,6 @@ import org.molgenis.data.Repository;
 import org.molgenis.data.RepositoryCollection;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.EntityType;
-import org.molgenis.data.meta.system.SystemEntityTypeRegistry;
 import org.molgenis.test.AbstractMockitoTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -28,76 +27,61 @@ import static org.testng.Assert.assertEquals;
 
 public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 {
-	private final String entityTypeId1 = "EntityType1";
-	private final String entityTypeId2 = "EntityType2";
-	private final String entityTypeId3 = "EntityType3";
-
-	private EntityTypeRepositoryDecorator repo;
 	@Mock
 	private Repository<EntityType> delegateRepository;
 	@Mock
 	private DataService dataService;
 	@Mock
-	private MetaDataService metaDataService;
-	@Mock
-	private SystemEntityTypeRegistry systemEntityTypeRegistry;
-	@Mock
-	private EntityType entityType1;
-	@Mock
-	private EntityType entityType2;
-	@Mock
-	private EntityType entityType3;
-	@Mock
 	private EntityTypeDependencyResolver entityTypeDependencyResolver;
-	@Mock
-	private RepositoryCollection repositoryCollection;
+
+	private EntityTypeRepositoryDecorator entityTypeRepositoryDecorator;
 
 	@BeforeMethod
 	public void setUpBeforeMethod()
 	{
+		entityTypeRepositoryDecorator = new EntityTypeRepositoryDecorator(delegateRepository, dataService,
+				entityTypeDependencyResolver);
+	}
+
+	private MetaDataService createMockMetaDataService()
+	{
+		MetaDataService metaDataService = mock(MetaDataService.class);
 		when(dataService.getMeta()).thenReturn(metaDataService);
-		when(entityType1.getId()).thenReturn(entityTypeId1);
-		when(entityType1.getLabel()).thenReturn(entityTypeId1);
-
-		String backend = "backend";
-		when(entityType1.getBackend()).thenReturn(backend);
-		when(entityType2.getId()).thenReturn(entityTypeId2);
-		when(entityType2.getLabel()).thenReturn(entityTypeId1);
-		when(entityType2.getBackend()).thenReturn(backend);
-		when(entityType3.getId()).thenReturn(entityTypeId3);
-		when(entityType3.getLabel()).thenReturn(entityTypeId1);
-		when(entityType3.getBackend()).thenReturn(backend);
-
-		when(dataService.getMeta()).thenReturn(metaDataService);
-
-		when(metaDataService.getBackend(entityType1)).thenReturn(repositoryCollection);
-		when(metaDataService.getBackend(entityType2)).thenReturn(repositoryCollection);
-		when(metaDataService.getBackend(entityType3)).thenReturn(repositoryCollection);
-		when(metaDataService.getBackend(backend)).thenReturn(repositoryCollection);
-
-		repo = new EntityTypeRepositoryDecorator(delegateRepository, dataService, entityTypeDependencyResolver);
+		return metaDataService;
 	}
 
 	@Test
 	public void addWithKnownBackend()
 	{
-		when(entityType1.getAttributes()).thenReturn(emptyList());
-		repo.add(entityType1);
-		verify(delegateRepository).add(entityType1);
+		EntityType entityType = when(mock(EntityType.class).getId()).thenReturn("EntityTypeId").getMock();
+		RepositoryCollection repositoryCollection = mock(RepositoryCollection.class);
+		MetaDataService metaDataService = createMockMetaDataService();
+		when(metaDataService.getBackend(entityType)).thenReturn(repositoryCollection);
+
+		entityTypeRepositoryDecorator.add(entityType);
+		verify(delegateRepository).add(entityType);
+		verify(repositoryCollection).createRepository(entityType);
+		verifyNoMoreInteractions(delegateRepository, dataService, entityTypeDependencyResolver);
 	}
 
 	@Test(expectedExceptions = MolgenisDataException.class, expectedExceptionsMessageRegExp = "Unknown backend \\[backend\\]")
 	public void addWithUnknownBackend()
 	{
-		when(entityType1.getAttributes()).thenReturn(emptyList());
-		when(metaDataService.getBackend(entityType1)).thenReturn(null);
-		repo.add(entityType1);
-		verify(delegateRepository).add(entityType1);
+		EntityType entityType = when(mock(EntityType.class).getId()).thenReturn("EntityTypeId").getMock();
+		when(entityType.getBackend()).thenReturn("backend");
+		createMockMetaDataService();
+
+		entityTypeRepositoryDecorator.add(entityType);
 	}
 
 	@Test
 	public void delete()
 	{
+		EntityType entityType = mock(EntityType.class);
+		RepositoryCollection repositoryCollection = mock(RepositoryCollection.class);
+		MetaDataService metaDataService = createMockMetaDataService();
+		when(metaDataService.getBackend(entityType)).thenReturn(repositoryCollection);
+
 		Attribute attr0 = mock(Attribute.class);
 		when(attr0.getChildren()).thenReturn(emptyList());
 		Attribute attrCompound = mock(Attribute.class);
@@ -106,12 +90,12 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 		Attribute attr1b = mock(Attribute.class);
 		when(attr1b.getChildren()).thenReturn(emptyList());
 		when(attrCompound.getChildren()).thenReturn(newArrayList(attr1a, attr1b));
-		when(entityType1.getOwnAttributes()).thenReturn(newArrayList(attr0, attrCompound));
+		when(entityType.getOwnAttributes()).thenReturn(newArrayList(attr0, attrCompound));
 
-		repo.delete(entityType1);
+		entityTypeRepositoryDecorator.delete(entityType);
 
-		verify(delegateRepository).delete(entityType1);
-		verify(repositoryCollection).deleteRepository(entityType1);
+		verify(delegateRepository).delete(entityType);
+		verify(repositoryCollection).deleteRepository(entityType);
 
 		@SuppressWarnings("unchecked")
 		ArgumentCaptor<Stream<Attribute>> attrCaptor = ArgumentCaptor.forClass(Stream.class);
@@ -122,15 +106,16 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void deleteAbstract()
 	{
-		when(entityType1.isAbstract()).thenReturn(true);
+		EntityType entityType = mock(EntityType.class);
+
+		when(entityType.isAbstract()).thenReturn(true);
 		Attribute attr0 = mock(Attribute.class);
 		when(attr0.getChildren()).thenReturn(emptyList());
-		when(entityType1.getOwnAttributes()).thenReturn(singletonList(attr0));
+		when(entityType.getOwnAttributes()).thenReturn(singletonList(attr0));
 
-		repo.delete(entityType1);
+		entityTypeRepositoryDecorator.delete(entityType);
 
-		verify(delegateRepository).delete(entityType1);
-		verify(repositoryCollection, times(0)).deleteRepository(entityType1); // entity is abstract
+		verify(delegateRepository).delete(entityType);
 
 		@SuppressWarnings("unchecked")
 		ArgumentCaptor<Stream<Attribute>> attrCaptor = ArgumentCaptor.forClass(Stream.class);
@@ -141,13 +126,18 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void addRemoveAttributeAbstractEntityType()
 	{
-		EntityType currentEntityType = mock(EntityType.class);
+		String entityTypeId1 = "EntityType1";
+		String entityTypeId2 = "EntityType2";
+		String entityTypeId3 = "EntityType3";
+		EntityType entityType1 = when(mock(EntityType.class).getId()).thenReturn(entityTypeId1).getMock();
+		EntityType entityType2 = when(mock(EntityType.class).getId()).thenReturn(entityTypeId2).getMock();
+		EntityType entityType3 = when(mock(EntityType.class).getId()).thenReturn(entityTypeId3).getMock();
+		EntityType currentEntityType1 = mock(EntityType.class);
 		EntityType currentEntityType2 = mock(EntityType.class);
 		EntityType currentEntityType3 = mock(EntityType.class);
-		when(systemEntityTypeRegistry.getSystemEntityType(entityTypeId1)).thenReturn(null);
-		when(delegateRepository.findOneById(entityTypeId1)).thenReturn(currentEntityType);
-		when(delegateRepository.findOneById(entityTypeId2)).thenReturn(currentEntityType2);
-		when(delegateRepository.findOneById(entityTypeId3)).thenReturn(currentEntityType3);
+		doReturn(currentEntityType1).when(delegateRepository).findOneById(entityTypeId1);
+		doReturn(currentEntityType2).when(delegateRepository).findOneById(entityTypeId2);
+		doReturn(currentEntityType3).when(delegateRepository).findOneById(entityTypeId3);
 
 		Attribute attributeStays = mock(Attribute.class);
 		when(attributeStays.getName()).thenReturn("attributeStays");
@@ -156,18 +146,18 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 		Attribute attributeAdded = mock(Attribute.class);
 		when(attributeAdded.getName()).thenReturn("attributeAdded");
 
-		when(currentEntityType.isAbstract()).thenReturn(true);
-		when(currentEntityType.getOwnAllAttributes()).thenReturn(Lists.newArrayList(attributeStays, attributeRemoved));
+		MetaDataService metaDataService = createMockMetaDataService();
+
+		when(currentEntityType1.isAbstract()).thenReturn(true);
+		when(currentEntityType1.getOwnAllAttributes()).thenReturn(Lists.newArrayList(attributeStays, attributeRemoved));
 		when(entityType1.getOwnAllAttributes()).thenReturn(Lists.newArrayList(attributeStays, attributeAdded));
 		when(metaDataService.getConcreteChildren(entityType1)).thenReturn(Stream.of(entityType2, entityType3));
 		RepositoryCollection backend2 = mock(RepositoryCollection.class);
 		RepositoryCollection backend3 = mock(RepositoryCollection.class);
-		when(metaDataService.getBackend(entityType2)).thenReturn(backend2);
-		when(metaDataService.getBackend(entityType3)).thenReturn(backend3);
+		doReturn(backend2).when(metaDataService).getBackend(entityType2);
+		doReturn(backend3).when(metaDataService).getBackend(entityType3);
 
-		when(dataService.getEntityType(entityTypeId1)).thenReturn(currentEntityType);
-
-		repo.update(entityType1);
+		entityTypeRepositoryDecorator.update(entityType1);
 
 		// verify that attributes got added and deleted in concrete extending entities
 		verify(backend2).addAttribute(currentEntityType2, attributeAdded);
@@ -181,6 +171,13 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void updateConcreteEntityType()
 	{
+		String entityTypeId1 = "EntityType1";
+		EntityType entityType1 = mock(EntityType.class);
+
+		RepositoryCollection repositoryCollection = mock(RepositoryCollection.class);
+		MetaDataService metaDataService = createMockMetaDataService();
+		when(metaDataService.getBackend(entityType1)).thenReturn(repositoryCollection);
+
 		when(entityType1.isAbstract()).thenReturn(false);
 		when(delegateRepository.findOneById(entityTypeId1)).thenReturn(entityType1);
 		when(entityType1.getOwnAllAttributes()).thenReturn(emptyList());
@@ -190,7 +187,7 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 		when(updatedEntityType1.getOwnAllAttributes()).thenReturn(emptyList());
 		when(metaDataService.getConcreteChildren(updatedEntityType1)).thenReturn(Stream.empty());
 
-		repo.update(updatedEntityType1);
+		entityTypeRepositoryDecorator.update(updatedEntityType1);
 
 		verify(repositoryCollection).updateRepository(entityType1, updatedEntityType1);
 	}
@@ -198,6 +195,16 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void deleteEntityTypesWithOneToMany()
 	{
+		String entityTypeId1 = "EntityType1";
+		String entityTypeId2 = "EntityType2";
+		EntityType entityType1 = when(mock(EntityType.class).getId()).thenReturn(entityTypeId1).getMock();
+		EntityType entityType2 = when(mock(EntityType.class).getId()).thenReturn(entityTypeId2).getMock();
+
+		MetaDataService metaDataService = createMockMetaDataService();
+		RepositoryCollection repositoryCollection = mock(RepositoryCollection.class);
+		doReturn(repositoryCollection).when(metaDataService).getBackend(entityType1);
+		doReturn(repositoryCollection).when(metaDataService).getBackend(entityType2);
+
 		Attribute mappedByAttribute = mock(Attribute.class);
 		when(mappedByAttribute.getEntity()).thenReturn(entityType2);
 		when(entityType1.getMappedByAttributes()).thenReturn(Stream.of(mappedByAttribute));
@@ -206,7 +213,7 @@ public class EntityTypeRepositoryDecoratorTest extends AbstractMockitoTest
 		InOrder repositoryCollectionInOrder = inOrder(repositoryCollection);
 		InOrder decoratedRepoInOrder = inOrder(delegateRepository);
 
-		repo.delete(Stream.of(entityType1, entityType2));
+		entityTypeRepositoryDecorator.delete(Stream.of(entityType1, entityType2));
 
 		verify(dataService).delete(ATTRIBUTE_META_DATA, mappedByAttribute);
 		repositoryCollectionInOrder.verify(repositoryCollection).deleteRepository(entityType2);

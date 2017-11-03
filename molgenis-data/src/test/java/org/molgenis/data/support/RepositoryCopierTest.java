@@ -6,7 +6,9 @@ import org.molgenis.data.Entity;
 import org.molgenis.data.Query;
 import org.molgenis.data.Repository;
 import org.molgenis.data.meta.MetaDataService;
-import org.molgenis.data.meta.model.*;
+import org.molgenis.data.meta.model.Attribute;
+import org.molgenis.data.meta.model.AttributeFactory;
+import org.molgenis.data.meta.model.EntityType;
 import org.molgenis.data.meta.model.Package;
 import org.molgenis.test.AbstractMockitoTest;
 import org.testng.annotations.BeforeMethod;
@@ -17,7 +19,7 @@ import java.util.stream.Stream;
 import static java.util.Collections.emptyList;
 import static org.mockito.Mockito.*;
 import static org.molgenis.data.meta.AttributeType.*;
-import static org.molgenis.data.meta.model.EntityTypeMetadata.LABEL;
+import static org.molgenis.data.meta.model.EntityTypeMetadata.*;
 import static org.testng.Assert.assertEquals;
 
 public class RepositoryCopierTest extends AbstractMockitoTest
@@ -95,16 +97,16 @@ public class RepositoryCopierTest extends AbstractMockitoTest
 		Attribute boolAttr = when(mock(Attribute.class).getDataType()).thenReturn(BOOL).getMock();
 		Attribute xrefAttr = when(mock(Attribute.class).getDataType()).thenReturn(XREF).getMock();
 		Attribute mrefAttr = when(mock(Attribute.class).getDataType()).thenReturn(MREF).getMock();
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.ID)).thenReturn(strAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.PACKAGE)).thenReturn(xrefAttr);
-		when(entityTypeMeta.getAttribute(LABEL)).thenReturn(strAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.DESCRIPTION)).thenReturn(strAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.ATTRIBUTES)).thenReturn(mrefAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.IS_ABSTRACT)).thenReturn(boolAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.EXTENDS)).thenReturn(xrefAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.TAGS)).thenReturn(mrefAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.BACKEND)).thenReturn(strAttr);
-		when(entityTypeMeta.getAttribute(EntityTypeMetadata.INDEXING_DEPTH)).thenReturn(intAttr);
+		doReturn(strAttr).when(entityTypeMeta).getAttribute(ID);
+		doReturn(xrefAttr).when(entityTypeMeta).getAttribute(PACKAGE);
+		doReturn(strAttr).when(entityTypeMeta).getAttribute(LABEL);
+		doReturn(strAttr).when(entityTypeMeta).getAttribute(DESCRIPTION);
+		doReturn(mrefAttr).when(entityTypeMeta).getAttribute(ATTRIBUTES);
+		doReturn(boolAttr).when(entityTypeMeta).getAttribute(IS_ABSTRACT);
+		doReturn(xrefAttr).when(entityTypeMeta).getAttribute(EXTENDS);
+		doReturn(mrefAttr).when(entityTypeMeta).getAttribute(TAGS);
+		doReturn(strAttr).when(entityTypeMeta).getAttribute(BACKEND);
+		doReturn(intAttr).when(entityTypeMeta).getAttribute(INDEXING_DEPTH);
 		return entityTypeMeta;
 	}
 }

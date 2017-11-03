@@ -39,7 +39,6 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@BeforeMethod
 	public void setUpBeforeMethod()
 	{
-		when(delegateRepository.getEntityType()).thenReturn(entityType);
 		entityReferenceResolverDecorator = new EntityReferenceResolverDecorator(delegateRepository, entityManager);
 	}
 
@@ -151,6 +150,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void findAllAsStreamFetch()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		Entity entity0 = mock(Entity.class);
 		@SuppressWarnings("unchecked")
 		Query<Entity> query = mock(Query.class);
@@ -166,6 +167,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void findAllAsStreamNoFetch()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		Entity entity0 = mock(Entity.class);
 		@SuppressWarnings("unchecked")
 		Query<Entity> query = mock(Query.class);
@@ -179,6 +182,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void findAllStream()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		Object id0 = "id0";
 		Object id1 = "id1";
 		Entity entity0 = mock(Entity.class);
@@ -197,6 +202,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void findAllStreamFetch()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		Fetch fetch = new Fetch();
 		Object id0 = "id0";
 		Object id1 = "id1";
@@ -216,6 +223,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void streamFetch()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		Fetch fetch = new Fetch();
 		Entity entity0 = mock(Entity.class);
 		Entity entity1 = mock(Entity.class);
@@ -242,6 +251,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void findOneQueryFetchEntity()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		Fetch fetch = new Fetch();
 		@SuppressWarnings("unchecked")
 		Query<Entity> q = mock(Query.class);
@@ -256,10 +267,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void findOneQueryFetchEntityNull()
 	{
-		Fetch fetch = new Fetch();
 		@SuppressWarnings("unchecked")
 		Query<Entity> q = mock(Query.class);
-		when(q.getFetch()).thenReturn(fetch);
 		entityReferenceResolverDecorator.findOne(q);
 		verify(delegateRepository, times(1)).findOne(q);
 		verifyZeroInteractions(entityManager);
@@ -287,6 +296,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void findOneObjectFetch()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		Object id = 1;
 		Fetch fetch = new Fetch();
 		Entity entity = mock(Entity.class);
@@ -332,6 +343,8 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 	@Test
 	public void iterator()
 	{
+		when(delegateRepository.getEntityType()).thenReturn(entityType);
+
 		QueryImpl<Entity> q = new QueryImpl<>();
 		Stream<Entity> entities = Stream.of(mock(Entity.class));
 		when(delegateRepository.findAll(q)).thenReturn(entities);

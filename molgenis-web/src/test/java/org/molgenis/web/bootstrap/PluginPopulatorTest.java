@@ -63,12 +63,10 @@ public class PluginPopulatorTest extends AbstractMockitoTest
 		Plugin changedPlugin = when(mock(Plugin.class).getId()).thenReturn("changedPlugin").getMock();
 		when(changedPlugin.setLabel("changedPlugin")).thenReturn(changedPlugin);
 		Plugin existingChangedPlugin = when(mock(Plugin.class).getId()).thenReturn("changedPlugin").getMock();
-		when(existingChangedPlugin.setLabel("oldChangedPlugin")).thenReturn(existingChangedPlugin);
 		Plugin deletedPlugin = when(mock(Plugin.class).getId()).thenReturn("deletedPlugin").getMock();
-		when(deletedPlugin.setLabel("deletedPlugin")).thenReturn(deletedPlugin);
 
-		when(pluginFactory.create("newPlugin")).thenReturn(newPlugin);
-		when(pluginFactory.create("changedPlugin")).thenReturn(changedPlugin);
+		doReturn(newPlugin).when(pluginFactory).create("newPlugin");
+		doReturn(changedPlugin).when(pluginFactory).create("changedPlugin");
 		when(dataService.getRepository(PluginMetadata.PLUGIN, Plugin.class)).thenReturn(pluginRepository);
 		when(dataService.findAll(PluginMetadata.PLUGIN, Plugin.class)).thenReturn(
 				Stream.of(existingChangedPlugin, deletedPlugin));
