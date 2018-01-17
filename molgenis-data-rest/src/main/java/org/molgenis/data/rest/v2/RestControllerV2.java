@@ -21,6 +21,7 @@ import org.molgenis.data.validation.meta.NameValidator;
 import org.molgenis.i18n.LanguageService;
 import org.molgenis.security.core.Permission;
 import org.molgenis.security.core.PermissionService;
+import org.molgenis.util.MolgenisRuntimeException;
 import org.molgenis.util.UnexpectedEnumException;
 import org.molgenis.web.ErrorMessageResponse;
 import org.molgenis.web.ErrorMessageResponse.ErrorMessage;
@@ -654,7 +655,7 @@ public class RestControllerV2
 			Attribute yAttr = aggsQ.getAttributeY();
 			if (xAttr == null && yAttr == null)
 			{
-				throw new MolgenisQueryException("Aggregate query is missing 'x' or 'y' attribute");
+				throw new MolgenisRuntimeException("Aggregate query is missing 'x' or 'y' attribute");
 			}
 			AggregateResult aggs = dataService.aggregate(entityTypeId, aggsQ);
 			AttributeResponseV2 xAttrResponse =
