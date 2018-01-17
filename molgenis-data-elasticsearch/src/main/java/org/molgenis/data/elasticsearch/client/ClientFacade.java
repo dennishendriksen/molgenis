@@ -33,13 +33,13 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.sort.SortBuilder;
 import org.molgenis.data.MolgenisDataException;
-import org.molgenis.data.MolgenisQueryException;
 import org.molgenis.data.elasticsearch.client.model.SearchHit;
 import org.molgenis.data.elasticsearch.client.model.SearchHits;
 import org.molgenis.data.elasticsearch.generator.model.*;
 import org.molgenis.data.index.exception.IndexAlreadyExistsException;
 import org.molgenis.data.index.exception.IndexException;
 import org.molgenis.data.index.exception.UnknownIndexException;
+import org.molgenis.util.MolgenisRuntimeException;
 import org.molgenis.util.UnexpectedEnumException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -353,7 +353,7 @@ public class ClientFacade implements Closeable
 	{
 		if (size > 10000)
 		{
-			throw new MolgenisQueryException(
+			throw new MolgenisRuntimeException(
 					String.format("Batch size of %s exceeds the maximum batch size of %s for search queries", size,
 							MAX_BATCH_SIZE));
 		}
