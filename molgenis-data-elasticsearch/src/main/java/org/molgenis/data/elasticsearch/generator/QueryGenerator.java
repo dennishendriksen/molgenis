@@ -2,7 +2,10 @@ package org.molgenis.data.elasticsearch.generator;
 
 import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.*;
-import org.molgenis.data.*;
+import org.molgenis.data.Entity;
+import org.molgenis.data.Query;
+import org.molgenis.data.QueryRule;
+import org.molgenis.data.UnknownAttributeException;
 import org.molgenis.data.meta.AttributeType;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.EntityType;
@@ -76,7 +79,7 @@ public class QueryGenerator
 				{
 					QueryRule occurQueryRule = queryRules.get(i + 1);
 					QueryRule.Operator occurOperator = occurQueryRule.getOperator();
-					if (occurOperator == null) throw new MolgenisQueryException("Missing expected occur operator");
+					if (occurOperator == null) throw new QueryGenerationException("Missing expected occur operator");
 
 					//noinspection EnumSwitchStatementWhichMissesCases
 					switch (occurOperator)
@@ -85,13 +88,13 @@ public class QueryGenerator
 						case OR:
 							if (occur != null && occurOperator != occur)
 							{
-								throw new MolgenisQueryException(
+								throw new QueryGenerationException(
 										"Mixing query operators not allowed, use nested queries");
 							}
 							occur = occurOperator;
 							break;
 						default:
-							throw new MolgenisQueryException(
+							throw new QueryGenerationException(
 									"Expected query occur operator instead of [" + occurOperator + "]");
 					}
 				}
@@ -113,7 +116,7 @@ public class QueryGenerator
 						boolQuery.mustNot(queryPartBuilder);
 						break;
 					default:
-						throw new MolgenisQueryException("Unknown occurence operator [" + occur + "]");
+						throw new QueryGenerationException("Unknown occurence operator [" + occur + "]");
 				}
 			}
 			queryBuilder = boolQuery;
@@ -154,7 +157,7 @@ public class QueryGenerator
 			case AND:
 			case OR:
 			case NOT:
-				throw new MolgenisQueryException(format("Unexpected query operator [%s]", queryOperator.toString()));
+				throw new QueryGenerationException(format("Unexpected query operator [%s]", queryOperator.toString()));
 			default:
 				throw new UnexpectedEnumException(queryOperator);
 		}
@@ -225,7 +228,7 @@ public class QueryGenerator
 			case ONE_TO_MANY:
 				if (attributePath.size() > 1)
 				{
-					throw new MolgenisQueryException("Can not filter on references deeper than 1.");
+					throw new QueryGenerationException("Can not filter on references deeper than 1.");
 				}
 
 				Attribute refIdAttr = attr.getRefEntity().getIdAttribute();
@@ -238,7 +241,7 @@ public class QueryGenerator
 				return QueryBuilders.nestedQuery(fieldName, QueryBuilders.termQuery(indexFieldName, queryValue),
 						ScoreMode.Avg);
 			case COMPOUND:
-				throw new MolgenisQueryException(format("Illegal attribute type [%s]", attrType.toString()));
+				throw new QueryGenerationException(format("Illegal attribute type [%s]", attrType.toString()));
 			default:
 				throw new UnexpectedEnumException(attrType);
 		}
@@ -275,7 +278,7 @@ public class QueryGenerator
 			case XREF:
 				if (attributePath.size() > 1)
 				{
-					throw new MolgenisQueryException("Can not filter on references deeper than 1.");
+					throw new QueryGenerationException("Can not filter on references deeper than 1.");
 				}
 
 				Attribute refIdAttr = attr.getRefEntity().getIdAttribute();
@@ -286,7 +289,7 @@ public class QueryGenerator
 									.mustNot(QueryBuilders.nestedQuery(fieldName,
 											QueryBuilders.existsQuery(indexFieldName), ScoreMode.Avg));
 			case COMPOUND:
-				throw new MolgenisQueryException(format("Illegal attribute type [%s]", attrType.toString()));
+				throw new QueryGenerationException(format("Illegal attribute type [%s]", attrType.toString()));
 			default:
 				throw new UnexpectedEnumException(attrType);
 		}
@@ -298,7 +301,7 @@ public class QueryGenerator
 		Object queryValue = queryRule.getValue();
 
 		QueryBuilder queryBuilder;
-		if (queryValue == null) throw new MolgenisQueryException("Query value cannot be null");
+		if (queryValue == null) throw new QueryGenerationException("Query value cannot be null");
 
 		if (queryField == null)
 		{
@@ -342,7 +345,7 @@ public class QueryGenerator
 					break;
 				case BOOL:
 				case COMPOUND:
-					throw new MolgenisQueryException(
+					throw new QueryGenerationException(
 							"Illegal data type [" + dataType + "] for operator [" + QueryRule.Operator.FUZZY_MATCH
 									+ "]");
 				default:
@@ -358,7 +361,7 @@ public class QueryGenerator
 		Object queryValue = queryRule.getValue();
 
 		QueryBuilder queryBuilder;
-		if (queryValue == null) throw new MolgenisQueryException("Query value cannot be null");
+		if (queryValue == null) throw new QueryGenerationException("Query value cannot be null");
 
 		if (queryField == null)
 		{
@@ -413,11 +416,11 @@ public class QueryGenerator
 		Object queryRuleValue = queryRule.getValue();
 		if (queryRuleValue == null)
 		{
-			throw new MolgenisQueryException("Query value cannot be null");
+			throw new QueryGenerationException("Query value cannot be null");
 		}
 		if (!(queryRuleValue instanceof Iterable<?>))
 		{
-			throw new MolgenisQueryException(
+			throw new QueryGenerationException(
 					"Query value must be a Iterable instead of [" + queryRuleValue.getClass().getSimpleName() + "]");
 		}
 		Object[] queryValues = StreamSupport.stream(((Iterable<?>) queryRuleValue).spliterator(), false)
@@ -472,7 +475,7 @@ public class QueryGenerator
 				queryBuilder = QueryBuilders.nestedQuery(fieldName, queryBuilder, ScoreMode.Avg);
 				break;
 			case COMPOUND:
-				throw new MolgenisQueryException(
+				throw new QueryGenerationException(
 						"Illegal data type [" + dataType + "] for operator [" + QueryRule.Operator.IN + "]");
 			default:
 				throw new UnexpectedEnumException(dataType);
@@ -504,7 +507,7 @@ public class QueryGenerator
 			case DECIMAL:
 			case INT:
 			case LONG:
-				throw new MolgenisQueryException(format("Illegal data type [%s] for operator [%s]", attrType, LIKE));
+				throw new QueryGenerationException(format("Illegal data type [%s] for operator [%s]", attrType, LIKE));
 			case CATEGORICAL:
 			case CATEGORICAL_MREF:
 			case FILE:
@@ -526,7 +529,7 @@ public class QueryGenerator
 		List<QueryRule> nestedQueryRules = queryRule.getNestedRules();
 		if (nestedQueryRules == null || nestedQueryRules.isEmpty())
 		{
-			throw new MolgenisQueryException("Missing nested rules for nested query");
+			throw new QueryGenerationException("Missing nested rules for nested query");
 		}
 		return createQueryBuilder(nestedQueryRules, entityType);
 	}
@@ -541,11 +544,11 @@ public class QueryGenerator
 		Object queryValue = getQueryValue(attr, queryRule.getValue());
 		if (queryValue == null)
 		{
-			throw new MolgenisQueryException("Query value cannot be null");
+			throw new QueryGenerationException("Query value cannot be null");
 		}
 		if (!(queryValue instanceof Iterable<?>))
 		{
-			throw new MolgenisQueryException(
+			throw new QueryGenerationException(
 					format("Query value must be a Iterable instead of [%s]", queryValue.getClass().getSimpleName()));
 		}
 		Iterator<?> queryValuesIterator = ((Iterable<?>) queryValue).iterator();
@@ -566,7 +569,7 @@ public class QueryGenerator
 		Object queryValue = getQueryValue(attr, queryRule.getValue());
 		if (queryValue == null)
 		{
-			throw new MolgenisQueryException("Query value cannot be null");
+			throw new QueryGenerationException("Query value cannot be null");
 		}
 
 		RangeQueryBuilder filterBuilder = QueryBuilders.rangeQuery(fieldName);
@@ -598,7 +601,7 @@ public class QueryGenerator
 			case RANGE:
 			case SEARCH:
 			case SHOULD:
-				throw new MolgenisQueryException(format("Illegal query rule operator [%s]", operator.toString()));
+				throw new QueryGenerationException(format("Illegal query rule operator [%s]", operator.toString()));
 			default:
 				throw new UnexpectedEnumException(operator);
 		}
@@ -610,7 +613,7 @@ public class QueryGenerator
 	{
 		if (queryRule.getValue() == null)
 		{
-			throw new MolgenisQueryException("Query value cannot be null");
+			throw new QueryGenerationException("Query value cannot be null");
 		}
 
 		if (queryRule.getField() == null)
@@ -664,9 +667,9 @@ public class QueryGenerator
 				return QueryBuilders.nestedQuery(fieldName,
 						QueryBuilders.matchQuery(fieldName + '.' + "_all", queryValue), ScoreMode.Avg);
 			case BOOL:
-				throw new MolgenisQueryException("Cannot execute search query on [" + dataType + "] attribute");
+				throw new QueryGenerationException("Cannot execute search query on [" + dataType + "] attribute");
 			case COMPOUND:
-				throw new MolgenisQueryException(
+				throw new QueryGenerationException(
 						"Illegal data type [" + dataType + "] for operator [" + QueryRule.Operator.SEARCH + "]");
 			default:
 				throw new UnexpectedEnumException(dataType);
@@ -711,7 +714,7 @@ public class QueryGenerator
 			case ONE_TO_MANY:
 				return useNotAnalyzedField(attr.getRefEntity().getIdAttribute());
 			case COMPOUND:
-				throw new MolgenisQueryException(format("Illegal attribute type [%s]", attrType.toString()));
+				throw new QueryGenerationException(format("Illegal attribute type [%s]", attrType.toString()));
 			default:
 				throw new UnexpectedEnumException(attrType);
 		}
@@ -744,7 +747,7 @@ public class QueryGenerator
 			case STRING:
 			case TEXT:
 			case XREF:
-				throw new MolgenisQueryException("Range query not allowed for type [" + dataType + "]");
+				throw new QueryGenerationException("Range query not allowed for type [" + dataType + "]");
 			default:
 				throw new UnexpectedEnumException(dataType);
 		}
@@ -769,7 +772,7 @@ public class QueryGenerator
 				entityTypeAtCurrentDepth = attribute.getRefEntity();
 				if (entityTypeAtCurrentDepth == null)
 				{
-					throw new MolgenisQueryException(
+					throw new QueryGenerationException(
 							format("Invalid query field [%s]: attribute [%s] does not refer to another entity",
 									queryRuleField, attribute.getName()));
 				}
@@ -843,7 +846,7 @@ public class QueryGenerator
 				}
 				else
 				{
-					throw new MolgenisQueryException(format("Query value must be of type LocalDate instead of [%s]",
+					throw new QueryGenerationException(format("Query value must be of type LocalDate instead of [%s]",
 							queryRuleValue.getClass().getSimpleName()));
 				}
 			case DATE_TIME:
@@ -857,11 +860,11 @@ public class QueryGenerator
 				}
 				else
 				{
-					throw new MolgenisQueryException(format("Query value must be of type Instant instead of [%s]",
+					throw new QueryGenerationException(format("Query value must be of type Instant instead of [%s]",
 							queryRuleValue.getClass().getSimpleName()));
 				}
 			case COMPOUND:
-				throw new MolgenisQueryException(format("Illegal attribute type [%s]", attrType.toString()));
+				throw new QueryGenerationException(format("Illegal attribute type [%s]", attrType.toString()));
 			default:
 				throw new UnexpectedEnumException(attrType);
 		}

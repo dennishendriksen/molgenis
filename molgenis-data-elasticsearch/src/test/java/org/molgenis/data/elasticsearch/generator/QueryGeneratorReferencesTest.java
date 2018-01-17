@@ -5,7 +5,10 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.mockito.quality.Strictness;
-import org.molgenis.data.*;
+import org.molgenis.data.AbstractMolgenisSpringTest;
+import org.molgenis.data.DataConverter;
+import org.molgenis.data.Entity;
+import org.molgenis.data.Query;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.AttributeFactory;
 import org.molgenis.data.meta.model.EntityType;
@@ -278,7 +281,7 @@ public class QueryGeneratorReferencesTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleEqualsCategorical()
 	{
 		String value = "id";
@@ -297,7 +300,7 @@ public class QueryGeneratorReferencesTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleNotEqualsCategorical()
 	{
 		String value = "id";
@@ -305,7 +308,7 @@ public class QueryGeneratorReferencesTest extends AbstractMolgenisSpringTest
 		queryGenerator.createQueryBuilder(q, entityType);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleNotEqualsCompound()
 	{
 		Object value = "value";

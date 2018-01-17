@@ -4,7 +4,10 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.mockito.quality.Strictness;
-import org.molgenis.data.*;
+import org.molgenis.data.AbstractMolgenisSpringTest;
+import org.molgenis.data.DataConverter;
+import org.molgenis.data.Entity;
+import org.molgenis.data.Query;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.AttributeFactory;
 import org.molgenis.data.meta.model.EntityType;
@@ -127,7 +130,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		queryGenerator = new QueryGenerator(documentIdGenerator);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleGreaterInvalidAttribute()
 	{
 		String value = "str";
@@ -188,7 +191,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleGreaterEqualInvalidAttribute()
 	{
 		String value = "str";
@@ -250,7 +253,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLesserEqualInvalidAttribute()
 	{
 		String value = "str";
@@ -312,7 +315,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLesserInvalidAttribute()
 	{
 		String value = "str";
@@ -629,7 +632,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLikeBool()
 	{
 		String value = "value";
@@ -645,7 +648,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		queryGenerator.createQueryBuilder(q, entityType);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLikeCompound()
 	{
 		String value = "value";
@@ -664,7 +667,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLikeDate()
 	{
 		String value = "value";
@@ -672,7 +675,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		queryGenerator.createQueryBuilder(q, entityType);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLikeDateTime()
 	{
 		String value = "value";
@@ -680,7 +683,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		queryGenerator.createQueryBuilder(q, entityType);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLikeDecimal()
 	{
 		String value = "value";
@@ -729,7 +732,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLikeInt()
 	{
 		String value = "value";
@@ -737,7 +740,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		queryGenerator.createQueryBuilder(q, entityType);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleLikeLong()
 	{
 		String value = "value";
@@ -811,7 +814,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleEqualsCompoundNull()
 	{
 		Object value = null;
@@ -992,7 +995,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleNotEqualsCompoundNull()
 	{
 		Object value = null;
@@ -1186,7 +1189,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleEqualsCompound()
 	{
 		Object value = "value";
@@ -1369,7 +1372,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleNotEqualsCompound()
 	{
 		Object value = "value";
@@ -1568,7 +1571,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleSearchOneFieldBool()
 	{
 		String value = "value";
@@ -1587,7 +1590,7 @@ public class QueryGeneratorTest extends AbstractMolgenisSpringTest
 		assertQueryBuilderEquals(query, expectedQuery);
 	}
 
-	@Test(expectedExceptions = MolgenisQueryException.class)
+	@Test(expectedExceptions = QueryGenerationException.class)
 	public void generateOneQueryRuleSearchOneFieldCompound()
 	{
 		String value = "value";
