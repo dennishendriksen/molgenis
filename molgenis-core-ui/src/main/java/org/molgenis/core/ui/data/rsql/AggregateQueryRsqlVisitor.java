@@ -3,7 +3,6 @@ package org.molgenis.core.ui.data.rsql;
 import cz.jirutka.rsql.parser.ast.*;
 import org.apache.commons.lang3.StringUtils;
 import org.molgenis.data.Entity;
-import org.molgenis.data.MolgenisQueryException;
 import org.molgenis.data.Query;
 import org.molgenis.data.UnknownAttributeException;
 import org.molgenis.data.aggregation.AggregateQuery;
@@ -45,7 +44,7 @@ public class AggregateQueryRsqlVisitor extends NoArgRSQLVisitorAdapter<Aggregate
 	@Override
 	public AggregateQuery visit(OrNode node)
 	{
-		throw new MolgenisQueryException("RSQL query operator OR (';' or 'or') not allowed in aggregates query");
+		throw new RsqlQueryException("RSQL query operator OR (';' or 'or') not allowed in aggregates query");
 	}
 
 	@Override
@@ -54,7 +53,7 @@ public class AggregateQueryRsqlVisitor extends NoArgRSQLVisitorAdapter<Aggregate
 		String symbol = node.getOperator().getSymbol();
 		if (!symbol.equals("=="))
 		{
-			throw new MolgenisQueryException(
+			throw new RsqlQueryException(
 					String.format("RSQL query symbol [%s] not allowed in aggregates query, use ['==']", symbol));
 		}
 
@@ -71,7 +70,7 @@ public class AggregateQueryRsqlVisitor extends NoArgRSQLVisitorAdapter<Aggregate
 				aggsQ.setAttributeDistinct(getAttribute(node));
 				break;
 			default:
-				throw new MolgenisQueryException(String.format(
+				throw new RsqlQueryException(String.format(
 						"RSQL query selector [%s] not allowed in aggregates query, use ['x', 'y' or 'distinct']",
 						selector));
 		}
@@ -83,9 +82,8 @@ public class AggregateQueryRsqlVisitor extends NoArgRSQLVisitorAdapter<Aggregate
 		List<String> args = node.getArguments();
 		if (args.size() != 1)
 		{
-			throw new MolgenisQueryException(
-					String.format("RSQL query value must have exactly one value instead of [%s]",
-							StringUtils.join(args, ',')));
+			throw new RsqlQueryException(String.format("RSQL query value must have exactly one value instead of [%s]",
+					StringUtils.join(args, ',')));
 		}
 		String attrName = args.iterator().next();
 

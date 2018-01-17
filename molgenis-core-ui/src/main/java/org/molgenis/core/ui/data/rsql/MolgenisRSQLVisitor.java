@@ -2,7 +2,6 @@ package org.molgenis.core.ui.data.rsql;
 
 import cz.jirutka.rsql.parser.ast.*;
 import org.molgenis.data.Entity;
-import org.molgenis.data.MolgenisQueryException;
 import org.molgenis.data.Query;
 import org.molgenis.data.UnknownAttributeException;
 import org.molgenis.data.meta.model.Attribute;
@@ -147,13 +146,13 @@ public class MolgenisRSQLVisitor extends NoArgRSQLVisitorAdapter<Query<Entity>>
 				q.not().eq(attrName, notEqValue);
 				break;
 			case "=should=":
-				throw new MolgenisQueryException("Unsupported RSQL query operator [" + symbol + "]");
+				throw new RsqlQueryException("Unsupported RSQL query operator [" + symbol + "]");
 			case "=dismax=":
-				throw new MolgenisQueryException("Unsupported RSQL query operator [" + symbol + "]");
+				throw new RsqlQueryException("Unsupported RSQL query operator [" + symbol + "]");
 			case "=fuzzy=":
-				throw new MolgenisQueryException("Unsupported RSQL query operator [" + symbol + "]");
+				throw new RsqlQueryException("Unsupported RSQL query operator [" + symbol + "]");
 			default:
-				throw new MolgenisQueryException("Unknown RSQL query operator [" + symbol + "]");
+				throw new RsqlQueryException("Unknown RSQL query operator [" + symbol + "]");
 		}
 		return q;
 	}
