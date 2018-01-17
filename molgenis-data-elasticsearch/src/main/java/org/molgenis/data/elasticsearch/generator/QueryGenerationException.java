@@ -8,22 +8,8 @@ public class QueryGenerationException extends RuntimeException
 {
 	private static final long serialVersionUID = 1L;
 
-	public QueryGenerationException()
-	{
-	}
-
-	public QueryGenerationException(String msg)
+	QueryGenerationException(String msg)
 	{
 		super(msg);
-	}
-
-	public QueryGenerationException(Throwable t)
-	{
-		super(t);
-	}
-
-	public QueryGenerationException(String msg, Throwable t)
-	{
-		super(msg, t);
 	}
 }
