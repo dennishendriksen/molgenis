@@ -38,23 +38,30 @@
     function createFilterModalControls(modal) {
         $('.filter-apply-btn', modal).unbind('click');
         $('.filter-apply-btn', modal).click(function () {
-            var filters = molgenis.dataexplorer.filter.createFilters($('form', modal));
-            $(document).trigger('updateAttributeFilters', {
-                'filters': filters
-            });
+            var tokens = $('#query-area').val().split('\n');
+
+            var form = $('form', modal);
+            var container = $('.complex-filter-container', form);
+            var attribute = container.first().data('attribute');
+            var q = [];
+            for (var i = 0; i < tokens.length; i++) {
+                if (i > 0) {
+                    q.push({
+                        operator: 'OR'
+                    });
+                }
+                q.push({
+                    field: attribute.name,
+                    operator: 'EQUALS',
+                    value: tokens[i]
+                })
+            }
+            $(document).trigger('changeQuery', {'q': q});
         });
 
         $(modal).unbind('shown.bs.modal');
         modal.on('shown.bs.modal', function () {
             $('form input:visible:first', modal).focus();
-        });
-
-        $(modal).unbind('keypress');
-        modal.keypress(function (e) {
-            if (e.which == 13) {
-                e.preventDefault();
-                $('.filter-apply-btn', modal).click();
-            }
         });
     }
 }($, window.top.molgenis = window.top.molgenis || {}));

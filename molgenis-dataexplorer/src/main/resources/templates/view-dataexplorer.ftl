@@ -193,7 +193,8 @@
                     <legend>Description</legend>
                     <p class="filter-description"></p>
                     <legend>Filter</legend>
-                    <form class="form-horizontal"></form>
+                    <textarea id="query-area" rows="10" cols="50"></textarea>
+                    <form class="form-horizontal" style="display: none"></form>
                 </div>
 
                 <div class="modal-footer">
