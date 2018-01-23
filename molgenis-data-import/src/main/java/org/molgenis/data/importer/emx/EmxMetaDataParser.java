@@ -20,13 +20,18 @@ import org.molgenis.data.meta.model.*;
 import org.molgenis.data.meta.model.Package;
 import org.molgenis.data.support.EntityTypeUtils;
 import org.molgenis.data.util.EntityUtils;
+import org.molgenis.data.validation.EntityCollectionValidationException;
+import org.molgenis.data.validation.EntityValidationErrors;
 import org.molgenis.data.validation.meta.AttributeValidator;
 import org.molgenis.data.validation.meta.AttributeValidator.ValidationMode;
 import org.molgenis.data.validation.meta.EntityTypeValidator;
 import org.molgenis.data.validation.meta.TagValidator;
 import org.molgenis.i18n.LanguageService;
+import org.springframework.validation.Errors;
 
 import java.util.*;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static com.google.common.collect.ImmutableMap.builder;
 import static com.google.common.collect.Lists.newArrayList;
@@ -37,6 +42,9 @@ import static java.lang.Boolean.TRUE;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toMap;
 import static org.molgenis.data.DataConverter.toList;
 import static org.molgenis.data.file.model.FileMetaMetaData.FILE_META;
 import static org.molgenis.data.i18n.I18nUtils.getLanguageCode;
@@ -281,26 +289,31 @@ public class EmxMetaDataParser implements MetaDataParser
 		else return getEntityTypeFromDataService(dataService, source.getEntityTypeIds());
 	}
 
+	public static <T> Stream<T> stream(Iterable<T> iterable)
+	{
+		return StreamSupport.stream(iterable.spliterator(), false);
+	}
+
 	private EntitiesValidationReport buildValidationReport(RepositoryCollection source,
 			MyEntitiesValidationReport report, Map<String, EntityType> metaDataMap)
 	{
-		metaDataMap.values().forEach(entityTypeValidator::validate);
-		metaDataMap.values().stream().map(EntityType::getAllAttributes).forEach(attributes -> attributes.forEach(attr ->
+		Collection<EntityType> entityTypes = metaDataMap.values();
+		entityTypes.forEach(entityTypeValidator::validate);
+		entityTypes.stream().map(EntityType::getAllAttributes).forEach(attributes -> attributes.forEach(attr ->
 		{
 			attributeValidator.validate(attr, ValidationMode.ADD_SKIP_ENTITY_VALIDATION);
 		}));
 
 		// validate package/entity/attribute tags
-		metaDataMap.values()
-				   .stream()
-				   .map(EntityType::getPackage)
-				   .filter(Objects::nonNull)
-				   .forEach(package_ -> package_.getTags().forEach(tagValidator::validate));
-		metaDataMap.values().forEach(entityType -> entityType.getTags().forEach(tagValidator::validate));
-		metaDataMap.values().stream().map(EntityType::getAllAttributes).forEach(attributes -> attributes.forEach(attr ->
+		Collection<Tag> tags = getTags(entityTypes);
+		List<EntityValidationErrors<?>> tagValidationErrors = tags.stream()
+																  .map(tagValidator::validate)
+																  .filter(Errors::hasErrors)
+																  .collect(toList());
+		if (!tagValidationErrors.isEmpty())
 		{
-			attr.getTags().forEach(tagValidator::validate);
-		}));
+			throw new EntityCollectionValidationException(tagValidationErrors);
+		}
 
 		report = generateEntityValidationReport(source, report, metaDataMap);
 
@@ -310,6 +323,31 @@ public class EmxMetaDataParser implements MetaDataParser
 			if (!report.getSheetsImportable().containsKey(entityTypeId)) report.addEntity(entityTypeId, true);
 		}
 		return report;
+	}
+
+	/**
+	 * Returns stream of:
+	 * - entity type tags
+	 * - entity type package tags
+	 * - entity type attribute tags
+	 */
+	@SuppressWarnings("ResultOfMethodCallIgnored")
+	private Collection<Tag> getTags(Collection<EntityType> entityTypes)
+	{
+		Map<String, Tag> tags = new LinkedHashMap<>();
+		entityTypes.stream()
+				   .map(EntityType::getPackage)
+				   .filter(Objects::nonNull)
+				   .flatMap(p -> stream(p.getTags()))
+				   .collect(toMap(Tag::getId, identity(), (u, v) -> u, () -> tags));
+		entityTypes.stream()
+				   .flatMap(entityType -> stream(entityType.getTags()))
+				   .collect(toMap(Tag::getId, identity(), (u, v) -> u, () -> tags));
+		entityTypes.stream()
+				   .flatMap(entityType -> stream(entityType.getOwnAllAttributes()))
+				   .flatMap(attribute -> stream(attribute.getTags()))
+				   .collect(toMap(Tag::getId, identity(), (u, v) -> u, () -> tags));
+		return tags.values();
 	}
 
 	/**

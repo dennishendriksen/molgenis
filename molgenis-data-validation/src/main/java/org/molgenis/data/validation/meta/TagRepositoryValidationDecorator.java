@@ -3,6 +3,8 @@ package org.molgenis.data.validation.meta;
 import org.molgenis.data.AbstractRepositoryDecorator;
 import org.molgenis.data.Repository;
 import org.molgenis.data.meta.model.Tag;
+import org.molgenis.data.validation.EntityValidationErrors;
+import org.molgenis.data.validation.EntityValidationException;
 
 import java.util.stream.Stream;
 
@@ -24,14 +26,14 @@ public class TagRepositoryValidationDecorator extends AbstractRepositoryDecorato
 	@Override
 	public void update(Tag tag)
 	{
-		tagValidator.validate(tag);
+		validate(tag);
 		super.update(tag);
 	}
 
 	@Override
 	public void add(Tag tag)
 	{
-		tagValidator.validate(tag);
+		validate(tag);
 		super.add(tag);
 	}
 
@@ -40,7 +42,7 @@ public class TagRepositoryValidationDecorator extends AbstractRepositoryDecorato
 	{
 		return delegate().add(tagStream.filter(tag ->
 		{
-			tagValidator.validate(tag);
+			validate(tag);
 			return true;
 		}));
 	}
@@ -48,10 +50,19 @@ public class TagRepositoryValidationDecorator extends AbstractRepositoryDecorato
 	@Override
 	public void update(Stream<Tag> tagStream)
 	{
-		delegate().update(tagStream.filter(entityType ->
+		delegate().update(tagStream.filter(tag ->
 		{
-			tagValidator.validate(entityType);
+			validate(tag);
 			return true;
 		}));
+	}
+
+	private void validate(Tag tag)
+	{
+		EntityValidationErrors<Tag> tagValidationErrors = tagValidator.validate(tag);
+		if (tagValidationErrors.hasErrors())
+		{
+			throw new EntityValidationException(tagValidationErrors);
+		}
 	}
 }

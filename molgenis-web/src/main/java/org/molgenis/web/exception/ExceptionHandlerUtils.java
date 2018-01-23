@@ -30,8 +30,8 @@ import static com.google.common.collect.Lists.newArrayList;
 
 class ExceptionHandlerUtils
 {
-	private static final String VIEW_EXCEPTION = "view-exception";
-	private static final String KEY_ERROR_MESSAGE_RESPONSE = "errorMessageResponse";
+	static final String VIEW_EXCEPTION = "view-exception";
+	static final String KEY_ERROR_MESSAGE_RESPONSE = "errorMessageResponse";
 	public static final String DEVELOPMENT = "development";
 	public static final String PRODUCTION = "production";
 	public static final String STACK_TRACE = "stackTrace";
@@ -128,7 +128,7 @@ class ExceptionHandlerUtils
 		return new ErrorMessageResponse(errorMessages);
 	}
 
-	private static boolean isHtmlRequest(HandlerMethod handlerMethod)
+	static boolean isHtmlRequest(HandlerMethod handlerMethod)
 	{
 		return !(handlerMethod.hasMethodAnnotation(ResponseBody.class) || handlerMethod.hasMethodAnnotation(
 				ResponseStatus.class) || handlerMethod.getBeanType().isAnnotationPresent(ResponseBody.class)
