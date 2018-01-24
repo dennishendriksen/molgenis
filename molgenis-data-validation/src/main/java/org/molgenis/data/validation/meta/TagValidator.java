@@ -32,7 +32,8 @@ public class TagValidator extends EntityValidator<Tag>
 		Relation relation = Relation.forIRI(relationIri);
 		if (relation == null)
 		{
-			errors.rejectValue(RELATION_IRI, "V20", new Object[] { tag.getId() }, format("id:%s", tag.getId()));
+			errors.rejectValue(RELATION_IRI, "V20", new Object[] { tag.getId(), relationIri },
+					format("id:%s relationIri:%s", tag.getId(), relationIri));
 		}
 	}
 }

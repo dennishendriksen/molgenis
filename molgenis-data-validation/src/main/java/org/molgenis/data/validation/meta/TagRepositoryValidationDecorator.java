@@ -4,7 +4,7 @@ import org.molgenis.data.AbstractRepositoryDecorator;
 import org.molgenis.data.Repository;
 import org.molgenis.data.meta.model.Tag;
 import org.molgenis.data.validation.EntityValidationErrors;
-import org.molgenis.data.validation.EntityValidationException;
+import org.molgenis.data.validation.ValidationException;
 
 import java.util.stream.Stream;
 
@@ -62,7 +62,7 @@ public class TagRepositoryValidationDecorator extends AbstractRepositoryDecorato
 		EntityValidationErrors<Tag> tagValidationErrors = tagValidator.validate(tag);
 		if (tagValidationErrors.hasErrors())
 		{
-			throw new EntityValidationException(tagValidationErrors);
+			throw new ValidationException(tagValidationErrors);
 		}
 	}
 }

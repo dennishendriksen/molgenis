@@ -3,12 +3,17 @@ package org.molgenis.data.importer;
 import org.apache.commons.lang3.StringUtils;
 import org.molgenis.data.DatabaseAction;
 import org.molgenis.data.RepositoryCollection;
+import org.molgenis.i18n.MessageSourceHolder;
+import org.molgenis.util.BatchErrorsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.servlet.http.HttpSession;
+import java.util.Locale;
 
 public class ImportJob implements Runnable
 {
@@ -65,6 +70,22 @@ public class ImportJob implements Runnable
 
 			long t = System.currentTimeMillis();
 			LOG.info("Import finished in " + (t - t0) + " msec.");
+		}
+		catch (BatchErrorsException e)
+		{
+			LOG.info("Import failed.", e);
+
+			Locale locale = LocaleContextHolder.getLocale();
+			MessageSource messageSource = MessageSourceHolder.getMessageSource();
+
+			StringBuilder messageBuilder = new StringBuilder();
+			e.getErrorsList().forEach(errors -> errors.getAllErrors().forEach(error ->
+			{
+				String message = messageSource.getMessage(error.getCode(), error.getArguments(), locale);
+				messageBuilder.append(message).append('\n');
+			}));
+
+			importRunService.failImportRun(importRunId, e.getMessage());
 		}
 		catch (Exception e)
 		{
