@@ -3,7 +3,8 @@ package org.molgenis.core.ui.data.importer.wizard;
 import org.molgenis.core.ui.wizard.Wizard;
 import org.molgenis.data.DatabaseAction;
 import org.molgenis.i18n.MessageSourceHolder;
-import org.molgenis.util.BatchErrorsException;
+import org.molgenis.util.Error;
+import org.molgenis.util.ErrorException;
 import org.slf4j.Logger;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -59,26 +60,26 @@ public class ImportWizardUtil
 		}
 
 		String errorMessage;
-		if (e instanceof BatchErrorsException)
+		if (e instanceof ErrorException)
 		{
-			BatchErrorsException batchErrorsException = (BatchErrorsException) e;
+			ErrorException errorException = (ErrorException) e;
 
 			Locale locale = LocaleContextHolder.getLocale();
 			MessageSource messageSource = MessageSourceHolder.getMessageSource();
 
 			StringBuilder messageBuilder = new StringBuilder();
-			batchErrorsException.getErrorsList().forEach(errors -> errors.getAllErrors().forEach(error ->
+			errorException.getError().getChildren().map(Error::getMessageSourceResolvable).forEach(error ->
 			{
-				String message = messageSource.getMessage(error.getCode(), error.getArguments(), locale);
-				messageBuilder.append(message).append('\n');
-			}));
+				String message = messageSource.getMessage(error, locale);
+				messageBuilder.append("<br />").append(message);
+			});
 			errorMessage = messageBuilder.toString();
 		}
 		else
 		{
 			errorMessage = e.getMessage();
 		}
-		result.addError(new ObjectError("wizard", "<b>Your import failed:</b><br />" + errorMessage));
+		result.addError(new ObjectError("wizard", "<b>Your import failed:</b>" + errorMessage));
 	}
 
 	public static void validateImportWizard(Wizard wizard)

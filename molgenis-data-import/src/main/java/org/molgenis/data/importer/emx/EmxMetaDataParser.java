@@ -20,13 +20,12 @@ import org.molgenis.data.meta.model.*;
 import org.molgenis.data.meta.model.Package;
 import org.molgenis.data.support.EntityTypeUtils;
 import org.molgenis.data.util.EntityUtils;
-import org.molgenis.data.validation.BatchValidationException;
+import org.molgenis.data.validation.ValidationException;
 import org.molgenis.data.validation.meta.AttributeValidator;
 import org.molgenis.data.validation.meta.AttributeValidator.ValidationMode;
 import org.molgenis.data.validation.meta.EntityTypeValidator;
 import org.molgenis.data.validation.meta.TagValidator;
 import org.molgenis.i18n.LanguageService;
-import org.springframework.validation.AbstractErrors;
 import org.springframework.validation.Errors;
 
 import java.util.*;
@@ -306,13 +305,13 @@ public class EmxMetaDataParser implements MetaDataParser
 
 		// validate package/entity/attribute tags
 		Collection<Tag> tags = getTags(entityTypes);
-		List<AbstractErrors> tagValidationErrors = tags.stream()
-													   .map(tagValidator::validate)
-													   .filter(Errors::hasErrors)
-													   .collect(toList());
+		List<Errors> tagValidationErrors = tags.stream()
+											   .map(tagValidator::validate)
+											   .filter(Errors::hasErrors)
+											   .collect(toList());
 		if (!tagValidationErrors.isEmpty())
 		{
-			throw new BatchValidationException(tagValidationErrors);
+			throw new ValidationException(tagValidationErrors);
 		}
 
 		report = generateEntityValidationReport(source, report, metaDataMap);
