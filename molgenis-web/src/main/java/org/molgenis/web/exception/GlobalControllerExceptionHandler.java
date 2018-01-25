@@ -26,6 +26,8 @@ import java.util.Locale;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Arrays.stream;
+import static java.util.stream.Collectors.joining;
 import static org.molgenis.web.exception.ExceptionHandlerUtils.*;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -58,7 +60,8 @@ public class GlobalControllerExceptionHandler
 		e.getError().getChildren().map(Error::getMessageSourceResolvable).forEach(error ->
 		{
 			String message = messageSource.getMessage(error, locale);
-			errorMessages.add(new ErrorMessage(message, error.getCodes()[0])); // FIXME hacky [0]
+			ErrorMessage errorMessage = new ErrorMessage(message, stream(error.getCodes()).collect(joining(".")));
+			errorMessages.add(errorMessage);
 		});
 
 		HttpStatus httpStatus = HttpStatus.BAD_REQUEST;
