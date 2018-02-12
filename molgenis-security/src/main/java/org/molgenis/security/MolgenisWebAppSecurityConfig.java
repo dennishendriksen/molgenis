@@ -29,6 +29,7 @@ import org.molgenis.security.twofactor.service.TwoFactorAuthenticationService;
 import org.molgenis.security.user.MolgenisUserDetailsChecker;
 import org.molgenis.security.user.UserAccountService;
 import org.molgenis.security.user.UserDetailsService;
+import org.molgenis.web.bootstrap.InitialConfigurationController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -55,7 +56,6 @@ import org.springframework.security.web.RedirectStrategy;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
-import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 import org.springframework.security.web.header.writers.CacheControlHeadersWriter;
 import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
@@ -138,14 +138,17 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 		http.authenticationProvider(tokenAuthenticationProvider());
 
 		http.authenticationProvider(runAsAuthenticationProvider());
+		//
+		//		http.addFilterBefore(tokenAuthenticationFilter(), MolgenisAnonymousAuthenticationFilter.class);
+		//
+		//		http.addFilterBefore(googleAuthenticationProcessingFilter(), TokenAuthenticationFilter.class);
+		//
+		//		http.addFilterAfter(changePasswordFilter(), SwitchUserFilter.class);
+		//
+		//		http.addFilterAfter(twoFactorAuthenticationFilter(), MolgenisChangePasswordFilter.class);
 
-		http.addFilterBefore(tokenAuthenticationFilter(), MolgenisAnonymousAuthenticationFilter.class);
+		http.addFilterBefore(appConfigurationFilter(), MolgenisAnonymousAuthenticationFilter.class);
 
-		http.addFilterBefore(googleAuthenticationProcessingFilter(), TokenAuthenticationFilter.class);
-
-		http.addFilterAfter(changePasswordFilter(), SwitchUserFilter.class);
-
-		http.addFilterAfter(twoFactorAuthenticationFilter(), MolgenisChangePasswordFilter.class);
 		http.authenticationProvider(twoFactorAuthenticationProvider());
 		http.authenticationProvider(recoveryAuthenticationProvider());
 
@@ -181,6 +184,8 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 
 				.antMatchers("/account/**")
 				.permitAll()
+
+				.antMatchers(InitialConfigurationController.URI).permitAll()
 
 				.antMatchers(PATTERN_SWAGGER)
 				.permitAll()
@@ -250,8 +255,8 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 				.and()
 
 				.logout()
-				.deleteCookies("JSESSIONID")
-				.addLogoutHandler((req, res, auth) -> {
+				.deleteCookies("JSESSIONID").addLogoutHandler((req, res, auth) ->
+		{
 					if (req.getSession(false) != null
 							&& req.getSession().getAttribute("continueWithUnsupportedBrowser") != null)
 					{
@@ -259,7 +264,8 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 					}
 				})
 
-				.logoutSuccessHandler((req, res, auth) -> {
+				.logoutSuccessHandler((req, res, auth) ->
+				{
 					StringBuilder logoutSuccessUrl = new StringBuilder("/");
 					if (req.getAttribute("continueWithUnsupportedBrowser") != null)
 					{
@@ -298,6 +304,12 @@ public abstract class MolgenisWebAppSecurityConfig extends WebSecurityConfigurer
 			ExpressionUrlAuthorizationConfigurer<HttpSecurity>.ExpressionInterceptUrlRegistry expressionInterceptUrlRegistry);
 
 	protected abstract RoleHierarchy roleHierarchy();
+
+	@Bean
+	public InitialConfigurationFilter appConfigurationFilter()
+	{
+		return new InitialConfigurationFilter();
+	}
 
 	@Bean
 	public MolgenisAnonymousAuthenticationFilter anonymousAuthFilter()

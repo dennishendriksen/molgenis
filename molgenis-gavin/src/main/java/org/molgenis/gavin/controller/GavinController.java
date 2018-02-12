@@ -19,7 +19,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
@@ -268,7 +267,7 @@ public class GavinController extends AbstractStaticContentController
 	/**
 	 * Removes old files in the gavin working directory from the file store.
 	 */
-	@Scheduled(cron = "0 0 * * * *")
+	//	@Scheduled(cron = "0 0 * * * *")
 	public void cleanUp()
 	{
 		LOG.debug("Clean up old jobs in the file store...");

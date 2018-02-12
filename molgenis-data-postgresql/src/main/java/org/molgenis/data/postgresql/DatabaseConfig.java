@@ -46,15 +46,25 @@ public class DatabaseConfig implements TransactionManagementConfigurer
 	@Autowired
 	private TransactionExceptionTranslatorRegistry transactionExceptionTranslatorRegistry;
 
-	@Bean
+	@Bean(destroyMethod = "hardReset")
 	public DataSource dataSource()
 	{
-		if (dbDriverClass == null) throw new IllegalArgumentException("db_driver is null");
-		if (dbJdbcUri == null) throw new IllegalArgumentException("db_uri is null");
-		if (dbUser == null) throw new IllegalArgumentException(
-				"please configure the db_user property in your molgenis-server.properties");
-		if (dbPassword == null) throw new IllegalArgumentException(
-				"please configure the db_password property in your molgenis-server.properties");
+		if (dbDriverClass == null)
+		{
+			throw new IllegalArgumentException("db_driver is null");
+		}
+		if (dbJdbcUri == null)
+		{
+			dbJdbcUri = "dummyJdbcUri";
+		}
+		if (dbUser == null)
+		{
+			dbUser = "dummyUser";
+		}
+		if (dbPassword == null)
+		{
+			dbPassword = "dummyPassword";
+		}
 
 		ComboPooledDataSource dataSource = new ComboPooledDataSource();
 		try

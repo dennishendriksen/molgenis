@@ -13,9 +13,7 @@ import org.molgenis.jobs.JobBootstrapper;
 import org.molgenis.security.core.runas.RunAsSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.core.PriorityOrdered;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +22,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * Application bootstrapper
  */
-@SuppressWarnings("unused")
 @Component
-class MolgenisBootstrapper implements ApplicationListener<ContextRefreshedEvent>, PriorityOrdered
+class MolgenisBootstrapper
 {
 	private static final Logger LOG = LoggerFactory.getLogger(MolgenisBootstrapper.class);
 
@@ -65,15 +62,14 @@ class MolgenisBootstrapper implements ApplicationListener<ContextRefreshedEvent>
 
 	@Transactional
 	@RunAsSystem
-	@Override
-	public void onApplicationEvent(ContextRefreshedEvent event)
+	public void bootstrap(ContextRefreshedEvent event)
 	{
 
 		LOG.info("Bootstrapping application ...");
 		bootstrappingEventPublisher.publishBootstrappingStartedEvent();
 
 		LOG.trace("Updating MOLGENIS ...");
-		upgradeBootstrapper.bootstrap();
+		//		upgradeBootstrapper.bootstrap();
 		LOG.debug("Updated MOLGENIS");
 
 		LOG.trace("Bootstrapping transaction exception translators ...");
@@ -114,11 +110,5 @@ class MolgenisBootstrapper implements ApplicationListener<ContextRefreshedEvent>
 
 		bootstrappingEventPublisher.publishBootstrappingFinishedEvent();
 		LOG.info("Bootstrapping application completed");
-	}
-
-	@Override
-	public int getOrder()
-	{
-		return PriorityOrdered.HIGHEST_PRECEDENCE; // bootstrap application before doing anything else
 	}
 }

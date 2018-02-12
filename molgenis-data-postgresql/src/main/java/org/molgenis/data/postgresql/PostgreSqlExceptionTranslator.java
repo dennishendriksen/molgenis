@@ -44,7 +44,7 @@ class PostgreSqlExceptionTranslator extends SQLErrorCodeSQLExceptionTranslator i
 
 	PostgreSqlExceptionTranslator(DataSource dataSource, EntityTypeRegistry entityTypeRegistry)
 	{
-		super(requireNonNull(dataSource));
+		super("PostgreSQL");
 		this.entityTypeRegistry = requireNonNull(entityTypeRegistry);
 	}
 

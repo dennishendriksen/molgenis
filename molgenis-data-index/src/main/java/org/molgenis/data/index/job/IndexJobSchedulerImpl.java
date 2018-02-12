@@ -9,7 +9,6 @@ import org.molgenis.jobs.JobExecutor;
 import org.molgenis.security.core.runas.RunAsSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -93,7 +92,7 @@ public class IndexJobSchedulerImpl implements IndexJobScheduler
 	 * Cleans up successful IndexJobExecutions that finished longer than five minutes ago.
 	 * delay for a minute to allow the transaction manager to become available
 	 */
-	@Scheduled(initialDelay = 1 * 60 * 1000, fixedRate = 5 * 60 * 1000)
+	//	@Scheduled(initialDelay = 1 * 60 * 1000, fixedRate = 5 * 60 * 1000)
 	public void cleanupJobExecutions()
 	{
 		runAsSystem(() ->

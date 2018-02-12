@@ -1,17 +1,13 @@
 package org.molgenis.security;
 
-import org.molgenis.security.core.runas.SystemSecurityToken;
-import org.molgenis.security.core.utils.SecurityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.AuthenticationDetailsSource;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.util.Assert;
@@ -23,7 +19,8 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.Collection;
+
+import static java.util.Collections.singletonList;
 
 /**
  * Based on org.springframework.security.web.authentication.AnonymousAuthenticationFilter:
@@ -96,7 +93,8 @@ public class MolgenisAnonymousAuthenticationFilter extends GenericFilterBean imp
 
 	protected Authentication createAuthentication(HttpServletRequest request)
 	{
-		AnonymousAuthenticationToken auth = new AnonymousAuthenticationToken(key, principal, getAuthorities());
+		AnonymousAuthenticationToken auth = new AnonymousAuthenticationToken(key, principal,
+				singletonList(new SimpleGrantedAuthority("ROLE_ANONYMOUS")));
 		auth.setDetails(authenticationDetailsSource.buildDetails(request));
 		return auth;
 	}
@@ -106,34 +104,5 @@ public class MolgenisAnonymousAuthenticationFilter extends GenericFilterBean imp
 	{
 		Assert.notNull(authenticationDetailsSource, "AuthenticationDetailsSource required");
 		this.authenticationDetailsSource = authenticationDetailsSource;
-	}
-
-	public Object getPrincipal()
-	{
-		return principal;
-	}
-
-	public Collection<? extends GrantedAuthority> getAuthorities()
-	{
-		// Remember the original context
-		SecurityContext origCtx = SecurityContextHolder.getContext();
-		try
-		{
-			// Set a SystemSecurityToken
-			SecurityContextHolder.setContext(SecurityContextHolder.createEmptyContext());
-			SecurityContextHolder.getContext().setAuthentication(new SystemSecurityToken());
-
-			UserDetails user = userDetailsService.loadUserByUsername(SecurityUtils.ANONYMOUS_USERNAME);
-			if (user == null)
-			{
-				throw new RuntimeException("user with name '" + SecurityUtils.ANONYMOUS_USERNAME + "' does not exist");
-			}
-			return user.getAuthorities();
-		}
-		finally
-		{
-			// Set the original context back when method is finished
-			SecurityContextHolder.setContext(origCtx);
-		}
 	}
 }

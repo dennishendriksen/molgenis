@@ -13,7 +13,6 @@ import org.molgenis.data.transaction.DefaultMolgenisTransactionListener;
 import org.molgenis.data.transaction.TransactionInformation;
 import org.molgenis.data.transaction.TransactionManager;
 import org.slf4j.Logger;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
@@ -112,7 +111,7 @@ public class L3Cache extends DefaultMolgenisTransactionListener
 	/**
 	 * Logs cumulative cache statistics for all known caches.
 	 */
-	@Scheduled(fixedRate = 60000)
+	//	@Scheduled(fixedRate = 60000)
 	public void logStatistics()
 	{
 		//TODO: do we want to log diff with last log instead?

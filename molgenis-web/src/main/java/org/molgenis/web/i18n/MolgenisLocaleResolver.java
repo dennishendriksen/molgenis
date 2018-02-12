@@ -12,7 +12,6 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 import static org.molgenis.data.security.auth.UserMetaData.USER;
 import static org.molgenis.i18n.LanguageService.DEFAULT_LANGUAGE_CODE;
@@ -37,15 +36,15 @@ public class MolgenisLocaleResolver implements LocaleResolver
 	@Override
 	public Locale resolveLocale(HttpServletRequest request)
 	{
-		Stream<Supplier<Optional<String>>> candidates = Stream.of(() -> getCurrentUser().map(User::getLanguageCode),
-				() -> Optional.of(fallbackLocaleSupplier.get().getLanguage()));
-		String languageCode = candidates.map(Supplier::get)
-										.map(candidate -> candidate.filter(LanguageService::hasLanguageCode))
-										.filter(Optional::isPresent)
-										.map(Optional::get)
-										.findFirst()
-										.orElse(DEFAULT_LANGUAGE_CODE);
-		return Locale.forLanguageTag(languageCode);
+		//		Stream<Supplier<Optional<String>>> candidates = Stream.of(() -> getCurrentUser().map(User::getLanguageCode),
+		//				() -> Optional.of(fallbackLocaleSupplier.get().getLanguage()));
+		//		String languageCode = candidates.map(Supplier::get)
+		//										.map(candidate -> candidate.filter(LanguageService::hasLanguageCode))
+		//										.filter(Optional::isPresent)
+		//										.map(Optional::get)
+		//										.findFirst()
+		//										.orElse(DEFAULT_LANGUAGE_CODE);
+		return Locale.forLanguageTag(DEFAULT_LANGUAGE_CODE);
 	}
 
 	private Optional<User> getCurrentUser()

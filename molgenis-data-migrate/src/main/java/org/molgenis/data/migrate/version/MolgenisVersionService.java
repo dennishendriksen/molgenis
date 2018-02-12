@@ -40,20 +40,20 @@ public class MolgenisVersionService
 
 	public MolgenisVersionService(DataSource dataSource)
 	{
-		if (MigrationUtils.getVersion() == null)
-		{
-			LOG.warn("No {} property found in molgenis-server.properties.", MigrationUtils.VERSION_KEY);
-			if (isPopulatedDatabase(dataSource))
-			{
-				LOG.info("Database is populated. Setting molgenis-server.properties to 0. (Molgenis 1.4.3)");
-				updateToVersion(0);
-			}
-			else
-			{
-				LOG.info("Database is empty. Setting molgenis-server.properties to current version. (Clean install)");
-				updateToCurrentVersion();
-			}
-		}
+		//		if (MigrationUtils.getVersion() == null)
+		//		{
+		//			LOG.warn("No {} property found in molgenis-server.properties.", MigrationUtils.VERSION_KEY);
+		//			if (isPopulatedDatabase(dataSource))
+		//			{
+		//				LOG.info("Database is populated. Setting molgenis-server.properties to 0. (Molgenis 1.4.3)");
+		//				updateToVersion(0);
+		//			}
+		//			else
+		//			{
+		//				LOG.info("Database is empty. Setting molgenis-server.properties to current version. (Clean install)");
+		//				updateToCurrentVersion();
+		//			}
+		//		}
 	}
 
 	/**
