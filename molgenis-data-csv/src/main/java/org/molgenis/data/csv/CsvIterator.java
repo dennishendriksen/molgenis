@@ -209,7 +209,10 @@ public class CsvIterator implements CloseableIterator<Entity>
 			{
 				return new CSVReader(reader, '\t');
 			}
-
+			if (fileName.toLowerCase().endsWith('.' + CsvFileExtensions.PSV.toString()))
+			{
+				return new CSVReader(reader, '|');
+			}
 			throw new MolgenisDataException(format("Unknown file type: [%s] for csv repository", fileName));
 		}
 

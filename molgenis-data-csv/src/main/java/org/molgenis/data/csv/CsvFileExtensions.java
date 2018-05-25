@@ -6,7 +6,7 @@ import java.util.Set;
 
 public enum CsvFileExtensions
 {
-	CSV("csv"), TXT("txt"), TSV("tsv"), ZIP("zip");
+	CSV("csv"), TXT("txt"), TSV("tsv"), PSV("psv"), ZIP("zip");
 
 	private String name;
 
@@ -17,7 +17,7 @@ public enum CsvFileExtensions
 
 	public static Set<String> getCSV()
 	{
-		return ImmutableSet.of(CSV.toString(), TXT.toString(), TSV.toString(), ZIP.toString());
+		return ImmutableSet.of(CSV.toString(), TXT.toString(), TSV.toString(), PSV.toString(), ZIP.toString());
 	}
 
 	@Override
