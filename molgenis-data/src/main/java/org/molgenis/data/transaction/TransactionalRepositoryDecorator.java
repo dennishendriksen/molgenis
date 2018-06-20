@@ -7,7 +7,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -190,12 +189,6 @@ public class TransactionalRepositoryDecorator<E extends Entity> extends Abstract
 	public Integer add(Stream<E> entities)
 	{
 		return createWriteTransactionTemplate().execute(status -> delegate().add(entities));
-	}
-
-	@Override
-	public Iterator<E> iterator()
-	{
-		return createReadonlyTransactionTemplate().execute(status -> delegate().iterator());
 	}
 
 	private TransactionTemplate createWriteTransactionTemplate()

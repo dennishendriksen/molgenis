@@ -1,12 +1,15 @@
 package org.molgenis.data.validation.meta;
 
 import org.mockito.ArgumentCaptor;
+import org.molgenis.data.Entity;
 import org.molgenis.data.Repository;
 import org.molgenis.data.meta.model.Package;
 import org.molgenis.data.validation.MolgenisValidationException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.util.Collections.singletonList;
@@ -176,21 +179,31 @@ public class PackageRepositoryValidationDecoratorTest
 		packageRepositoryValidationDecorator.deleteById(id);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testDeleteAllValid() throws Exception
 	{
 		Package package_ = mock(Package.class);
-		when(delegateRepository.iterator()).thenReturn(singletonList(package_).iterator());
+		doAnswer(invocation ->
+		{
+			((Consumer<List<Entity>>) invocation.getArgument(1)).accept(singletonList(package_));
+			return null;
+		}).when(delegateRepository).forEachBatched(eq(null), any(), eq(1000));
 		packageRepositoryValidationDecorator.deleteAll();
 		verify(packageValidator).validate(package_);
 		verify(delegateRepository).deleteAll();
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test(expectedExceptions = MolgenisValidationException.class)
 	public void testDeleteAllInvalid() throws Exception
 	{
 		Package package_ = mock(Package.class);
-		when(delegateRepository.iterator()).thenReturn(singletonList(package_).iterator());
+		doAnswer(invocation ->
+		{
+			((Consumer<List<Entity>>) invocation.getArgument(1)).accept(singletonList(package_));
+			return null;
+		}).when(delegateRepository).forEachBatched(eq(null), any(), eq(1000));
 		doThrow(mock(MolgenisValidationException.class)).when(packageValidator).validate(package_);
 		packageRepositoryValidationDecorator.deleteAll();
 	}

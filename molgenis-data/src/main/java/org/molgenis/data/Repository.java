@@ -20,7 +20,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Repository gives access to a collection of Entity. Synonyms: EntityReader, EntitySource, EntityCollection
  */
-public interface Repository<E extends Entity> extends Iterable<E>, Closeable
+public interface Repository<E extends Entity> extends Closeable
 {
 	/**
 	 * Checks if IDs are present in this {@link Repository}.

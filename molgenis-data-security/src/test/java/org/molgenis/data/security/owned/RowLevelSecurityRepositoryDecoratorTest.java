@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -461,23 +460,6 @@ public class RowLevelSecurityRepositoryDecoratorTest extends AbstractMockitoTest
 		when(delegateRepository.findAll(new QueryImpl<>().setOffset(0).setPageSize(Integer.MAX_VALUE))).thenAnswer(
 				invocation -> Stream.of(entity));
 		assertEquals(rowLevelSecurityRepositoryDecorator.count(query), 0L);
-	}
-
-	@Test
-	public void testIterator()
-	{
-		Entity entity = getEntityMock();
-		when(delegateRepository.iterator()).thenReturn(singletonList(entity).iterator());
-		when(userPermissionEvaluator.hasPermission(new EntityIdentity(entity), READ)).thenReturn(true);
-		assertEquals(newArrayList(rowLevelSecurityRepositoryDecorator.iterator()), singletonList(entity));
-	}
-
-	@Test
-	public void testIteratorPermissionDenied()
-	{
-		Entity entity = getEntityMock();
-		when(delegateRepository.iterator()).thenReturn(singletonList(entity).iterator());
-		assertEquals(newArrayList(rowLevelSecurityRepositoryDecorator.iterator()), emptyList());
 	}
 
 	@SuppressWarnings("unchecked")

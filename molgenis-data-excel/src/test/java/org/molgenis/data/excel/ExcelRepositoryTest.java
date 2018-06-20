@@ -74,10 +74,9 @@ public class ExcelRepositoryTest extends AbstractMolgenisSpringTest
 		when(processor.process("col2")).thenReturn("col2");
 
 		excelSheetReader.addCellProcessor(processor);
-		//noinspection StatementWithEmptyBody
-		for (@SuppressWarnings("unused") Entity entity : excelSheetReader)
+		excelSheetReader.forEachBatched(entityBatch ->
 		{
-		}
+		}, 1000);
 		verify(processor).process("col1");
 		verify(processor).process("col2");
 	}
@@ -87,8 +86,9 @@ public class ExcelRepositoryTest extends AbstractMolgenisSpringTest
 	{
 		CellProcessor processor = when(mock(CellProcessor.class).processData()).thenReturn(true).getMock();
 		excelSheetReader.addCellProcessor(processor);
-		for (Entity entity : excelSheetReader)
-			entity.get("col2");
+		excelSheetReader.forEachBatched(entityBatch ->
+		{
+		}, 1000);
 
 		verify(processor).process("val2");
 		verify(processor).process("val4");

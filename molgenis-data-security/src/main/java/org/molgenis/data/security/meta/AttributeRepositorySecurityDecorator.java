@@ -12,11 +12,9 @@ import org.molgenis.data.support.QueryImpl;
 import org.molgenis.data.util.EntityUtils;
 import org.molgenis.security.core.UserPermissionEvaluator;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -51,7 +49,9 @@ public class AttributeRepositorySecurityDecorator extends AbstractRepositoryDeco
 		}
 		else
 		{
-			Stream<Attribute> attrs = StreamSupport.stream(delegate().spliterator(), false);
+			Query<Attribute> qWithoutLimitOffset = new QueryImpl<>();
+			qWithoutLimitOffset.offset(0).pageSize(Integer.MAX_VALUE);
+			Stream<Attribute> attrs = delegate().findAll(qWithoutLimitOffset);
 			return filterReadMetadataPermission(attrs).count();
 		}
 	}
@@ -97,20 +97,6 @@ public class AttributeRepositorySecurityDecorator extends AbstractRepositoryDeco
 			return filteredAttrs;
 		}
 
-	}
-
-	@Override
-	public Iterator<Attribute> iterator()
-	{
-		if (currentUserIsSuOrSystem())
-		{
-			return delegate().iterator();
-		}
-		else
-		{
-			Stream<Attribute> attrs = StreamSupport.stream(delegate().spliterator(), false);
-			return filterReadMetadataPermission(attrs).iterator();
-		}
 	}
 
 	@Override

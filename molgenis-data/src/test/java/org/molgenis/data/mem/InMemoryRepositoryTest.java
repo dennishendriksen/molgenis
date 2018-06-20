@@ -10,6 +10,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -72,7 +73,9 @@ public class InMemoryRepositoryTest
 		inMemoryRepository.delete(Stream.of(entity0));
 
 		// get all
-		assertEquals(Lists.newArrayList(inMemoryRepository.iterator()), Arrays.asList(entity1));
+		List<Entity> expectedList = new ArrayList<>();
+		inMemoryRepository.forEachBatched(expectedList::addAll, 1000);
+		assertEquals(expectedList, Arrays.asList(entity1));
 	}
 
 	@Test
@@ -96,7 +99,9 @@ public class InMemoryRepositoryTest
 		inMemoryRepository.update(Stream.of(entity0));
 
 		// get all
-		assertEquals(Lists.newArrayList(inMemoryRepository.iterator()), Arrays.asList(entity0, entity1));
+		List<Entity> expectedList = new ArrayList<>();
+		inMemoryRepository.forEachBatched(expectedList::addAll, 1000);
+		assertEquals(expectedList, Arrays.asList(entity0, entity1));
 	}
 
 	@Test

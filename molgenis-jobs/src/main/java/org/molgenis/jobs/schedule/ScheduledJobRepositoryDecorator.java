@@ -1,11 +1,9 @@
 package org.molgenis.jobs.schedule;
 
 import org.molgenis.data.AbstractRepositoryDecorator;
-import org.molgenis.data.Entity;
 import org.molgenis.data.Repository;
 import org.molgenis.data.validation.JsonValidator;
 import org.molgenis.jobs.model.ScheduledJob;
-import org.molgenis.jobs.model.ScheduledJobMetadata;
 import org.molgenis.security.core.utils.SecurityUtils;
 
 import java.util.stream.Stream;
@@ -17,6 +15,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class ScheduledJobRepositoryDecorator extends AbstractRepositoryDecorator<ScheduledJob>
 {
+	private static final int BATCH_SIZE = 1000;
+
 	private final JobScheduler scheduler;
 	private final JsonValidator jsonValidator;
 
@@ -96,11 +96,8 @@ public class ScheduledJobRepositoryDecorator extends AbstractRepositoryDecorator
 	@Override
 	public void deleteAll()
 	{
-		for (Entity e : this)
-		{
-			String entityId = e.getString(ScheduledJobMetadata.ID);
-			scheduler.unschedule(entityId);
-		}
+		forEachBatched(scheduledJobsBatch -> scheduledJobsBatch.forEach(
+				scheduledJob -> scheduler.unschedule(scheduledJob.getId())), BATCH_SIZE);
 		delegate().deleteAll();
 	}
 

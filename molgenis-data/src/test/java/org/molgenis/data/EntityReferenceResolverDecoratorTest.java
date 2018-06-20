@@ -5,7 +5,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.molgenis.data.aggregation.AggregateQuery;
 import org.molgenis.data.meta.model.EntityType;
-import org.molgenis.data.support.QueryImpl;
 import org.molgenis.test.AbstractMockitoTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -323,19 +322,6 @@ public class EntityReferenceResolverDecoratorTest extends AbstractMockitoTest
 		entityReferenceResolverDecorator.getName();
 		verify(delegateRepository, times(1)).getName();
 		verifyZeroInteractions(entityManager);
-	}
-
-	@Test
-	public void iterator()
-	{
-		when(delegateRepository.getEntityType()).thenReturn(entityType);
-		QueryImpl<Entity> q = new QueryImpl<>();
-		Stream<Entity> entities = Stream.of(mock(Entity.class));
-		when(delegateRepository.findAll(q)).thenReturn(entities);
-		when(entityManager.resolveReferences(entityType, entities, null)).thenReturn(entities);
-		entityReferenceResolverDecorator.iterator();
-		verify(delegateRepository, times(1)).findAll(q);
-		verify(entityManager).resolveReferences(entityType, entities, null);
 	}
 
 	@Test

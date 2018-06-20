@@ -2,12 +2,16 @@ package org.molgenis.data.plugin.model;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.molgenis.data.Entity;
 import org.molgenis.data.Repository;
 import org.molgenis.test.AbstractMockitoTest;
 import org.springframework.security.acls.model.MutableAclService;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
@@ -94,12 +98,17 @@ public class PluginSecurityRepositoryDecoratorTest extends AbstractMockitoTest
 		verify(delegateRepository).deleteById("plugin0");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testDeleteAll()
 	{
 		Plugin plugin0 = when(mock(Plugin.class).getId()).thenReturn("plugin0").getMock();
 		Plugin plugin1 = when(mock(Plugin.class).getId()).thenReturn("plugin1").getMock();
-		when(delegateRepository.iterator()).thenReturn(Stream.of(plugin0, plugin1).iterator());
+		doAnswer(invocation ->
+		{
+			((Consumer<List<Entity>>) invocation.getArgument(1)).accept(Arrays.asList(plugin0, plugin1));
+			return null;
+		}).when(delegateRepository).forEachBatched(eq(null), any(), eq(1000));
 		pluginSecurityRepositoryDecorator.deleteAll();
 		verify(delegateRepository).deleteAll();
 		verify(mutableAclService).deleteAcl(new PluginIdentity("plugin0"), true);

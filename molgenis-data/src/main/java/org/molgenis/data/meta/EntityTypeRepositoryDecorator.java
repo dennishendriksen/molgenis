@@ -9,7 +9,6 @@ import javax.annotation.Nonnull;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -17,7 +16,6 @@ import static com.google.common.collect.Lists.reverse;
 import static com.google.common.collect.Sets.difference;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static java.util.Spliterators.spliteratorUnknownSize;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -34,6 +32,8 @@ import static org.molgenis.data.meta.model.AttributeMetadata.ATTRIBUTE_META_DATA
  */
 public class EntityTypeRepositoryDecorator extends AbstractRepositoryDecorator<EntityType>
 {
+	private static final int BATCH_SIZE = 1000;
+
 	private final DataService dataService;
 	private final EntityTypeDependencyResolver entityTypeDependencyResolver;
 
@@ -91,7 +91,7 @@ public class EntityTypeRepositoryDecorator extends AbstractRepositoryDecorator<E
 	@Override
 	public void deleteAll()
 	{
-		delete(stream(spliteratorUnknownSize(iterator(), Spliterator.ORDERED), false));
+		forEachBatched(entityTypeBatch -> this.delete(entityTypeBatch.stream()), BATCH_SIZE);
 	}
 
 	@Override

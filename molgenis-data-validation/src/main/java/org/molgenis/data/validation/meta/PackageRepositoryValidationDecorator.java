@@ -14,6 +14,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class PackageRepositoryValidationDecorator extends AbstractRepositoryDecorator<Package>
 {
+	private static final int BATCH_SIZE = 1000;
+
 	private final PackageValidator packageValidator;
 
 	public PackageRepositoryValidationDecorator(Repository<Package> delegateRepository,
@@ -89,7 +91,7 @@ public class PackageRepositoryValidationDecorator extends AbstractRepositoryDeco
 	@Override
 	public void deleteAll()
 	{
-		iterator().forEachRemaining(packageValidator::validate);
+		forEachBatched(packageBatch -> packageBatch.forEach(packageValidator::validate), BATCH_SIZE);
 		super.deleteAll();
 	}
 

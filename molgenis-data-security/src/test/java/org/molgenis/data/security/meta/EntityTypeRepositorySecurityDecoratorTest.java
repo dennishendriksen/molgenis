@@ -36,7 +36,6 @@ import org.testng.annotations.Test;
 
 import java.util.stream.Stream;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
@@ -223,26 +222,6 @@ public class EntityTypeRepositorySecurityDecoratorTest extends AbstractMockitoTe
 		Query<EntityType> decoratedQ = queryCaptor.getValue();
 		assertEquals(decoratedQ.getOffset(), 0);
 		assertEquals(decoratedQ.getPageSize(), Integer.MAX_VALUE);
-	}
-
-	@WithMockUser(username = USERNAME)
-	@Test
-	public void iteratorUser()
-	{
-		String entityType0Name = "entity0";
-		EntityType entityType0 = when(mock(EntityType.class).getId()).thenReturn(entityType0Name).getMock();
-		String entityType1Name = "entity1";
-		EntityType entityType1 = when(mock(EntityType.class).getId()).thenReturn(entityType1Name).getMock();
-		String entityType2Name = "entity2";
-		EntityType entityType2 = when(mock(EntityType.class).getId()).thenReturn(entityType2Name).getMock();
-		when(delegateRepository.iterator()).thenReturn(asList(entityType0, entityType1, entityType2).iterator());
-		doReturn(true).when(userPermissionEvaluator)
-					  .hasPermission(new EntityTypeIdentity(entityType0Name), EntityTypePermission.READ_METADATA);
-		doReturn(false).when(userPermissionEvaluator)
-					   .hasPermission(new EntityTypeIdentity(entityType1Name), EntityTypePermission.READ_METADATA);
-		doReturn(true).when(userPermissionEvaluator)
-					  .hasPermission(new EntityTypeIdentity(entityType2Name), EntityTypePermission.READ_METADATA);
-		assertEquals(newArrayList(repo.iterator()), asList(entityType0, entityType2));
 	}
 
 	@WithMockUser(username = USERNAME)

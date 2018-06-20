@@ -1,12 +1,13 @@
 package org.molgenis.data.excel;
 
-import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.util.CellReference;
 import org.molgenis.data.Entity;
+import org.molgenis.data.Fetch;
 import org.molgenis.data.MolgenisDataException;
 import org.molgenis.data.RepositoryCapability;
 import org.molgenis.data.file.processor.AbstractCellProcessor;
@@ -17,6 +18,7 @@ import org.molgenis.data.meta.model.EntityTypeFactory;
 import org.molgenis.data.support.AbstractRepository;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
@@ -72,7 +74,6 @@ public class ExcelRepository extends AbstractRepository
 		return sheet.getLastRowNum() + 1; // getLastRowNum is 0-based
 	}
 
-	@Override
 	public Iterator<Entity> iterator()
 	{
 		final Iterator<Row> it = sheet.iterator();
@@ -213,6 +214,12 @@ public class ExcelRepository extends AbstractRepository
 	}
 
 	@Override
+	public void forEachBatched(Fetch fetch, Consumer<List<Entity>> consumer, int batchSize)
+	{
+		Iterators.partition(iterator(), batchSize).forEachRemaining(consumer::accept);
+	}
+
+	@Override
 	public Set<RepositoryCapability> getCapabilities()
 	{
 		return Collections.emptySet();
@@ -221,6 +228,6 @@ public class ExcelRepository extends AbstractRepository
 	@Override
 	public long count()
 	{
-		return Iterables.size(this);
+		return Iterators.size(iterator());
 	}
 }

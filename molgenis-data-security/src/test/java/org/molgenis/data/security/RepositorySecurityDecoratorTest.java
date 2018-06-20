@@ -370,22 +370,6 @@ public class RepositorySecurityDecoratorTest extends AbstractMockitoTest
 	}
 
 	@Test
-	public void testIteratorPermissionGranted()
-	{
-		initPermissionServiceMock(EntityTypePermission.READ_DATA, true);
-		repositorySecurityDecorator.iterator();
-		verify(delegateRepository).iterator();
-	}
-
-	@Test(expectedExceptions = EntityTypePermissionDeniedException.class, expectedExceptionsMessageRegExp = "permission:READ_DATA entityTypeId:entityTypeId")
-	public void testIteratorPermissionDenied()
-	{
-		initPermissionServiceMock(EntityTypePermission.READ_DATA, false);
-		repositorySecurityDecorator.iterator();
-		verify(delegateRepository).iterator();
-	}
-
-	@Test
 	public void testUpdatePermissionGranted()
 	{
 		initPermissionServiceMock(EntityTypePermission.UPDATE_DATA, true);

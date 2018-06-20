@@ -13,7 +13,10 @@ import org.molgenis.vcf.VcfReader;
 import org.molgenis.vcf.meta.VcfMeta;
 
 import java.io.*;
-import java.util.*;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.zip.GZIPInputStream;
@@ -71,12 +74,6 @@ public class VcfRepository extends AbstractRepository
 				throw new MolgenisDataException("Failed to read VCF Metadata from file", e);
 			}
 		});
-	}
-
-	@Override
-	public Iterator<Entity> iterator()
-	{
-		throw new UnsupportedOperationException("Use forEachBatched instead of iterator");
 	}
 
 	public EntityType getEntityType()

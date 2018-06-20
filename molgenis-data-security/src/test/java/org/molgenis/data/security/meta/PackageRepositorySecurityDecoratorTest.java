@@ -3,6 +3,7 @@ package org.molgenis.data.security.meta;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.molgenis.data.DataService;
+import org.molgenis.data.Entity;
 import org.molgenis.data.Repository;
 import org.molgenis.data.meta.model.Package;
 import org.molgenis.data.meta.model.PackageMetadata;
@@ -21,6 +22,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
@@ -205,6 +208,7 @@ public class PackageRepositorySecurityDecoratorTest extends AbstractMockitoTestN
 		verify(delegateRepository).deleteById("1");
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testDeleteAll()
 	{
@@ -212,7 +216,11 @@ public class PackageRepositorySecurityDecoratorTest extends AbstractMockitoTestN
 		Package package2 = mock(Package.class);
 		when(package1.getId()).thenReturn("1");
 		when(package2.getId()).thenReturn("2");
-		when(delegateRepository.iterator()).thenReturn(Arrays.asList(package1, package2).iterator());
+		doAnswer(invocation ->
+		{
+			((Consumer<List<Entity>>) invocation.getArgument(1)).accept(Arrays.asList(package1, package2));
+			return null;
+		}).when(delegateRepository).forEachBatched(eq(null), any(), eq(1000));
 		repo.deleteAll();
 
 		//TODO: how to verify the deleteAcl method in the "filter" of the stream

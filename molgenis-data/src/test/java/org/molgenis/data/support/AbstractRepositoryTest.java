@@ -11,7 +11,11 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -41,16 +45,14 @@ public class AbstractRepositoryTest
 		when(entityType.getIdAttribute()).thenReturn(idAttr);
 		abstractRepository = Mockito.spy(new AbstractRepository()
 		{
-
-			@Override
-			public Iterator<Entity> iterator()
-			{
-				return null;
-			}
-
 			public EntityType getEntityType()
 			{
 				return entityType;
+			}
+
+			@Override
+			public void forEachBatched(Fetch fetch, Consumer<List<Entity>> consumer, int batchSize)
+			{
 			}
 
 			@Override

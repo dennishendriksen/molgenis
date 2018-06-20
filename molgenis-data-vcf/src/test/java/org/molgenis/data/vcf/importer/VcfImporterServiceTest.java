@@ -84,18 +84,6 @@ public class VcfImporterServiceTest extends AbstractMockitoTest
 			}
 
 			@Override
-			public Iterator<Entity> iterator()
-			{
-				return entities.iterator();
-			}
-
-			@Override
-			public Spliterator<Entity> spliterator()
-			{
-				return entities.spliterator();
-			}
-
-			@Override
 			public String getName()
 			{
 				return entityTypeId0;
@@ -179,18 +167,6 @@ public class VcfImporterServiceTest extends AbstractMockitoTest
 			public EntityType getEntityType()
 			{
 				return entityType0;
-			}
-
-			@Override
-			public Iterator<Entity> iterator()
-			{
-				return entities.iterator();
-			}
-
-			@Override
-			public Spliterator<Entity> spliterator()
-			{
-				return entities.spliterator();
 			}
 
 			@Override

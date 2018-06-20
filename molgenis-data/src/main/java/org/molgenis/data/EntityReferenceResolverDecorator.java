@@ -1,8 +1,5 @@
 package org.molgenis.data;
 
-import org.molgenis.data.support.QueryImpl;
-
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -34,14 +31,6 @@ public class EntityReferenceResolverDecorator extends AbstractRepositoryDecorato
 	{
 		Entity entity = delegate().findOne(q);
 		return entity != null ? resolveEntityReferences(entity, q.getFetch()) : null;
-	}
-
-	// Resolve entity references
-	@Override
-	public Iterator<Entity> iterator()
-	{
-		Stream<Entity> entities = delegate().findAll(new QueryImpl<>());
-		return resolveEntityReferences(entities).iterator();
 	}
 
 	// Resolve entity references

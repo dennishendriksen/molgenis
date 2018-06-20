@@ -7,7 +7,6 @@ import org.molgenis.data.meta.model.EntityType;
 import org.molgenis.data.support.QueryImpl;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -32,12 +31,6 @@ public abstract class AbstractRepositoryDecorator<E extends Entity> extends Forw
 	protected Repository<E> delegate()
 	{
 		return delegateRepository;
-	}
-
-	@Override
-	public Iterator<E> iterator()
-	{
-		return delegate().iterator();
 	}
 
 	@Override

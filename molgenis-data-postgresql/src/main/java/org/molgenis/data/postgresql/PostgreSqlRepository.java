@@ -93,13 +93,6 @@ class PostgreSqlRepository extends AbstractRepository
 	}
 
 	@Override
-	public Iterator<Entity> iterator()
-	{
-		Query<Entity> q = new QueryImpl<>();
-		return findAllBatching(q).iterator();
-	}
-
-	@Override
 	public Set<RepositoryCapability> getCapabilities()
 	{
 		return REPO_CAPABILITIES;

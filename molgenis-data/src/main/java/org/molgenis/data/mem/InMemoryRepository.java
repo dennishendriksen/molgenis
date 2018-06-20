@@ -43,12 +43,6 @@ public class InMemoryRepository implements Repository<Entity>
 	}
 
 	@Override
-	public Iterator<Entity> iterator()
-	{
-		return entities.values().iterator();
-	}
-
-	@Override
 	public void forEachBatched(Fetch fetch, Consumer<List<Entity>> consumer, int batchSize)
 	{
 		for (List<Entity> batch : partition(entities.values(), batchSize))

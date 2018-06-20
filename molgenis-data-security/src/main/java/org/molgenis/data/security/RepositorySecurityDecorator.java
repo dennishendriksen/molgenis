@@ -8,7 +8,6 @@ import org.molgenis.data.security.exception.EntityTypePermissionDeniedException;
 import org.molgenis.security.core.UserPermissionEvaluator;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -27,14 +26,6 @@ public class RepositorySecurityDecorator extends AbstractRepositoryDecorator<Ent
 	{
 		super(delegateRepository);
 		this.permissionService = requireNonNull(permissionService);
-	}
-
-	@Override
-	public Iterator<Entity> iterator()
-	{
-		EntityType entityType = delegate().getEntityType();
-		validatePermission(entityType, READ_DATA);
-		return delegate().iterator();
 	}
 
 	@Override

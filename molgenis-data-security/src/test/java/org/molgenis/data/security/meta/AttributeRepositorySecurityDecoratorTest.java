@@ -130,7 +130,10 @@ public class AttributeRepositorySecurityDecoratorTest extends AbstractMockitoTes
 		String attr1Name = "entity1attr0";
 		Attribute attr1 = when(mock(Attribute.class).getName()).thenReturn(attr1Name).getMock();
 		when(attr1.getEntity()).thenReturn(entityType1);
-		when(delegateRepository.spliterator()).thenReturn(asList(attr0, attr1).spliterator());
+		Query<Attribute> q = new QueryImpl<>();
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<Query<Attribute>> queryCaptor = forClass(Query.class);
+		when(delegateRepository.findAll(queryCaptor.capture())).thenReturn(Stream.of(attr0, attr1));
 		when(permissionService.hasPermission(new EntityTypeIdentity(entityType0Name),
 				EntityTypePermission.READ_METADATA)).thenReturn(false);
 		when(permissionService.hasPermission(new EntityTypeIdentity(entityType1Name),
@@ -267,50 +270,6 @@ public class AttributeRepositorySecurityDecoratorTest extends AbstractMockitoTes
 		assertEquals(repo.findAll(q).collect(toList()), emptyList());
 		assertEquals(queryCaptor.getValue().getOffset(), 0);
 		assertEquals(queryCaptor.getValue().getPageSize(), Integer.MAX_VALUE);
-	}
-
-	@WithMockUser(username = USERNAME, roles = { ROLE_SU })
-	@Test
-	public void iteratorSu() throws Exception
-	{
-		iteratorSuOrSystem();
-	}
-
-	@WithMockUser(username = USERNAME_SYSTEM, roles = { ROLE_SYSTEM })
-	@Test
-	public void iteratorSystem() throws Exception
-	{
-		iteratorSuOrSystem();
-	}
-
-	private void iteratorSuOrSystem() throws Exception
-	{
-		Attribute attr0 = mock(Attribute.class);
-		Attribute attr1 = mock(Attribute.class);
-		when(delegateRepository.iterator()).thenReturn(asList(attr0, attr1).iterator());
-		assertEquals(newArrayList(repo.iterator()), asList(attr0, attr1));
-	}
-
-	@WithMockUser(username = USERNAME)
-	@Test
-	public void iteratorUser() throws Exception
-	{
-		String entityType0Name = "entity0";
-		EntityType entityType0 = when(mock(EntityType.class).getId()).thenReturn(entityType0Name).getMock();
-		String entityType1Name = "entity1";
-		EntityType entityType1 = when(mock(EntityType.class).getId()).thenReturn(entityType1Name).getMock();
-		String attr0Name = "entity0attr0";
-		Attribute attr0 = when(mock(Attribute.class).getName()).thenReturn(attr0Name).getMock();
-		when(attr0.getEntity()).thenReturn(entityType0);
-		String attr1Name = "entity1attr0";
-		Attribute attr1 = when(mock(Attribute.class).getName()).thenReturn(attr1Name).getMock();
-		when(attr1.getEntity()).thenReturn(entityType1);
-		when(delegateRepository.spliterator()).thenReturn(asList(attr0, attr1).spliterator());
-		when(permissionService.hasPermission(new EntityTypeIdentity(entityType0Name),
-				EntityTypePermission.READ_METADATA)).thenReturn(false);
-		when(permissionService.hasPermission(new EntityTypeIdentity(entityType1Name),
-				EntityTypePermission.READ_METADATA)).thenReturn(true);
-		assertEquals(newArrayList(repo.iterator()), singletonList(attr1));
 	}
 
 	@WithMockUser(username = USERNAME, roles = { ROLE_SU })

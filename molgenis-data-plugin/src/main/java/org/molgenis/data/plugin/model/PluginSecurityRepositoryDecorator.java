@@ -11,6 +11,8 @@ import java.util.stream.Stream;
  */
 public class PluginSecurityRepositoryDecorator extends AbstractRepositoryDecorator<Plugin>
 {
+	private static final int BATCH_SIZE = 1000;
+
 	private final MutableAclService mutableAclService;
 
 	PluginSecurityRepositoryDecorator(Repository<Plugin> delegateRepository, MutableAclService mutableAclService)
@@ -53,7 +55,7 @@ public class PluginSecurityRepositoryDecorator extends AbstractRepositoryDecorat
 	@Override
 	public void deleteAll()
 	{
-		iterator().forEachRemaining(this::deleteAcl);
+		forEachBatched(pluginBatch -> pluginBatch.forEach(this::deleteAcl), BATCH_SIZE);
 		super.deleteAll();
 	}
 

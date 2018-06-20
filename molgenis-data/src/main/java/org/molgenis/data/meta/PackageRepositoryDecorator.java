@@ -16,6 +16,8 @@ import static org.molgenis.data.meta.model.EntityTypeMetadata.ENTITY_TYPE_META_D
 
 public class PackageRepositoryDecorator extends AbstractRepositoryDecorator<Package>
 {
+	private static final int BATCH_SIZE = 1000;
+
 	private final DataService dataService;
 
 	public PackageRepositoryDecorator(Repository<Package> delegateRepository, DataService dataService)
@@ -51,7 +53,7 @@ public class PackageRepositoryDecorator extends AbstractRepositoryDecorator<Pack
 	@Override
 	public void deleteAll()
 	{
-		forEach(this::deletePackage);
+		forEachBatched(packageBatch -> packageBatch.forEach(this::deletePackage), BATCH_SIZE);
 	}
 
 	private void deletePackage(Package aPackage)

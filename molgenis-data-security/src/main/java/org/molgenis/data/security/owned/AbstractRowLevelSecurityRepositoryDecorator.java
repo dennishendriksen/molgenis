@@ -7,14 +7,12 @@ import org.molgenis.data.support.QueryImpl;
 import org.springframework.security.acls.model.MutableAclService;
 import org.springframework.security.acls.model.ObjectIdentity;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.StreamSupport.stream;
 import static org.molgenis.data.security.owned.AbstractRowLevelSecurityRepositoryDecorator.Action.*;
 import static org.molgenis.security.core.utils.SecurityUtils.currentUserIsSuOrSystem;
 
@@ -42,19 +40,10 @@ public abstract class AbstractRowLevelSecurityRepositoryDecorator<E extends Enti
 	}
 
 	@Override
-	public Iterator<E> iterator()
-	{
-		Iterable<E> iterable = () -> delegate().iterator();
-		return stream(iterable.spliterator(), false).filter(entity -> isActionPermitted(entity, READ))
-													.iterator();
-	}
-
-	@Override
 	public void forEachBatched(Fetch fetch, Consumer<List<E>> consumer, int batchSize)
 	{
 		delegate().forEachBatched(fetch, entities -> consumer.accept(
-				entities.stream().filter(entity -> isActionPermitted(entity, READ)).collect(toList())),
-				batchSize);
+				entities.stream().filter(entity -> isActionPermitted(entity, READ)).collect(toList())), batchSize);
 	}
 
 	@Override

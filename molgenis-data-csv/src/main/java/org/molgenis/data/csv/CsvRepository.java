@@ -1,7 +1,8 @@
 package org.molgenis.data.csv;
 
-import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import org.molgenis.data.Entity;
+import org.molgenis.data.Fetch;
 import org.molgenis.data.RepositoryCapability;
 import org.molgenis.data.file.processor.CellProcessor;
 import org.molgenis.data.meta.model.Attribute;
@@ -14,6 +15,7 @@ import org.springframework.util.StringUtils;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.*;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 import static org.molgenis.data.meta.AttributeType.STRING;
@@ -61,7 +63,6 @@ public class CsvRepository extends AbstractRepository
 		this.cellProcessors = cellProcessors;
 	}
 
-	@Override
 	public Iterator<Entity> iterator()
 	{
 		return new CsvIterator(file, sheetName, cellProcessors, separator, getEntityType());
@@ -90,6 +91,12 @@ public class CsvRepository extends AbstractRepository
 	}
 
 	@Override
+	public void forEachBatched(Fetch fetch, Consumer<List<Entity>> consumer, int batchSize)
+	{
+		Iterators.partition(iterator(), batchSize).forEachRemaining(consumer::accept);
+	}
+
+	@Override
 	public Set<RepositoryCapability> getCapabilities()
 	{
 		return Collections.emptySet();
@@ -98,7 +105,6 @@ public class CsvRepository extends AbstractRepository
 	@Override
 	public long count()
 	{
-		return Iterables.size(this);
+		return Iterators.size(iterator());
 	}
-
 }

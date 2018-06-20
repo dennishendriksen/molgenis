@@ -11,12 +11,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static com.google.common.base.Predicates.notNull;
-import static com.google.common.collect.Iterables.*;
+import static com.google.common.collect.Iterables.filter;
+import static com.google.common.collect.Iterables.transform;
 import static com.google.common.collect.Maps.uniqueIndex;
 
 /**
@@ -188,15 +188,5 @@ public abstract class AbstractRepository implements Repository<Entity>
 	public Integer add(Stream<Entity> entities)
 	{
 		throw new UnsupportedOperationException();
-	}
-
-	@Override
-	public void forEachBatched(Fetch fetch, Consumer<List<Entity>> consumer, int batchSize)
-	{
-		// by default: ignore fetch
-		for (List<Entity> entities : partition(this, batchSize))
-		{
-			consumer.accept(entities);
-		}
 	}
 }

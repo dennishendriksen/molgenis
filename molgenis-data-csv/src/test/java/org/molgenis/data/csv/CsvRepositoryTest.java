@@ -87,9 +87,9 @@ public class CsvRepositoryTest extends AbstractMolgenisSpringTest
 		try (CsvRepository csvRepository = new CsvRepository(test, entityTypeFactory, attrMetaFactory, null))
 		{
 			csvRepository.addCellProcessor(processor);
-			for (@SuppressWarnings("unused") Entity entity : csvRepository)
+			csvRepository.forEachBatched(entityBatch ->
 			{
-			}
+			}, 1000);
 			verify(processor).process("col1");
 			verify(processor).process("col2");
 		}
@@ -102,9 +102,9 @@ public class CsvRepositoryTest extends AbstractMolgenisSpringTest
 		try (CsvRepository csvRepository = new CsvRepository(test, entityTypeFactory, attrMetaFactory, null))
 		{
 			csvRepository.addCellProcessor(processor);
-			for (@SuppressWarnings("unused") Entity entity : csvRepository)
+			csvRepository.forEachBatched(entityBatch ->
 			{
-			}
+			}, 1000);
 			verify(processor).process("val1");
 			verify(processor).process("val2");
 		}

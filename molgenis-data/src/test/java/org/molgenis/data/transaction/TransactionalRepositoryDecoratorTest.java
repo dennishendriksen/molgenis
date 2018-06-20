@@ -226,12 +226,4 @@ public class TransactionalRepositoryDecoratorTest
 		verify(transactionManager).getTransaction(any(TransactionDefinition.class));
 		verify(delegateRepository).add(entityStream);
 	}
-
-	@Test
-	public void iterator() throws Exception
-	{
-		transactionalRepo.iterator();
-		verify(transactionManager).getTransaction(any(TransactionDefinition.class));
-		verify(delegateRepository).iterator();
-	}
 }

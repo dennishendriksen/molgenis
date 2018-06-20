@@ -26,6 +26,8 @@ import static org.molgenis.security.core.utils.SecurityUtils.currentUserIsSuOrSy
 
 public class PackageRepositorySecurityDecorator extends AbstractRepositoryDecorator<Package>
 {
+	private static final int BATCH_SIZE = 1000;
+
 	private final MutableAclService mutableAclService;
 	private final UserPermissionEvaluator userPermissionEvaluator;
 	private final DataService dataService;
@@ -96,7 +98,7 @@ public class PackageRepositorySecurityDecorator extends AbstractRepositoryDecora
 	@Override
 	public void deleteAll()
 	{
-		iterator().forEachRemaining(this::deleteAcl);
+		forEachBatched(packageBatch -> packageBatch.forEach(this::deleteAcl), BATCH_SIZE);
 		super.deleteAll();
 	}
 
