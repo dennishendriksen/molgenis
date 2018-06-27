@@ -405,7 +405,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 
-		when(semanticSearchService.decisionTreeToFindRelevantAttributes(sourceEntityType, targetAttribute,
+		when(semanticSearchService.findAttributes(sourceEntityType, targetAttribute,
 				ontologyTermTags.values(), null)).thenReturn(matches);
 
 		when(ontologyTagService.getTagsForAttribute(targetEntityType, targetAttribute)).thenReturn(ontologyTermTags);
@@ -471,7 +471,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 
-		when(semanticSearchService.decisionTreeToFindRelevantAttributes(sourceEntityType, targetAttribute,
+		when(semanticSearchService.findAttributes(sourceEntityType, targetAttribute,
 				ontologyTermTags.values(), null)).thenReturn(mappings);
 
 		when(ontologyTagService.getTagsForAttribute(targetEntityType, targetAttribute)).thenReturn(ontologyTermTags);

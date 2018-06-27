@@ -162,7 +162,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	}
 
 	@Override
-	public Map<Attribute, ExplainedAttribute> decisionTreeToFindRelevantAttributes(EntityType sourceEntityType,
+	public Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType,
 			Attribute targetAttribute, Collection<OntologyTerm> ontologyTermsFromTags, Set<String> searchTerms)
 	{
 		Set<String> queryTerms = createLexicalSearchQueryTerms(targetAttribute, searchTerms);

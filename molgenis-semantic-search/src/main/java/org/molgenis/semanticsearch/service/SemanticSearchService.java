@@ -22,7 +22,7 @@ public interface SemanticSearchService
 	 *
 	 * @return Attribute of resembling attributes, sorted by relevance
 	 */
-	Map<Attribute, ExplainedAttribute> decisionTreeToFindRelevantAttributes(EntityType sourceEntityType,
+	Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType,
 			Attribute targetAttribute, Collection<OntologyTerm> ontologyTermsFromTags, Set<String> searchTerms);
 
 	/**

@@ -88,7 +88,7 @@ public class AlgorithmServiceImpl implements AlgorithmService
 		Multimap<Relation, OntologyTerm> tagsForAttribute = ontologyTagService.getTagsForAttribute(targetEntityType,
 				targetAttribute);
 
-		Map<Attribute, ExplainedAttribute> relevantAttributes = semanticSearchService.decisionTreeToFindRelevantAttributes(
+		Map<Attribute, ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(
 				sourceEntityType, targetAttribute, tagsForAttribute.values(), null);
 		GeneratedAlgorithm generatedAlgorithm = algorithmGeneratorService.generate(targetAttribute, relevantAttributes,
 				targetEntityType, sourceEntityType);
