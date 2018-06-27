@@ -1,6 +1,5 @@
 package org.molgenis.semanticmapper.service.impl;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Sets;
 import org.molgenis.data.AbstractMolgenisSpringTest;
@@ -27,7 +26,8 @@ import org.molgenis.semanticmapper.mapping.model.EntityMapping;
 import org.molgenis.semanticmapper.mapping.model.MappingProject;
 import org.molgenis.semanticmapper.service.AlgorithmService;
 import org.molgenis.semanticmapper.service.UnitResolver;
-import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.repository.TagRepository;
 import org.molgenis.semanticsearch.service.OntologyTagService;
@@ -49,14 +49,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.ZoneId;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.ZoneId.systemDefault;
 import static java.time.ZoneOffset.UTC;
+import static java.util.Arrays.asList;
 import static java.util.Collections.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -338,10 +337,10 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 													 .setNillable(false)
 													 .setRefEntity(refEntityType));
 		Entity source = new DynamicEntity(entityTypeSource);
-		source.set(sourceEntityAttrName, Arrays.asList(refEntity0, refEntity1));
+		source.set(sourceEntityAttrName, asList(refEntity0, refEntity1));
 
 		Object result = algorithmService.apply(attributeMapping, source, entityTypeSource);
-		assertEquals(result, Arrays.asList(refEntity0, refEntity1));
+		assertEquals(result, asList(refEntity0, refEntity1));
 	}
 
 	@Test
@@ -401,9 +400,9 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		EntityMapping mapping = project.getMappingTarget("target").addSource(sourceEntityType);
 
-		Map<Attribute, ExplainedAttribute> matches = ImmutableMap.of(sourceAttribute,
-				ExplainedAttribute.create(sourceAttribute,
-						singletonList(ExplainedQueryString.create("height", "height", "height", 100)), true));
+		AttributeSearchHits matches = AttributeSearchHits.create(singletonList(
+				AttributeSearchHit.create(sourceAttribute,
+						singleton(ExplainedQueryString.create("height", "height", "height", 100)), false)));
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 
@@ -436,7 +435,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 		EntityMapping mapping = project.getMappingTarget("target").addSource(sourceEntityType);
 
 		when(semanticSearchServiceImpl.findAttributes(sourceEntityType, Sets.newHashSet("targetHeight", "height"),
-				Collections.emptyList())).thenReturn(emptyMap());
+				Collections.emptyList())).thenReturn(AttributeSearchHits.create(emptyList()));
 
 		when(ontologyTagService.getTagsForAttribute(targetEntityType, targetAttribute)).thenReturn(
 				LinkedHashMultimap.create());
@@ -460,16 +459,16 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 		Attribute sourceAttribute2 = attrMetaFactory.create().setName("sourceHeight2");
 		sourceAttribute2.setDescription("height");
 
-		sourceEntityType.addAttributes(Arrays.asList(sourceAttribute1, sourceAttribute2));
+		sourceEntityType.addAttributes(asList(sourceAttribute1, sourceAttribute2));
 
 		MappingProject project = new MappingProject("project");
 		project.addTarget(targetEntityType);
 
 		EntityMapping mapping = project.getMappingTarget("target").addSource(sourceEntityType);
 
-		Map<Attribute, ExplainedAttribute> mappings = ImmutableMap.of(sourceAttribute1,
-				ExplainedAttribute.create(sourceAttribute1), sourceAttribute2,
-				ExplainedAttribute.create(sourceAttribute2));
+		AttributeSearchHits mappings = AttributeSearchHits.create(
+				asList(AttributeSearchHit.create(sourceAttribute1, emptySet(), false),
+						AttributeSearchHit.create(sourceAttribute2, emptySet(), false)));
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 

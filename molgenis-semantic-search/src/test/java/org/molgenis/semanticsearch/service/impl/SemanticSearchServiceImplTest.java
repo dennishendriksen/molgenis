@@ -1,6 +1,5 @@
 package org.molgenis.semanticsearch.service.impl;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.apache.lucene.search.Explanation;
 import org.mockito.Mock;
@@ -12,7 +11,8 @@ import org.molgenis.data.meta.model.*;
 import org.molgenis.data.support.QueryImpl;
 import org.molgenis.ontology.core.model.OntologyTerm;
 import org.molgenis.ontology.core.service.OntologyService;
-import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.explain.service.ElasticSearchExplainService;
 import org.molgenis.semanticsearch.semantic.Hit;
@@ -35,8 +35,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Maps.newHashMap;
 import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
+import static java.util.Collections.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.molgenis.data.meta.model.AttributeMetadata.ATTRIBUTE_META_DATA;
@@ -266,21 +265,21 @@ public class SemanticSearchServiceImplTest extends AbstractMolgenisSpringTest
 		when(dataService.findAll(ATTRIBUTE_META_DATA, new QueryImpl<>(disMaxQueryRules))).thenReturn(
 				Stream.of(entity1));
 
-		Map<Attribute, ExplainedAttribute> termsActual1 = semanticSearchService.findAttributes(sourceEntityType,
+		AttributeSearchHits termsActual1 = semanticSearchService.findAttributes(sourceEntityType,
 				newHashSet("targetAttribute"), emptyList());
 
-		Map<Attribute, ExplainedAttribute> termsExpected1 = ImmutableMap.of(attributeHeight,
-				ExplainedAttribute.create(attributeHeight));
+		AttributeSearchHits termsExpected1 = AttributeSearchHits.create(
+				singletonList(AttributeSearchHit.create(attributeHeight, emptySet(), false)));
 
 		assertEquals(termsActual1.toString(), termsExpected1.toString());
 
 		// Case 2
 		when(dataService.findAll(ATTRIBUTE_META_DATA, new QueryImpl<>(disMaxQueryRules))).thenReturn(Stream.empty());
 
-		Map<Attribute, ExplainedAttribute> termsActual2 = semanticSearchService.findAttributes(sourceEntityType,
+		AttributeSearchHits termsActual2 = semanticSearchService.findAttributes(sourceEntityType,
 				newHashSet("targetAttribute"), emptyList());
 
-		Map<Attribute, ExplainedAttribute> termsExpected2 = ImmutableMap.of();
+		AttributeSearchHits termsExpected2 = AttributeSearchHits.create(emptyList());
 
 		assertEquals(termsActual2, termsExpected2);
 

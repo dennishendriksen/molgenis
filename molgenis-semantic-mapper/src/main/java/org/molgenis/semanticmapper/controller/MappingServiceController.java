@@ -28,6 +28,8 @@ import org.molgenis.semanticmapper.mapping.model.AttributeMapping.AlgorithmState
 import org.molgenis.semanticmapper.service.AlgorithmService;
 import org.molgenis.semanticmapper.service.MappingService;
 import org.molgenis.semanticmapper.service.impl.AlgorithmEvaluation;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
@@ -451,16 +453,22 @@ public class MappingServiceController extends PluginController
 
 		Attribute targetAttribute = entityMapping.getTargetEntityType().getAttribute(targetAttributeName);
 
-		Map<Attribute, ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(
+		AttributeSearchHits relevantAttributes = semanticSearchService.findAttributes(
 				entityMapping.getSourceEntityType(), entityMapping.getTargetEntityType(), targetAttribute, searchTerms);
 
 		// If no relevant attributes are found, return all source attributes
-		if (relevantAttributes.isEmpty())
+		if (relevantAttributes.getHits().isEmpty())
 		{
 			return stream(entityMapping.getSourceEntityType().getAllAttributes()).map(ExplainedAttribute::create)
 																				 .collect(toList());
 		}
-		return newArrayList(relevantAttributes.values());
+		return relevantAttributes.getHits().stream().map(this::toExplainedAttribute).collect(toList());
+	}
+
+	private ExplainedAttribute toExplainedAttribute(AttributeSearchHit attributeSearchHit)
+	{
+		return ExplainedAttribute.create(attributeSearchHit.getAttribute(),
+				attributeSearchHit.getExplainedQueryStrings(), attributeSearchHit.isHighQuality());
 	}
 
 	@PostMapping(value = "/attributemapping/algorithm", consumes = APPLICATION_JSON_VALUE)

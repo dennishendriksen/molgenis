@@ -3,7 +3,7 @@ package org.molgenis.semanticsearch.service;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.EntityType;
 import org.molgenis.ontology.core.model.OntologyTerm;
-import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.semantic.Hit;
 
 import java.util.List;
@@ -13,14 +13,10 @@ import java.util.Set;
 public interface SemanticSearchService
 {
 	/**
-	 * A decision tree for getting the relevant attributes
-	 * <p>
-	 * 1. First find attributes based on searchTerms. 2. Second find attributes based on ontology terms from tags 3.
-	 * Third find attributes based on target attribute label.
-	 *
-	 * @return Attribute of resembling attributes, sorted by relevance
+	 * Find {@link Attribute attributes} in a {@link EntityType entity type} that match the given target attribute in
+	 * the target entity type. Optionally constrain the search using one or more search terms.
 	 */
-	Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
+	AttributeSearchHits findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
 			Attribute targetAttribute, Set<String> searchTerms);
 
 	/**

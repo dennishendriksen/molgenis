@@ -21,7 +21,8 @@ import org.molgenis.data.support.QueryImpl;
 import org.molgenis.ontology.core.model.Ontology;
 import org.molgenis.ontology.core.model.OntologyTerm;
 import org.molgenis.ontology.core.service.OntologyService;
-import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.explain.service.ElasticSearchExplainService;
 import org.molgenis.semanticsearch.semantic.Hit;
@@ -37,6 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.util.Collections.emptySet;
 import static java.util.Objects.requireNonNull;
 import static org.molgenis.data.meta.model.AttributeMetadata.ATTRIBUTE_META_DATA;
 
@@ -75,7 +77,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	/**
 	 * public for testability
 	 */
-	public Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
+	public AttributeSearchHits findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
 			Collection<OntologyTerm> ontologyTerms)
 	{
 		Iterable<String> attributeIdentifiers = semanticSearchServiceHelper.getAttributeIdentifiers(sourceEntityType);
@@ -97,30 +99,31 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 				ontologyTerms);
 
 		// Because the explain-API can be computationally expensive we limit the explanation to the top 10 attributes
-		Map<Attribute, ExplainedAttribute> explainedAttributes = new LinkedHashMap<>();
+		List<AttributeSearchHit> attributeSearchHits = new ArrayList<>();
 		AtomicInteger count = new AtomicInteger(0);
 		attributeEntities.forEach(attributeEntity ->
 		{
 			Attribute attribute = sourceEntityType.getAttribute(attributeEntity.getString(AttributeMetadata.NAME));
+			Set<ExplainedQueryString> explainedQueryStrings;
+			boolean isHighQuality;
 			if (count.get() < MAX_NUMBER_EXPLAINED_ATTRIBUTES)
 			{
-				Set<ExplainedQueryString> explanations = convertAttributeToExplainedAttribute(attribute,
-						collectExpanedQueryMap, new QueryImpl<>(finalQueryRules));
+				explainedQueryStrings = convertAttributeToExplainedAttribute(attribute, collectExpanedQueryMap,
+						new QueryImpl<>(finalQueryRules));
 
-				boolean singleMatchHighQuality = isSingleMatchHighQuality(queryTerms,
-						Sets.newHashSet(collectExpanedQueryMap.values()), explanations);
-
-				explainedAttributes.put(attribute,
-						ExplainedAttribute.create(attribute, explanations, singleMatchHighQuality));
+				isHighQuality = isSingleMatchHighQuality(queryTerms, Sets.newHashSet(collectExpanedQueryMap.values()),
+						explainedQueryStrings);
 			}
 			else
 			{
-				explainedAttributes.put(attribute, ExplainedAttribute.create(attribute));
+				explainedQueryStrings = emptySet();
+				isHighQuality = false;
 			}
+			attributeSearchHits.add(AttributeSearchHit.create(attribute, explainedQueryStrings, isHighQuality));
 			count.incrementAndGet();
 		});
 
-		return explainedAttributes;
+		return AttributeSearchHits.create(attributeSearchHits);
 	}
 
 	boolean isSingleMatchHighQuality(Collection<String> queryTerms, Collection<String> ontologyTermQueries,
@@ -163,7 +166,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	}
 
 	@Override
-	public Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
+	public AttributeSearchHits findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
 			Attribute targetAttribute, Set<String> searchTerms)
 	{
 		// Find relevant attributes base on tags

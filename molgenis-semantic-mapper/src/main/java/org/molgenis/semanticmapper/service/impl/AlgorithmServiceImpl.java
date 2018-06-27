@@ -15,7 +15,7 @@ import org.molgenis.semanticmapper.algorithmgenerator.service.AlgorithmGenerator
 import org.molgenis.semanticmapper.mapping.model.AttributeMapping;
 import org.molgenis.semanticmapper.mapping.model.EntityMapping;
 import org.molgenis.semanticmapper.service.AlgorithmService;
-import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
 import org.molgenis.util.UnexpectedEnumException;
 import org.slf4j.Logger;
@@ -27,7 +27,6 @@ import java.time.ZoneId;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -80,7 +79,7 @@ public class AlgorithmServiceImpl implements AlgorithmService
 	{
 		LOG.debug("createAttributeMappingIfOnlyOneMatch: target= {}", targetAttribute.getName());
 
-		Map<Attribute, ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(sourceEntityType,
+		AttributeSearchHits relevantAttributes = semanticSearchService.findAttributes(sourceEntityType,
 				targetEntityType, targetAttribute, null);
 		GeneratedAlgorithm generatedAlgorithm = algorithmGeneratorService.generate(targetAttribute, relevantAttributes,
 				targetEntityType, sourceEntityType);
@@ -100,7 +99,8 @@ public class AlgorithmServiceImpl implements AlgorithmService
 	public Iterable<AlgorithmEvaluation> applyAlgorithm(Attribute targetAttribute, String algorithm,
 			Iterable<Entity> sourceEntities)
 	{
-		return stream(sourceEntities.spliterator(), false).map(entity -> {
+		return stream(sourceEntities.spliterator(), false).map(entity ->
+		{
 			AlgorithmEvaluation algorithmResult = new AlgorithmEvaluation(entity);
 			Object derivedValue;
 

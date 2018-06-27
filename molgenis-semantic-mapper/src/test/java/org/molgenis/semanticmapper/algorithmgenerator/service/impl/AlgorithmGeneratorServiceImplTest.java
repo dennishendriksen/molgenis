@@ -1,6 +1,5 @@
 package org.molgenis.semanticmapper.algorithmgenerator.service.impl;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.molgenis.data.AbstractMolgenisSpringTest;
 import org.molgenis.data.DataService;
@@ -22,7 +21,8 @@ import org.molgenis.semanticmapper.service.impl.AlgorithmException;
 import org.molgenis.semanticmapper.service.impl.AlgorithmTemplateService;
 import org.molgenis.semanticmapper.service.impl.AlgorithmTemplateServiceImpl;
 import org.molgenis.semanticmapper.service.impl.UnitResolverImpl;
-import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
+import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -31,13 +31,12 @@ import org.springframework.test.context.ContextConfiguration;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Stream;
 
 import static java.util.Arrays.asList;
-import static java.util.Collections.*;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singleton;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.molgenis.data.meta.AttributeType.DECIMAL;
@@ -94,12 +93,11 @@ public class AlgorithmGeneratorServiceImplTest extends AbstractMolgenisSpringTes
 		sourceEntityType.addAttribute(heightSourceAttribute);
 		sourceEntityType.addAttribute(weightSourceAttribute);
 
-		Map<Attribute, ExplainedAttribute> sourceAttributes = ImmutableMap.of(heightSourceAttribute,
-				ExplainedAttribute.create(heightSourceAttribute,
-						singletonList(ExplainedQueryString.create("height", "height", "height", 100)), true),
-				weightSourceAttribute, ExplainedAttribute.create(heightSourceAttribute,
-						Collections.singletonList(ExplainedQueryString.create("weight", "weight", "weight", 100)),
-						true));
+		AttributeSearchHits sourceAttributes = AttributeSearchHits.create(
+				asList(AttributeSearchHit.create(heightSourceAttribute,
+						singleton(ExplainedQueryString.create("height", "height", "height", 100)), true),
+						AttributeSearchHit.create(weightSourceAttribute,
+								singleton(ExplainedQueryString.create("weight", "weight", "weight", 100)), true)));
 
 		Script script = mock(Script.class);
 		ScriptParameter heightParameter = mock(ScriptParameter.class);
@@ -156,7 +154,7 @@ public class AlgorithmGeneratorServiceImplTest extends AbstractMolgenisSpringTes
 	public void testGenerateMapExpressedTargetAttribute()
 	{
 		Attribute targetAttribute = when(mock(Attribute.class).hasExpression()).thenReturn(true).getMock();
-		Map<Attribute, ExplainedAttribute> sourceAttributes = emptyMap();
+		AttributeSearchHits sourceAttributes = AttributeSearchHits.create(emptyList());
 		EntityType targetEntityType = mock(EntityType.class);
 		EntityType sourceEntityType = mock(EntityType.class);
 		algorithmGeneratorService.generate(targetAttribute, sourceAttributes, targetEntityType, sourceEntityType);

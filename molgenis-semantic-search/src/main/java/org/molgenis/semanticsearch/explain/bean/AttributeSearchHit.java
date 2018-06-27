@@ -1,0 +1,23 @@
+package org.molgenis.semanticsearch.explain.bean;
+
+import com.google.auto.value.AutoValue;
+import org.molgenis.data.meta.model.Attribute;
+
+import java.util.Set;
+
+@AutoValue
+@SuppressWarnings("squid:S1610") // Abstract classes without fields should be converted to interfaces
+public abstract class AttributeSearchHit
+{
+	public abstract Attribute getAttribute();
+
+	public abstract Set<ExplainedQueryString> getExplainedQueryStrings();
+
+	public abstract boolean isHighQuality();
+
+	public static AttributeSearchHit create(Attribute attribute, Set<ExplainedQueryString> explainedQueryStrings,
+			boolean isHighQuality)
+	{
+		return new AutoValue_AttributeSearchHit(attribute, explainedQueryStrings, isHighQuality);
+	}
+}
