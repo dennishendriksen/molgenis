@@ -1,6 +1,5 @@
 package org.molgenis.semanticmapper.service.impl;
 
-import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.StringUtils;
 import org.molgenis.data.Entity;
 import org.molgenis.data.EntityManager;
@@ -8,9 +7,7 @@ import org.molgenis.data.meta.AttributeType;
 import org.molgenis.data.meta.IllegalAttributeTypeException;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.EntityType;
-import org.molgenis.data.semantic.Relation;
 import org.molgenis.js.magma.JsMagmaScriptEvaluator;
-import org.molgenis.ontology.core.model.OntologyTerm;
 import org.molgenis.script.core.ScriptException;
 import org.molgenis.security.core.runas.RunAsSystem;
 import org.molgenis.semanticmapper.algorithmgenerator.bean.GeneratedAlgorithm;
@@ -19,7 +16,6 @@ import org.molgenis.semanticmapper.mapping.model.AttributeMapping;
 import org.molgenis.semanticmapper.mapping.model.EntityMapping;
 import org.molgenis.semanticmapper.service.AlgorithmService;
 import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
-import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
 import org.molgenis.util.UnexpectedEnumException;
 import org.slf4j.Logger;
@@ -54,17 +50,15 @@ public class AlgorithmServiceImpl implements AlgorithmService
 
 	private static final int ENTITY_REFERENCE_FETCHING_DEPTH = 3;
 
-	private final OntologyTagService ontologyTagService;
 	private final SemanticSearchService semanticSearchService;
 	private final AlgorithmGeneratorService algorithmGeneratorService;
 	private final JsMagmaScriptEvaluator jsMagmaScriptEvaluator;
 	private final EntityManager entityManager;
 
-	public AlgorithmServiceImpl(OntologyTagService ontologyTagService, SemanticSearchService semanticSearchService,
+	public AlgorithmServiceImpl(SemanticSearchService semanticSearchService,
 			AlgorithmGeneratorService algorithmGeneratorService, EntityManager entityManager,
 			JsMagmaScriptEvaluator jsMagmaScriptEvaluator)
 	{
-		this.ontologyTagService = requireNonNull(ontologyTagService);
 		this.semanticSearchService = requireNonNull(semanticSearchService);
 		this.algorithmGeneratorService = requireNonNull(algorithmGeneratorService);
 		this.entityManager = requireNonNull(entityManager);
@@ -85,11 +79,9 @@ public class AlgorithmServiceImpl implements AlgorithmService
 			Attribute targetAttribute)
 	{
 		LOG.debug("createAttributeMappingIfOnlyOneMatch: target= {}", targetAttribute.getName());
-		Multimap<Relation, OntologyTerm> tagsForAttribute = ontologyTagService.getTagsForAttribute(targetEntityType,
-				targetAttribute);
 
-		Map<Attribute, ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(
-				sourceEntityType, targetAttribute, tagsForAttribute.values(), null);
+		Map<Attribute, ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(sourceEntityType,
+				targetEntityType, targetAttribute, null);
 		GeneratedAlgorithm generatedAlgorithm = algorithmGeneratorService.generate(targetAttribute, relevantAttributes,
 				targetEntityType, sourceEntityType);
 

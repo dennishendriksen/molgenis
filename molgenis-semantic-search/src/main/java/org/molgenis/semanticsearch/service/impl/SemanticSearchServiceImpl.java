@@ -2,10 +2,7 @@ package org.molgenis.semanticsearch.service.impl;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.Explanation;
@@ -19,6 +16,7 @@ import org.molgenis.data.meta.MetaDataService;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.AttributeMetadata;
 import org.molgenis.data.meta.model.EntityType;
+import org.molgenis.data.semantic.Relation;
 import org.molgenis.data.support.QueryImpl;
 import org.molgenis.ontology.core.model.Ontology;
 import org.molgenis.ontology.core.model.OntologyTerm;
@@ -27,6 +25,7 @@ import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.explain.service.ElasticSearchExplainService;
 import org.molgenis.semanticsearch.semantic.Hit;
+import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
 import org.molgenis.semanticsearch.string.NGramDistanceAlgorithm;
 import org.molgenis.semanticsearch.string.Stemmer;
@@ -50,6 +49,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	private final MetaDataService metaDataService;
 	private final SemanticSearchServiceHelper semanticSearchServiceHelper;
 	private final ElasticSearchExplainService elasticSearchExplainService;
+	private final OntologyTagService ontologyTagService;
 
 	private static final int MAX_NUM_TAGS = 100;
 	private static final float CUTOFF = 0.4f;
@@ -62,19 +62,20 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 
 	public SemanticSearchServiceImpl(DataService dataService, OntologyService ontologyService,
 			MetaDataService metaDataService, SemanticSearchServiceHelper semanticSearchServiceHelper,
-			ElasticSearchExplainService elasticSearchExplainService)
+			ElasticSearchExplainService elasticSearchExplainService, OntologyTagService ontologyTagService)
 	{
 		this.dataService = requireNonNull(dataService);
 		this.ontologyService = requireNonNull(ontologyService);
 		this.metaDataService = requireNonNull(metaDataService);
 		this.semanticSearchServiceHelper = requireNonNull(semanticSearchServiceHelper);
 		this.elasticSearchExplainService = requireNonNull(elasticSearchExplainService);
+		this.ontologyTagService = requireNonNull(ontologyTagService);
 	}
 
 	/**
-	 * package-private for testability
+	 * public for testability
 	 */
-	Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
+	public Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
 			Collection<OntologyTerm> ontologyTerms)
 	{
 		Iterable<String> attributeIdentifiers = semanticSearchServiceHelper.getAttributeIdentifiers(sourceEntityType);
@@ -162,9 +163,14 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	}
 
 	@Override
-	public Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType,
-			Attribute targetAttribute, Collection<OntologyTerm> ontologyTermsFromTags, Set<String> searchTerms)
+	public Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
+			Attribute targetAttribute, Set<String> searchTerms)
 	{
+		// Find relevant attributes base on tags
+		Multimap<Relation, OntologyTerm> tagsForAttribute = ontologyTagService.getTagsForAttribute(targetEntityType,
+				targetAttribute);
+		Collection<OntologyTerm> ontologyTermsFromTags = tagsForAttribute.values();
+
 		Set<String> queryTerms = createLexicalSearchQueryTerms(targetAttribute, searchTerms);
 
 		Collection<OntologyTerm> ontologyTerms = ontologyTermsFromTags;

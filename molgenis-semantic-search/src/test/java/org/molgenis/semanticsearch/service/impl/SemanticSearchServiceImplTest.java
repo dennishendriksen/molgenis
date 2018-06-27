@@ -350,7 +350,7 @@ public class SemanticSearchServiceImplTest extends AbstractMolgenisSpringTest
 		SemanticSearchServiceImpl semanticSearchService()
 		{
 			return new SemanticSearchServiceImpl(dataService(), ontologyService(), metaDataService(),
-					semanticSearchServiceHelper(), elasticSearchExplainService());
+					semanticSearchServiceHelper(), elasticSearchExplainService(), ontologyTagService());
 		}
 
 		@Bean

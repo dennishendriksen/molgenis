@@ -32,6 +32,7 @@ import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.repository.TagRepository;
 import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
+import org.molgenis.semanticsearch.service.impl.SemanticSearchServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -85,7 +86,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 	private OntologyTagService ontologyTagService;
 
 	@Autowired
-	private SemanticSearchService semanticSearchService;
+	private SemanticSearchServiceImpl semanticSearchServiceImpl;
 
 	@Autowired
 	private AlgorithmTemplateService algorithmTemplateService;
@@ -283,7 +284,8 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		Attribute targetAttribute = attrMetaFactory.create().setName("target_label");
 		AttributeMapping attributeMapping = new AttributeMapping(targetAttribute);
-		attributeMapping.setAlgorithm("var result = [];$('source_mref').map(function(mref){result.push(mref.val.label)});result");
+		attributeMapping.setAlgorithm(
+				"var result = [];$('source_mref').map(function(mref){result.push(mref.val.label)});result");
 
 		Object result = algorithmService.apply(attributeMapping, sourceEntity, sourceEntityType);
 		assertEquals(result, "[label 1, label 2]");
@@ -405,8 +407,8 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 
-		when(semanticSearchService.findAttributes(sourceEntityType, targetAttribute,
-				ontologyTermTags.values(), null)).thenReturn(matches);
+		when(semanticSearchServiceImpl.findAttributes(sourceEntityType, targetEntityType, targetAttribute,
+				null)).thenReturn(matches);
 
 		when(ontologyTagService.getTagsForAttribute(targetEntityType, targetAttribute)).thenReturn(ontologyTermTags);
 
@@ -433,7 +435,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		EntityMapping mapping = project.getMappingTarget("target").addSource(sourceEntityType);
 
-		when(semanticSearchService.findAttributes(sourceEntityType, Sets.newHashSet("targetHeight", "height"),
+		when(semanticSearchServiceImpl.findAttributes(sourceEntityType, Sets.newHashSet("targetHeight", "height"),
 				Collections.emptyList())).thenReturn(emptyMap());
 
 		when(ontologyTagService.getTagsForAttribute(targetEntityType, targetAttribute)).thenReturn(
@@ -471,8 +473,8 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 
-		when(semanticSearchService.findAttributes(sourceEntityType, targetAttribute,
-				ontologyTermTags.values(), null)).thenReturn(mappings);
+		when(semanticSearchServiceImpl.findAttributes(sourceEntityType, targetEntityType, targetAttribute,
+				null)).thenReturn(mappings);
 
 		when(ontologyTagService.getTagsForAttribute(targetEntityType, targetAttribute)).thenReturn(ontologyTermTags);
 
@@ -515,8 +517,8 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 		@Bean
 		public AlgorithmService algorithmService() throws ScriptException, IOException
 		{
-			return new AlgorithmServiceImpl(ontologyTagService(), semanticSearchService(), algorithmGeneratorService(),
-					entityManager(), jsScriptEvaluator());
+			return new AlgorithmServiceImpl(semanticSearchService(), algorithmGeneratorService(), entityManager(),
+					jsScriptEvaluator());
 		}
 
 		@Bean

@@ -451,12 +451,8 @@ public class MappingServiceController extends PluginController
 
 		Attribute targetAttribute = entityMapping.getTargetEntityType().getAttribute(targetAttributeName);
 
-		// Find relevant attributes base on tags
-		Multimap<Relation, OntologyTerm> tagsForAttribute = ontologyTagService.getTagsForAttribute(
-				entityMapping.getTargetEntityType(), targetAttribute);
-
 		Map<Attribute, ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(
-				entityMapping.getSourceEntityType(), targetAttribute, tagsForAttribute.values(), searchTerms);
+				entityMapping.getSourceEntityType(), entityMapping.getTargetEntityType(), targetAttribute, searchTerms);
 
 		// If no relevant attributes are found, return all source attributes
 		if (relevantAttributes.isEmpty())

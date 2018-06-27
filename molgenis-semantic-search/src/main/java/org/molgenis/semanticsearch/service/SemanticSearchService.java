@@ -6,14 +6,12 @@ import org.molgenis.ontology.core.model.OntologyTerm;
 import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.semantic.Hit;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public interface SemanticSearchService
 {
-
 	/**
 	 * A decision tree for getting the relevant attributes
 	 * <p>
@@ -22,16 +20,15 @@ public interface SemanticSearchService
 	 *
 	 * @return Attribute of resembling attributes, sorted by relevance
 	 */
-	Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType,
-			Attribute targetAttribute, Collection<OntologyTerm> ontologyTermsFromTags, Set<String> searchTerms);
+	Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
+			Attribute targetAttribute, Set<String> searchTerms);
 
 	/**
 	 * Finds {@link OntologyTerm}s that can be used to tag an attribute.
 	 *
 	 * @param entity      name of the entity
-	 * @param ontologyIDs IDs of ontologies to take the {@link OntologyTerm}s from.
+	 * @param ontologyIds IDs of ontologies to take the {@link OntologyTerm}s from.
 	 * @return {@link Map} of {@link Hit}s for {@link OntologyTerm} results
 	 */
-	Map<Attribute, Hit<OntologyTerm>> findTags(String entity, List<String> ontologyIDs);
-
+	Map<Attribute, Hit<OntologyTerm>> findTags(String entity, List<String> ontologyIds);
 }
