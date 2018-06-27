@@ -13,13 +13,6 @@ import java.util.Set;
 
 public interface SemanticSearchService
 {
-	/**
-	 * Find all relevant source attributes with an explanation based on ontology terms and search terms
-	 *
-	 * @return Attribute of resembling attributes, sorted by relevance
-	 */
-	Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
-			Collection<OntologyTerm> ontologyTerms);
 
 	/**
 	 * A decision tree for getting the relevant attributes
@@ -41,12 +34,4 @@ public interface SemanticSearchService
 	 */
 	Map<Attribute, Hit<OntologyTerm>> findTags(String entity, List<String> ontologyIDs);
 
-	/**
-	 * Finds {@link OntologyTerm}s for an attribute.
-	 *
-	 * @param attribute   Attribute to tag
-	 * @param ontologyIds IDs of ontologies to take the {@link OntologyTerm}s from.
-	 * @return {@link List} of {@link Hit}s for {@link OntologyTerm}s found, most relevant first
-	 */
-	Hit<OntologyTerm> findTags(Attribute attribute, List<String> ontologyIds);
 }

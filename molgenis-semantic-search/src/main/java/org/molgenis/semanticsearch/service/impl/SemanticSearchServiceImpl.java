@@ -71,8 +71,10 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 		this.elasticSearchExplainService = requireNonNull(elasticSearchExplainService);
 	}
 
-	@Override
-	public Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
+	/**
+	 * package-private for testability
+	 */
+	Map<Attribute, ExplainedAttribute> findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
 			Collection<OntologyTerm> ontologyTerms)
 	{
 		Iterable<String> attributeIdentifiers = semanticSearchServiceHelper.getAttributeIdentifiers(sourceEntityType);
@@ -257,8 +259,10 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 		return result;
 	}
 
-	@Override
-	public Hit<OntologyTerm> findTags(Attribute attribute, List<String> ontologyIds)
+	/**
+	 * package-private for testability
+	 */
+	Hit<OntologyTerm> findTags(Attribute attribute, List<String> ontologyIds)
 	{
 		String description = attribute.getDescription() == null ? attribute.getLabel() : attribute.getDescription();
 		Set<String> searchTerms = splitIntoTerms(description);
