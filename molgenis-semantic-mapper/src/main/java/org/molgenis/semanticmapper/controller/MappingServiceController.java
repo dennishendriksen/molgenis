@@ -28,9 +28,10 @@ import org.molgenis.semanticmapper.mapping.model.AttributeMapping.AlgorithmState
 import org.molgenis.semanticmapper.service.AlgorithmService;
 import org.molgenis.semanticmapper.service.MappingService;
 import org.molgenis.semanticmapper.service.impl.AlgorithmEvaluation;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
 import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttributeDto;
+import org.molgenis.semanticsearch.semantic.Hit;
+import org.molgenis.semanticsearch.semantic.Hits;
 import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
 import org.molgenis.web.PluginController;
@@ -429,7 +430,7 @@ public class MappingServiceController extends PluginController
 	 */
 	@PostMapping(value = "/attributeMapping/semanticsearch", consumes = APPLICATION_JSON_VALUE)
 	@ResponseBody
-	public List<ExplainedAttribute> getSemanticSearchAttributeMapping(@RequestBody Map<String, String> requestBody)
+	public List<ExplainedAttributeDto> getSemanticSearchAttributeMapping(@RequestBody Map<String, String> requestBody)
 	{
 		String mappingProjectId = requestBody.get("mappingProjectId");
 		String target = requestBody.get("target");
@@ -453,21 +454,25 @@ public class MappingServiceController extends PluginController
 
 		Attribute targetAttribute = entityMapping.getTargetEntityType().getAttribute(targetAttributeName);
 
-		AttributeSearchHits relevantAttributes = semanticSearchService.findAttributes(
+		Hits<ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(
 				entityMapping.getSourceEntityType(), entityMapping.getTargetEntityType(), targetAttribute, searchTerms);
 
 		// If no relevant attributes are found, return all source attributes
 		if (relevantAttributes.getHits().isEmpty())
 		{
-			return stream(entityMapping.getSourceEntityType().getAllAttributes()).map(ExplainedAttribute::create)
+			return stream(entityMapping.getSourceEntityType().getAllAttributes()).map(ExplainedAttributeDto::create)
 																				 .collect(toList());
 		}
-		return relevantAttributes.getHits().stream().map(this::toExplainedAttribute).collect(toList());
+		return relevantAttributes.getHits()
+								 .stream()
+								 .map(Hit::getResult)
+								 .map(this::toExplainedAttributeDto)
+								 .collect(toList());
 	}
 
-	private ExplainedAttribute toExplainedAttribute(AttributeSearchHit attributeSearchHit)
+	private ExplainedAttributeDto toExplainedAttributeDto(ExplainedAttribute attributeSearchHit)
 	{
-		return ExplainedAttribute.create(attributeSearchHit.getAttribute(),
+		return ExplainedAttributeDto.create(attributeSearchHit.getAttribute(),
 				attributeSearchHit.getExplainedQueryStrings(), attributeSearchHit.isHighQuality());
 	}
 

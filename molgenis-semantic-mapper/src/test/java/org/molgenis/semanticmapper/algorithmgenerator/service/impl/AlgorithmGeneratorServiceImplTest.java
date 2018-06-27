@@ -21,9 +21,10 @@ import org.molgenis.semanticmapper.service.impl.AlgorithmException;
 import org.molgenis.semanticmapper.service.impl.AlgorithmTemplateService;
 import org.molgenis.semanticmapper.service.impl.AlgorithmTemplateServiceImpl;
 import org.molgenis.semanticmapper.service.impl.UnitResolverImpl;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
+import org.molgenis.semanticsearch.semantic.Hit;
+import org.molgenis.semanticsearch.semantic.Hits;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -93,11 +94,11 @@ public class AlgorithmGeneratorServiceImplTest extends AbstractMolgenisSpringTes
 		sourceEntityType.addAttribute(heightSourceAttribute);
 		sourceEntityType.addAttribute(weightSourceAttribute);
 
-		AttributeSearchHits sourceAttributes = AttributeSearchHits.create(
-				asList(AttributeSearchHit.create(heightSourceAttribute,
-						singleton(ExplainedQueryString.create("height", "height", "height", 100)), true),
-						AttributeSearchHit.create(weightSourceAttribute,
-								singleton(ExplainedQueryString.create("weight", "weight", "weight", 100)), true)));
+		Hits<ExplainedAttribute> sourceAttributes = Hits.create(asList(Hit.create(
+				ExplainedAttribute.create(heightSourceAttribute,
+						singleton(ExplainedQueryString.create("height", "height", "height", 100)), true), 1f),
+				Hit.create(ExplainedAttribute.create(weightSourceAttribute,
+						singleton(ExplainedQueryString.create("weight", "weight", "weight", 100)), true), 1f)));
 
 		Script script = mock(Script.class);
 		ScriptParameter heightParameter = mock(ScriptParameter.class);
@@ -154,7 +155,7 @@ public class AlgorithmGeneratorServiceImplTest extends AbstractMolgenisSpringTes
 	public void testGenerateMapExpressedTargetAttribute()
 	{
 		Attribute targetAttribute = when(mock(Attribute.class).hasExpression()).thenReturn(true).getMock();
-		AttributeSearchHits sourceAttributes = AttributeSearchHits.create(emptyList());
+		Hits<ExplainedAttribute> sourceAttributes = Hits.create(emptyList());
 		EntityType targetEntityType = mock(EntityType.class);
 		EntityType sourceEntityType = mock(EntityType.class);
 		algorithmGeneratorService.generate(targetAttribute, sourceAttributes, targetEntityType, sourceEntityType);

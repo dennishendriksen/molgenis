@@ -11,11 +11,11 @@ import org.molgenis.data.meta.model.*;
 import org.molgenis.data.support.QueryImpl;
 import org.molgenis.ontology.core.model.OntologyTerm;
 import org.molgenis.ontology.core.service.OntologyService;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.explain.service.ElasticSearchExplainService;
 import org.molgenis.semanticsearch.semantic.Hit;
+import org.molgenis.semanticsearch.semantic.Hits;
 import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -265,21 +265,21 @@ public class SemanticSearchServiceImplTest extends AbstractMolgenisSpringTest
 		when(dataService.findAll(ATTRIBUTE_META_DATA, new QueryImpl<>(disMaxQueryRules))).thenReturn(
 				Stream.of(entity1));
 
-		AttributeSearchHits termsActual1 = semanticSearchService.findAttributes(sourceEntityType,
+		Hits<ExplainedAttribute> termsActual1 = semanticSearchService.findAttributes(sourceEntityType,
 				newHashSet("targetAttribute"), emptyList());
 
-		AttributeSearchHits termsExpected1 = AttributeSearchHits.create(
-				singletonList(AttributeSearchHit.create(attributeHeight, emptySet(), false)));
+		Hits<ExplainedAttribute> termsExpected1 = Hits.create(
+				singletonList(Hit.create(ExplainedAttribute.create(attributeHeight, emptySet(), false), 1f)));
 
 		assertEquals(termsActual1.toString(), termsExpected1.toString());
 
 		// Case 2
 		when(dataService.findAll(ATTRIBUTE_META_DATA, new QueryImpl<>(disMaxQueryRules))).thenReturn(Stream.empty());
 
-		AttributeSearchHits termsActual2 = semanticSearchService.findAttributes(sourceEntityType,
+		Hits<ExplainedAttribute> termsActual2 = semanticSearchService.findAttributes(sourceEntityType,
 				newHashSet("targetAttribute"), emptyList());
 
-		AttributeSearchHits termsExpected2 = AttributeSearchHits.create(emptyList());
+		Hits<ExplainedAttribute> termsExpected2 = Hits.create(emptyList());
 
 		assertEquals(termsActual2, termsExpected2);
 
@@ -348,8 +348,8 @@ public class SemanticSearchServiceImplTest extends AbstractMolgenisSpringTest
 		@Bean
 		SemanticSearchServiceImpl semanticSearchService()
 		{
-			return new SemanticSearchServiceImpl(dataService(), ontologyService(), metaDataService(),
-					semanticSearchServiceHelper(), elasticSearchExplainService(), ontologyTagService());
+			return new SemanticSearchServiceImpl(dataService(), ontologyService(), semanticSearchServiceHelper(),
+					elasticSearchExplainService(), ontologyTagService());
 		}
 
 		@Bean

@@ -17,8 +17,8 @@ import org.molgenis.semanticmapper.service.impl.AlgorithmTemplate;
 import org.molgenis.semanticmapper.service.impl.AlgorithmTemplateService;
 import org.molgenis.semanticmapper.utils.AlgorithmGeneratorHelper;
 import org.molgenis.semanticmapper.utils.MagmaUnitConverter;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.semantic.Hits;
 
 import javax.measure.quantity.Quantity;
 import javax.measure.unit.Unit;
@@ -93,7 +93,7 @@ public class AlgorithmGeneratorServiceImpl implements AlgorithmGeneratorService
 	}
 
 	@Override
-	public GeneratedAlgorithm generate(Attribute targetAttribute, AttributeSearchHits sourceAttributes,
+	public GeneratedAlgorithm generate(Attribute targetAttribute, Hits<ExplainedAttribute> sourceAttributes,
 			EntityType targetEntityType, EntityType sourceEntityType)
 	{
 		if (targetAttribute.hasExpression())
@@ -122,7 +122,7 @@ public class AlgorithmGeneratorServiceImpl implements AlgorithmGeneratorService
 			}
 			else
 			{
-				AttributeSearchHit attributeSearchHit = sourceAttributes.getHits().get(0);
+				ExplainedAttribute attributeSearchHit = sourceAttributes.getHits().iterator().next().getResult();
 				Attribute sourceAttribute = attributeSearchHit.getAttribute();
 				algorithm = generate(targetAttribute, Arrays.asList(sourceAttribute), targetEntityType,
 						sourceEntityType);

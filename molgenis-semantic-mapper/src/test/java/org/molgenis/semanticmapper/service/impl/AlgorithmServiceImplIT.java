@@ -26,10 +26,11 @@ import org.molgenis.semanticmapper.mapping.model.EntityMapping;
 import org.molgenis.semanticmapper.mapping.model.MappingProject;
 import org.molgenis.semanticmapper.service.AlgorithmService;
 import org.molgenis.semanticmapper.service.UnitResolver;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.repository.TagRepository;
+import org.molgenis.semanticsearch.semantic.Hit;
+import org.molgenis.semanticsearch.semantic.Hits;
 import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
 import org.molgenis.semanticsearch.service.impl.SemanticSearchServiceImpl;
@@ -400,9 +401,9 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		EntityMapping mapping = project.getMappingTarget("target").addSource(sourceEntityType);
 
-		AttributeSearchHits matches = AttributeSearchHits.create(singletonList(
-				AttributeSearchHit.create(sourceAttribute,
-						singleton(ExplainedQueryString.create("height", "height", "height", 100)), false)));
+		Hits<ExplainedAttribute> matches = Hits.create(singletonList(Hit.create(
+				ExplainedAttribute.create(sourceAttribute,
+						singleton(ExplainedQueryString.create("height", "height", "height", 100)), false), 1f)));
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 
@@ -435,7 +436,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 		EntityMapping mapping = project.getMappingTarget("target").addSource(sourceEntityType);
 
 		when(semanticSearchServiceImpl.findAttributes(sourceEntityType, Sets.newHashSet("targetHeight", "height"),
-				Collections.emptyList())).thenReturn(AttributeSearchHits.create(emptyList()));
+				Collections.emptyList())).thenReturn(Hits.create(emptyList()));
 
 		when(ontologyTagService.getTagsForAttribute(targetEntityType, targetAttribute)).thenReturn(
 				LinkedHashMultimap.create());
@@ -466,9 +467,12 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		EntityMapping mapping = project.getMappingTarget("target").addSource(sourceEntityType);
 
-		AttributeSearchHits mappings = AttributeSearchHits.create(
-				asList(AttributeSearchHit.create(sourceAttribute1, emptySet(), false),
-						AttributeSearchHit.create(sourceAttribute2, emptySet(), false)));
+		Hits<ExplainedAttribute> mappings = Hits.
+														create(asList(Hit.create(
+																ExplainedAttribute.create(sourceAttribute1, emptySet(),
+																		false), 1f), Hit.create(
+																ExplainedAttribute.create(sourceAttribute2, emptySet(),
+																		false), 1f)));
 
 		LinkedHashMultimap<Relation, OntologyTerm> ontologyTermTags = LinkedHashMultimap.create();
 

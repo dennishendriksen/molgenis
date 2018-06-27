@@ -15,7 +15,8 @@ import org.molgenis.semanticmapper.algorithmgenerator.service.AlgorithmGenerator
 import org.molgenis.semanticmapper.mapping.model.AttributeMapping;
 import org.molgenis.semanticmapper.mapping.model.EntityMapping;
 import org.molgenis.semanticmapper.service.AlgorithmService;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
+import org.molgenis.semanticsearch.semantic.Hits;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
 import org.molgenis.util.UnexpectedEnumException;
 import org.slf4j.Logger;
@@ -79,8 +80,8 @@ public class AlgorithmServiceImpl implements AlgorithmService
 	{
 		LOG.debug("createAttributeMappingIfOnlyOneMatch: target= {}", targetAttribute.getName());
 
-		AttributeSearchHits relevantAttributes = semanticSearchService.findAttributes(sourceEntityType,
-				targetEntityType, targetAttribute, null);
+		Hits<ExplainedAttribute> relevantAttributes = semanticSearchService.findAttributes(sourceEntityType,
+				targetEntityType, targetAttribute);
 		GeneratedAlgorithm generatedAlgorithm = algorithmGeneratorService.generate(targetAttribute, relevantAttributes,
 				targetEntityType, sourceEntityType);
 

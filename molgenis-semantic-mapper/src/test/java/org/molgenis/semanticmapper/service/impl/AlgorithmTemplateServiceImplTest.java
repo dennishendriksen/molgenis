@@ -14,9 +14,10 @@ import org.molgenis.js.magma.JsMagmaScriptRunner;
 import org.molgenis.script.core.*;
 import org.molgenis.script.core.config.ScriptTestConfig;
 import org.molgenis.security.core.token.TokenService;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
+import org.molgenis.semanticsearch.semantic.Hit;
+import org.molgenis.semanticsearch.semantic.Hits;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -94,9 +95,12 @@ public class AlgorithmTemplateServiceImplTest extends AbstractMolgenisSpringTest
 		sourceEntityMeta.addAttribute(sourceAttr1);
 		ExplainedQueryString sourceAttr0Explain = ExplainedQueryString.create("a", "b", param0Name, 1.0);
 		ExplainedQueryString sourceAttr1Explain = ExplainedQueryString.create("a", "b", param1Name, 0.5);
-		AttributeSearchHits attrResults = AttributeSearchHits.create(
-				asList(AttributeSearchHit.create(sourceAttr0, singleton(sourceAttr0Explain), false),
-						AttributeSearchHit.create(sourceAttr1, singleton(sourceAttr1Explain), false)));
+		Hits<ExplainedAttribute> attrResults = Hits.
+														   create(asList(Hit.create(
+																   ExplainedAttribute.create(sourceAttr0,
+																		   singleton(sourceAttr0Explain), false), 1f),
+																   Hit.create(ExplainedAttribute.create(sourceAttr1,
+																		   singleton(sourceAttr1Explain), false), 1f)));
 
 		Stream<AlgorithmTemplate> templateStream = algorithmTemplateServiceImpl.find(attrResults);
 

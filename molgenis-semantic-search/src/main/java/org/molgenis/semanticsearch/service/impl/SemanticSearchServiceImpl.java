@@ -12,7 +12,6 @@ import org.molgenis.data.Entity;
 import org.molgenis.data.Query;
 import org.molgenis.data.QueryRule;
 import org.molgenis.data.QueryRule.Operator;
-import org.molgenis.data.meta.MetaDataService;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.AttributeMetadata;
 import org.molgenis.data.meta.model.EntityType;
@@ -21,11 +20,11 @@ import org.molgenis.data.support.QueryImpl;
 import org.molgenis.ontology.core.model.Ontology;
 import org.molgenis.ontology.core.model.OntologyTerm;
 import org.molgenis.ontology.core.service.OntologyService;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHit;
-import org.molgenis.semanticsearch.explain.bean.AttributeSearchHits;
+import org.molgenis.semanticsearch.explain.bean.ExplainedAttribute;
 import org.molgenis.semanticsearch.explain.bean.ExplainedQueryString;
 import org.molgenis.semanticsearch.explain.service.ElasticSearchExplainService;
 import org.molgenis.semanticsearch.semantic.Hit;
+import org.molgenis.semanticsearch.semantic.Hits;
 import org.molgenis.semanticsearch.service.OntologyTagService;
 import org.molgenis.semanticsearch.service.SemanticSearchService;
 import org.molgenis.semanticsearch.string.NGramDistanceAlgorithm;
@@ -38,8 +37,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.Collections.emptySet;
+import static java.util.Collections.*;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.toList;
 import static org.molgenis.data.meta.model.AttributeMetadata.ATTRIBUTE_META_DATA;
 
 public class SemanticSearchServiceImpl implements SemanticSearchService
@@ -48,7 +48,6 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 
 	private final DataService dataService;
 	private final OntologyService ontologyService;
-	private final MetaDataService metaDataService;
 	private final SemanticSearchServiceHelper semanticSearchServiceHelper;
 	private final ElasticSearchExplainService elasticSearchExplainService;
 	private final OntologyTagService ontologyTagService;
@@ -63,12 +62,11 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	private static final int MAX_NUMBER_EXPLAINED_ATTRIBUTES = 10;
 
 	public SemanticSearchServiceImpl(DataService dataService, OntologyService ontologyService,
-			MetaDataService metaDataService, SemanticSearchServiceHelper semanticSearchServiceHelper,
+			SemanticSearchServiceHelper semanticSearchServiceHelper,
 			ElasticSearchExplainService elasticSearchExplainService, OntologyTagService ontologyTagService)
 	{
 		this.dataService = requireNonNull(dataService);
 		this.ontologyService = requireNonNull(ontologyService);
-		this.metaDataService = requireNonNull(metaDataService);
 		this.semanticSearchServiceHelper = requireNonNull(semanticSearchServiceHelper);
 		this.elasticSearchExplainService = requireNonNull(elasticSearchExplainService);
 		this.ontologyTagService = requireNonNull(ontologyTagService);
@@ -77,7 +75,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	/**
 	 * public for testability
 	 */
-	public AttributeSearchHits findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
+	public Hits<ExplainedAttribute> findAttributes(EntityType sourceEntityType, Set<String> queryTerms,
 			Collection<OntologyTerm> ontologyTerms)
 	{
 		Iterable<String> attributeIdentifiers = semanticSearchServiceHelper.getAttributeIdentifiers(sourceEntityType);
@@ -99,7 +97,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 				ontologyTerms);
 
 		// Because the explain-API can be computationally expensive we limit the explanation to the top 10 attributes
-		List<AttributeSearchHit> attributeSearchHits = new ArrayList<>();
+		List<ExplainedAttribute> attributeSearchHits = new ArrayList<>();
 		AtomicInteger count = new AtomicInteger(0);
 		attributeEntities.forEach(attributeEntity ->
 		{
@@ -119,11 +117,13 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 				explainedQueryStrings = emptySet();
 				isHighQuality = false;
 			}
-			attributeSearchHits.add(AttributeSearchHit.create(attribute, explainedQueryStrings, isHighQuality));
+			attributeSearchHits.add(ExplainedAttribute.create(attribute, explainedQueryStrings, isHighQuality));
 			count.incrementAndGet();
 		});
 
-		return AttributeSearchHits.create(attributeSearchHits);
+		return Hits.create(attributeSearchHits.stream()
+											  .map(explainedAttribute -> Hit.create(explainedAttribute, 1f))
+											  .collect(toList()));
 	}
 
 	boolean isSingleMatchHighQuality(Collection<String> queryTerms, Collection<String> ontologyTermQueries,
@@ -166,7 +166,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	}
 
 	@Override
-	public AttributeSearchHits findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
+	public Hits<ExplainedAttribute> findAttributes(EntityType sourceEntityType, EntityType targetEntityType,
 			Attribute targetAttribute, Set<String> searchTerms)
 	{
 		// Find relevant attributes base on tags
@@ -253,19 +253,11 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 	}
 
 	@Override
-	public Map<Attribute, Hit<OntologyTerm>> findTags(String entity, List<String> ontologyIds)
+	public Hits<OntologyTerm> findOntologyTerms(Attribute attribute, Collection<Ontology> ontologies)
 	{
-		Map<Attribute, Hit<OntologyTerm>> result = new LinkedHashMap<>();
-		EntityType emd = metaDataService.getEntityType(entity);
-		for (Attribute amd : emd.getAtomicAttributes())
-		{
-			Hit<OntologyTerm> tag = findTags(amd, ontologyIds);
-			if (tag != null)
-			{
-				result.put(amd, tag);
-			}
-		}
-		return result;
+		List<String> ontologyIds = ontologies.stream().map(Ontology::getId).collect(toList());
+		Hit<OntologyTerm> ontologyTermHit = findTags(attribute, ontologyIds);
+		return ontologyTermHit != null ? Hits.create(singletonList(ontologyTermHit)) : Hits.create(emptyList());
 	}
 
 	/**
@@ -278,7 +270,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 
 		if (LOG.isDebugEnabled())
 		{
-			LOG.debug("findOntologyTerms({},{},{})", ontologyIds, searchTerms, MAX_NUM_TAGS);
+			LOG.debug("findAttributeOntologyTerms({},{},{})", ontologyIds, searchTerms, MAX_NUM_TAGS);
 		}
 
 		List<OntologyTerm> candidates = ontologyService.findOntologyTerms(ontologyIds, searchTerms, MAX_NUM_TAGS);
@@ -294,8 +286,7 @@ public class SemanticSearchServiceImpl implements SemanticSearchService
 														 ontologyTerm))
 												 .map(ontolgoyTerm -> Hit.create(ontolgoyTerm,
 														 bestMatchingSynonym(ontolgoyTerm, searchTerms).getScore()))
-												 .sorted(Ordering.natural().reverse())
-												 .collect(Collectors.toList());
+												 .sorted(Ordering.natural().reverse()).collect(toList());
 
 		if (LOG.isDebugEnabled())
 		{
