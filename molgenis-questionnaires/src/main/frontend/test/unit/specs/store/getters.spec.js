@@ -221,7 +221,7 @@ describe('getters', () => {
     })
 
     it('should catch and log an error in case the visible expression evaluation throws an error', () => {
-      let stub = sinon.stub(console, 'error')
+      let stub = sinon.stub(console, 'log')
 
       const stateWithError = {
         chapters: [
@@ -246,8 +246,8 @@ describe('getters', () => {
 
       getters.getChapterProgress(stateWithError)
 
-      expect(console.error.called).to.equal(true)
-      expect(console.error.calledWith(sinon.match('Error in getters'))).to.equal(true)
+      expect(console.log.called).to.equal(true)
+      expect(console.log.calledWith(sinon.match('Setting chapter-1-field-1.visible to false'))).to.equal(true)
       stub.reset()
       stub.resetBehavior()
     })
