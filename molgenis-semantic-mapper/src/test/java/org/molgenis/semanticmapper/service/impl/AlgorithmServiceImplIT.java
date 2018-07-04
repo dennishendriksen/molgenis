@@ -3,10 +3,7 @@ package org.molgenis.semanticmapper.service.impl;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.Sets;
-import org.molgenis.data.AbstractMolgenisSpringTest;
-import org.molgenis.data.DataService;
-import org.molgenis.data.Entity;
-import org.molgenis.data.EntityManager;
+import org.molgenis.data.*;
 import org.molgenis.data.meta.AttributeType;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.AttributeFactory;
@@ -43,7 +40,6 @@ import org.testng.annotations.Test;
 
 import javax.script.ScriptException;
 import java.io.IOException;
-import java.text.ParseException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Month;
@@ -89,6 +85,9 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 	@Autowired
 	private AlgorithmTemplateService algorithmTemplateService;
+
+	@Autowired
+	private DataService dataService;
 
 	@BeforeMethod
 	public void setUpBeforeMethod()
@@ -173,7 +172,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 	}
 
 	@Test
-	public void testGetAgeScript() throws ParseException
+	public void testGetAgeScript()
 	{
 		String idAttrName = "id";
 		EntityType entityType = entityTypeFactory.create("LL");
@@ -193,7 +192,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 	}
 
 	@Test
-	public void testGetXrefScript() throws ParseException
+	public void testGetXrefScript()
 	{
 		// xref entities
 		EntityType entityTypeXref = entityTypeFactory.create("xrefEntity1");
@@ -226,13 +225,54 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 		attributeMapping.setAlgorithm("$('xref').map({'1':'2', '2':'1'}).value();");
 
 		when(entityManager.getReference(entityTypeXref, 1)).thenReturn(xref1a);
+		when(dataService.findOneById(entityTypeXref.getId(), 1)).thenReturn(mock(Entity.class));
+
+		Entity result = (Entity) algorithmService.apply(attributeMapping, source, entityTypeSource);
+		assertEquals(result.get("field1"), xref2a.get("field2"));
+	}
+
+	@Test(expectedExceptions = UnknownEntityException.class, expectedExceptionsMessageRegExp = "type:xrefEntity1 id:1 attribute:id")
+	public void testApplyNonExistingXref()
+	{
+		// xref entities
+		EntityType entityTypeXref = entityTypeFactory.create("xrefEntity1");
+		entityTypeXref.addAttribute(attrMetaFactory.create().setName("id").setDataType(INT), ROLE_ID);
+		entityTypeXref.addAttribute(attrMetaFactory.create().setName("field1"));
+		Entity xref1a = new DynamicEntity(entityTypeXref);
+		xref1a.set("id", 1);
+		xref1a.set("field1", "Test");
+
+		EntityType entityTypeXref2 = entityTypeFactory.create("xrefEntity2");
+		entityTypeXref2.addAttribute(attrMetaFactory.create().setName("id").setDataType(INT), ROLE_ID);
+		entityTypeXref2.addAttribute(attrMetaFactory.create().setName("field2"));
+		Entity xref2a = new DynamicEntity(entityTypeXref2);
+		xref2a.set("id", 2);
+		xref2a.set("field2", "Test");
+
+		// source Entity
+		EntityType entityTypeSource = entityTypeFactory.create("Source");
+		entityTypeSource.addAttribute(attrMetaFactory.create().setName("id").setDataType(INT), ROLE_ID);
+		entityTypeSource.addAttribute(attrMetaFactory.create().setName("xref").setDataType(XREF));
+		Entity source = new DynamicEntity(entityTypeSource);
+		source.set("id", 1);
+		source.set("xref", xref2a);
+
+		Attribute targetAttribute = attrMetaFactory.create().setName("field1");
+		targetAttribute.setDataType(XREF);
+		targetAttribute.setRefEntity(entityTypeXref);
+
+		AttributeMapping attributeMapping = new AttributeMapping(targetAttribute);
+		attributeMapping.setAlgorithm("$('xref').map({'1':'2', '2':'1'}).value();");
+
+		when(entityManager.getReference(entityTypeXref, 1)).thenReturn(xref1a);
+		when(dataService.findOneById(entityTypeXref.getId(), 1)).thenReturn(null);
 
 		Entity result = (Entity) algorithmService.apply(attributeMapping, source, entityTypeSource);
 		assertEquals(result.get("field1"), xref2a.get("field2"));
 	}
 
 	@Test
-	public void testDotAnnotationWithXref() throws ParseException
+	public void testDotAnnotationWithXref()
 	{
 		EntityType referenceEntityType = entityTypeFactory.create("reference");
 		referenceEntityType.addAttribute(attrMetaFactory.create().setName("id"), ROLE_ID);
@@ -259,7 +299,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 	}
 
 	@Test
-	public void testDotAnnotationWithMref() throws ParseException
+	public void testDotAnnotationWithMref()
 	{
 		EntityType referenceEntityType = entityTypeFactory.create("reference");
 		referenceEntityType.addAttribute(attrMetaFactory.create().setName("id"), ROLE_ID);
@@ -283,14 +323,15 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 
 		Attribute targetAttribute = attrMetaFactory.create().setName("target_label");
 		AttributeMapping attributeMapping = new AttributeMapping(targetAttribute);
-		attributeMapping.setAlgorithm("var result = [];$('source_mref').map(function(mref){result.push(mref.val.label)});result");
+		attributeMapping.setAlgorithm(
+				"var result = [];$('source_mref').map(function(mref){result.push(mref.val.label)});result");
 
 		Object result = algorithmService.apply(attributeMapping, sourceEntity, sourceEntityType);
 		assertEquals(result, "[label 1, label 2]");
 	}
 
 	@Test
-	public void testApplyMref() throws ParseException
+	public void testApplyMref()
 	{
 		String refEntityName = "refEntity";
 		String refEntityIdAttrName = "id";
@@ -338,12 +379,71 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 		Entity source = new DynamicEntity(entityTypeSource);
 		source.set(sourceEntityAttrName, Arrays.asList(refEntity0, refEntity1));
 
+		when(dataService.findOneById(refEntityName, refEntityId0)).thenReturn(mock(Entity.class));
+		when(dataService.findOneById(refEntityName, refEntityId1)).thenReturn(mock(Entity.class));
+
+		Object result = algorithmService.apply(attributeMapping, source, entityTypeSource);
+		assertEquals(result, Arrays.asList(refEntity0, refEntity1));
+	}
+
+	@Test(expectedExceptions = UnknownEntityException.class, expectedExceptionsMessageRegExp = "type:refEntity id:id0 attribute:id")
+	public void testApplyNonExistingMref()
+	{
+		String refEntityName = "refEntity";
+		String refEntityIdAttrName = "id";
+		String refEntityLabelAttrName = "label";
+
+		String refEntityId0 = "id0";
+		String refEntityId1 = "id1";
+
+		String sourceEntityName = "source";
+		String sourceEntityAttrName = "mref-source";
+		String targetEntityAttrName = "mref-target";
+
+		// ref entities
+		EntityType refEntityType = entityTypeFactory.create(refEntityName);
+		refEntityType.addAttribute(attrMetaFactory.create().setName(refEntityIdAttrName), ROLE_ID);
+		refEntityType.addAttribute(attrMetaFactory.create().setName(refEntityLabelAttrName).setDataType(STRING),
+				ROLE_LABEL);
+
+		Entity refEntity0 = new DynamicEntity(refEntityType);
+		refEntity0.set(refEntityIdAttrName, refEntityId0);
+		refEntity0.set(refEntityLabelAttrName, "label0");
+
+		Entity refEntity1 = new DynamicEntity(refEntityType);
+		refEntity1.set(refEntityIdAttrName, refEntityId1);
+		refEntity1.set(refEntityLabelAttrName, "label1");
+
+		// mapping
+		Attribute targetAttribute = attrMetaFactory.create().setName(targetEntityAttrName);
+		targetAttribute.setDataType(MREF).setNillable(false).setRefEntity(refEntityType);
+		AttributeMapping attributeMapping = new AttributeMapping(targetAttribute);
+		attributeMapping.setAlgorithm("$('" + sourceEntityAttrName + "').value()");
+
+		when(entityManager.getReference(refEntityType, refEntityId0)).thenReturn(refEntity0);
+		when(entityManager.getReference(refEntityType, refEntityId1)).thenReturn(refEntity1);
+
+		// source Entity
+		EntityType entityTypeSource = entityTypeFactory.create(sourceEntityName);
+		entityTypeSource.addAttribute(
+				attrMetaFactory.create().setName(refEntityIdAttrName).setDataType(INT).setAuto(true), ROLE_ID);
+		entityTypeSource.addAttribute(attrMetaFactory.create()
+													 .setName(sourceEntityAttrName)
+													 .setDataType(MREF)
+													 .setNillable(false)
+													 .setRefEntity(refEntityType));
+		Entity source = new DynamicEntity(entityTypeSource);
+		source.set(sourceEntityAttrName, Arrays.asList(refEntity0, refEntity1));
+
+		when(dataService.findOneById(refEntityName, refEntityId0)).thenReturn(null);
+		when(dataService.findOneById(refEntityName, refEntityId1)).thenReturn(null);
+
 		Object result = algorithmService.apply(attributeMapping, source, entityTypeSource);
 		assertEquals(result, Arrays.asList(refEntity0, refEntity1));
 	}
 
 	@Test
-	public void testApplyMrefNillable() throws ParseException
+	public void testApplyMrefNillable()
 	{
 		String refEntityName = "refEntity";
 		String refEntityIdAttrName = "id";
@@ -516,7 +616,7 @@ public class AlgorithmServiceImplIT extends AbstractMolgenisSpringTest
 		public AlgorithmService algorithmService() throws ScriptException, IOException
 		{
 			return new AlgorithmServiceImpl(ontologyTagService(), semanticSearchService(), algorithmGeneratorService(),
-					entityManager(), jsScriptEvaluator());
+					entityManager(), jsScriptEvaluator(), dataService);
 		}
 
 		@Bean

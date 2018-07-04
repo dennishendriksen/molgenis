@@ -2,6 +2,7 @@ package org.molgenis.semanticmapper.service.impl;
 
 import com.google.common.collect.Lists;
 import org.mockito.Mock;
+import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
 import org.molgenis.data.EntityManager;
 import org.molgenis.data.meta.AttributeType;
@@ -40,13 +41,13 @@ public class AlgorithmServiceImplTest extends AbstractMockitoTest
 	public void setUpBeforeMethod()
 	{
 		algorithmServiceImpl = new AlgorithmServiceImpl(ontologyTagService, semanticSearhService,
-				algorithmGeneratorService, entityManager, jsMagmaScriptEvaluator);
+				algorithmGeneratorService, entityManager, jsMagmaScriptEvaluator, mock(DataService.class));
 	}
 
 	@Test(expectedExceptions = NullPointerException.class)
 	public void testAlgorithmServiceImpl()
 	{
-		new AlgorithmServiceImpl(null, null, null, null, null);
+		new AlgorithmServiceImpl(null, null, null, null, null, null);
 	}
 
 	@Test(expectedExceptions = AlgorithmException.class, expectedExceptionsMessageRegExp = "'invalidDate' can't be converted to type 'DATE'")

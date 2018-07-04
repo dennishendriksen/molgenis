@@ -2,8 +2,10 @@ package org.molgenis.semanticmapper.service.impl;
 
 import com.google.common.collect.Multimap;
 import org.apache.commons.lang3.StringUtils;
+import org.molgenis.data.DataService;
 import org.molgenis.data.Entity;
 import org.molgenis.data.EntityManager;
+import org.molgenis.data.UnknownEntityException;
 import org.molgenis.data.meta.AttributeType;
 import org.molgenis.data.meta.IllegalAttributeTypeException;
 import org.molgenis.data.meta.model.Attribute;
@@ -58,17 +60,19 @@ public class AlgorithmServiceImpl implements AlgorithmService
 	private final SemanticSearchService semanticSearchService;
 	private final AlgorithmGeneratorService algorithmGeneratorService;
 	private final JsMagmaScriptEvaluator jsMagmaScriptEvaluator;
+	private final DataService dataService;
 	private final EntityManager entityManager;
 
 	public AlgorithmServiceImpl(OntologyTagService ontologyTagService, SemanticSearchService semanticSearchService,
 			AlgorithmGeneratorService algorithmGeneratorService, EntityManager entityManager,
-			JsMagmaScriptEvaluator jsMagmaScriptEvaluator)
+			JsMagmaScriptEvaluator jsMagmaScriptEvaluator, DataService dataService)
 	{
 		this.ontologyTagService = requireNonNull(ontologyTagService);
 		this.semanticSearchService = requireNonNull(semanticSearchService);
 		this.algorithmGeneratorService = requireNonNull(algorithmGeneratorService);
 		this.entityManager = requireNonNull(entityManager);
 		this.jsMagmaScriptEvaluator = requireNonNull(jsMagmaScriptEvaluator);
+		this.dataService = requireNonNull(dataService);
 	}
 
 	@Override
@@ -108,7 +112,8 @@ public class AlgorithmServiceImpl implements AlgorithmService
 	public Iterable<AlgorithmEvaluation> applyAlgorithm(Attribute targetAttribute, String algorithm,
 			Iterable<Entity> sourceEntities)
 	{
-		return stream(sourceEntities.spliterator(), false).map(entity -> {
+		return stream(sourceEntities.spliterator(), false).map(entity ->
+		{
 			AlgorithmEvaluation algorithmResult = new AlgorithmEvaluation(entity);
 			Object derivedValue;
 
@@ -132,7 +137,7 @@ public class AlgorithmServiceImpl implements AlgorithmService
 					return algorithmResult.errorMessage(
 							"Applying an algorithm on a null source value caused an exception. Is the target attribute required?");
 				}
-				return algorithmResult.errorMessage(e.getMessage());
+				return algorithmResult.errorMessage(e.getLocalizedMessage());
 			}
 			return algorithmResult.value(derivedValue);
 		}).collect(toList());
@@ -197,8 +202,10 @@ public class AlgorithmServiceImpl implements AlgorithmService
 			case CATEGORICAL:
 			case XREF:
 			case FILE:
-				convertedValue = value != null ? entityManager.getReference(attr.getRefEntity(),
-						convert(value, attr.getRefEntity().getIdAttribute())) : null;
+				Entity reference = entityManager.getReference(attr.getRefEntity(),
+						convert(value, attr.getRefEntity().getIdAttribute()));
+				checkRefExists(reference);
+				convertedValue = value != null ? reference : null;
 				break;
 			case CATEGORICAL_MREF:
 			case MREF:
@@ -208,6 +215,7 @@ public class AlgorithmServiceImpl implements AlgorithmService
 				convertedValue = valueIds.stream()
 										 .map(valueId -> entityManager.getReference(attr.getRefEntity(),
 												 convert(valueId, attr.getRefEntity().getIdAttribute())))
+										 .filter(this::checkRefExists)
 										 .collect(toList());
 				break;
 			case DATE:
@@ -241,6 +249,15 @@ public class AlgorithmServiceImpl implements AlgorithmService
 		}
 
 		return convertedValue;
+	}
+
+	private boolean checkRefExists(Entity ref)
+	{
+		if (dataService.findOneById(ref.getEntityType().getId(), ref.getIdValue()) == null)
+		{
+			throw new UnknownEntityException(ref.getEntityType(), ref.getIdValue());
+		}
+		return true;
 	}
 
 	LocalDate convertToDate(Object value)
