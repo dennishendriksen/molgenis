@@ -5,6 +5,7 @@ import org.molgenis.data.meta.AttributeType;
 import org.molgenis.data.meta.model.Attribute;
 import org.molgenis.data.meta.model.AttributeFactory;
 import org.molgenis.data.meta.model.EntityType;
+import org.molgenis.data.meta.model.Package;
 import org.molgenis.data.security.permission.PermissionSystemService;
 import org.molgenis.data.support.QueryImpl;
 import org.molgenis.jobs.Progress;
@@ -202,7 +203,8 @@ public class MappingServiceImpl implements MappingService
 		}
 		else if (packageId != null)
 		{
-			targetMetadata.setPackage(dataService.getMeta().getPackage(packageId));
+			Package aPackage = dataService.getMeta().getPackage(packageId).orElse(null);
+			targetMetadata.setPackage(aPackage);
 		}
 		else
 		{

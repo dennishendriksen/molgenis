@@ -76,8 +76,13 @@ public class EntityServiceImpl implements EntityService
 		// Create a dataTable
 		EntityType entityType = entityTypeFactory.create();
 
-		Package aPackage = metaDataService.getPackage(packageName);
-		if (aPackage == null)
+		Optional<Package> optionalPackage = metaDataService.getPackage(packageName);
+		Package aPackage;
+		if (optionalPackage.isPresent())
+		{
+			aPackage = optionalPackage.get();
+		}
+		else
 		{
 			aPackage = packageFactory.create(packageName);
 			aPackage.setLabel(packageName);
