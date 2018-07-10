@@ -9,6 +9,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.servlet.http.HttpSession;
+import java.nio.file.Path;
 
 public class ImportJob implements Runnable
 {
@@ -16,7 +17,8 @@ public class ImportJob implements Runnable
 
 	private final ImportService importService;
 	private final SecurityContext securityContext;
-	private final RepositoryCollection source;
+	private RepositoryCollection source;
+	private Path path;
 	private final DatabaseAction databaseAction;
 	private final String importRunId;
 	private final ImportRunService importRunService;
@@ -37,6 +39,20 @@ public class ImportJob implements Runnable
 		this.packageId = packageId;
 	}
 
+	public ImportJob(ImportService importService, SecurityContext securityContext, Path path,
+			DatabaseAction databaseAction, String importRunId, ImportRunService importRunService, HttpSession session,
+			String packageId)
+	{
+		this.importService = importService;
+		this.securityContext = securityContext;
+		this.path = path;
+		this.databaseAction = databaseAction;
+		this.importRunId = importRunId;
+		this.importRunService = importRunService;
+		this.session = session;
+		this.packageId = packageId;
+	}
+
 	@Override
 	public void run()
 	{
@@ -47,7 +63,7 @@ public class ImportJob implements Runnable
 
 			SecurityContextHolder.setContext(securityContext);
 
-			EntityImportReport importReport = importService.doImport(source, databaseAction, packageId);
+			EntityImportReport importReport = importService.doImport(path, databaseAction, packageId);
 
 			session.setAttribute("SPRING_SECURITY_CONTEXT", securityContext);
 

@@ -53,6 +53,11 @@ public final class IntermediateParseResults
 		this.l10nStrings = new LinkedHashMap<>();
 	}
 
+	public void addTag(Tag tag)
+	{
+		addTag(tag.getId(), tag);
+	}
+
 	public void addTag(String identifier, Tag tag)
 	{
 		tags.put(identifier, tag);
@@ -171,6 +176,11 @@ public final class IntermediateParseResults
 	public boolean knowsEntity(String name)
 	{
 		return entities.containsKey(name);
+	}
+
+	public void addPackage(Package p)
+	{
+		packages.put(p.getId(), p);
 	}
 
 	public void addPackage(String name, Package p)

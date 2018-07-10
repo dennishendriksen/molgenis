@@ -208,6 +208,64 @@ public class EmxMetaDataParser implements MetaDataParser
 
 	@Override
 	//FIXME The source is parsed twice!!! Once by determineImportableEntities and once by doImport
+	public ParsedMetaData parse(Tables tables, @Nullable String packageId)
+	{
+		if (tables.hasTable(EMX_ATTRIBUTES))
+		{
+			IntermediateParseResults intermediateResults = getEntityTypeFromSource(tables);
+			List<EntityType> entities;
+			if (packageId == null)
+			{
+				entities = intermediateResults.getEntities();
+			}
+			else
+			{
+				entities = putEntitiesInDefaultPackage(intermediateResults, packageId);
+			}
+
+			return new ParsedMetaData(entityTypeDependencyResolver.resolve(entities), intermediateResults.getPackages(),
+					intermediateResults.getTags(), intermediateResults.getLanguages(),
+					intermediateResults.getL10nStrings());
+		}
+		else
+		{
+			if (dataService != null)
+			{
+				List<EntityType> metadataList = new ArrayList<>();
+				tables.getTableStream().forEach(table ->
+				{
+					String emxName = table.getId();
+					String repoName = EMX_NAME_TO_REPO_NAME_MAP.get(emxName);
+					if (repoName == null) repoName = emxName;
+					metadataList.add(dataService.getRepository(repoName).getEntityType());
+				});
+				IntermediateParseResults intermediateParseResults = new IntermediateParseResults(entityTypeFactory);
+				tables.getTable(EMX_TAGS).ifPresent(table -> parseTagsSheet(table, intermediateParseResults));
+				tables.getTable(EMX_PACKAGES).ifPresent(table -> parsePackagesSheet(table, intermediateParseResults));
+
+				if (source.hasRepository(EMX_LANGUAGES))
+				{
+					parseLanguages(source.getRepository(EMX_LANGUAGES), intermediateResults);
+				}
+
+				if (source.hasRepository(EMX_I18NSTRINGS))
+				{
+					parseI18nStrings(source.getRepository(EMX_I18NSTRINGS), intermediateResults);
+				}
+
+				return new ParsedMetaData(entityTypeDependencyResolver.resolve(metadataList),
+						intermediateResults.getPackages(), intermediateResults.getTags(),
+						intermediateResults.getLanguages(), intermediateResults.getL10nStrings());
+			}
+			else
+			{
+				throw new UnsupportedOperationException();
+			}
+		}
+	}
+
+	@Override
+	//FIXME The source is parsed twice!!! Once by determineImportableEntities and once by doImport
 	public ParsedMetaData parse(final RepositoryCollection source, @Nullable String packageId)
 	{
 		if (source.getRepository(EMX_ATTRIBUTES) != null)
@@ -315,7 +373,7 @@ public class EmxMetaDataParser implements MetaDataParser
 	 * @param source the {@link RepositoryCollection} containing the metadata to parse
 	 * @return {@link IntermediateParseResults} containing the parsed metadata
 	 */
-	private IntermediateParseResults getEntityTypeFromSource(RepositoryCollection source)
+	private IntermediateParseResults getEntityTypeFromSource(Tables tables)
 	{
 		// TODO: this task is actually a 'merge' instead of 'import'
 		// so we need to consider both new metadata and existing ...
@@ -401,24 +459,44 @@ public class EmxMetaDataParser implements MetaDataParser
 	/**
 	 * Parses all tags defined in the tags repository.
 	 *
-	 * @param tagRepository the {@link Repository} that contains the tags entity
+	 * @param table the {@link Repository} that contains the tags entity
 	 * @return Map mapping tag Identifier to tag {@link Entity}, will be empty if no tags repository was found
 	 */
-	private IntermediateParseResults parseTagsSheet(Repository<Entity> tagRepository)
+	private void parseTagsSheet(Table table, IntermediateParseResults intermediateParseResults)
 	{
-		IntermediateParseResults intermediateParseResults = new IntermediateParseResults(entityTypeFactory);
-		if (tagRepository != null)
+		table.getRowStream().map(this::toTag).forEach(intermediateParseResults::addTag);
+	}
+
+	private Tag toTag(Row row)
+	{
+		Tag tag = tagFactory.create();
+		row.forEachCell(cell ->
 		{
-			for (Entity tagEntity : tagRepository)
+			switch (cell.getColumnHeader())
 			{
-				String id = tagEntity.getString(EMX_TAG_IDENTIFIER);
-				if (id != null)
-				{
-					intermediateParseResults.addTag(id, entityToTag(id, tagEntity));
-				}
+				case EMX_TAG_IDENTIFIER:
+					tag.setId(cell.getValueAsString());
+					break;
+				case EMX_TAG_OBJECT_IRI:
+					tag.setObjectIri(cell.getValueAsString());
+					break;
+				case EMX_TAG_LABEL:
+					tag.setLabel(cell.getValueAsString());
+					break;
+				case EMX_TAG_RELATION_LABEL:
+					tag.setRelationLabel(cell.getValueAsString());
+					break;
+				case EMX_TAG_CODE_SYSTEM:
+					tag.setCodeSystem(cell.getValueAsString());
+					break;
+				case EMX_TAG_RELATION_IRI:
+					tag.setCodeSystem(cell.getValueAsString());
+					break;
+				default:
+					break;
 			}
-		}
-		return intermediateParseResults;
+		});
+		return tag;
 	}
 
 	/**
@@ -427,9 +505,9 @@ public class EmxMetaDataParser implements MetaDataParser
 	 * @param repo                {@link Repository} for the packages
 	 * @param intermediateResults {@link IntermediateParseResults} containing the parsed tag entities
 	 */
-	private void parsePackagesSheet(Repository<Entity> repo, IntermediateParseResults intermediateResults)
+	private void parsePackagesSheet(Table table, IntermediateParseResults intermediateResults)
 	{
-		if (repo == null) return;
+		table.getRowStream().map(this::toPackage).forEach(intermediateResults::addPackage);
 
 		// Collect packages
 		int rowIndex = 1;
@@ -473,6 +551,13 @@ public class EmxMetaDataParser implements MetaDataParser
 		}
 	}
 
+	private Package toPackage(Row row)
+	{
+		Package aPackage = packageFactory.create();
+
+		return aPackage;
+	}
+
 	/**
 	 * Convert tag identifiers to tags
 	 */
@@ -494,21 +579,6 @@ public class EmxMetaDataParser implements MetaDataParser
 			tags.add(tag);
 		}
 		return tags;
-	}
-
-	/**
-	 * Transforms an {@link Entity} to a {@link Tag}
-	 */
-	private Tag entityToTag(String id, Entity tagEntity)
-	{
-		Tag tag = tagFactory.create(id);
-		tag.setObjectIri(tagEntity.getString(EMX_TAG_OBJECT_IRI));
-		tag.setLabel(tagEntity.getString(EMX_TAG_LABEL));
-		tag.setRelationLabel(tagEntity.getString(EMX_TAG_RELATION_LABEL));
-		tag.setCodeSystem(tagEntity.getString(EMX_TAG_CODE_SYSTEM));
-		tag.setRelationIri(tagEntity.getString(EMX_TAG_RELATION_IRI));
-
-		return tag;
 	}
 
 	/**

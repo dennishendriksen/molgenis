@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,6 +47,12 @@ public class VcfImporterService implements ImportService
 		this.dataService = requireNonNull(dataService);
 		this.metaDataService = requireNonNull(metaDataService);
 		this.permissionSystemService = requireNonNull(permissionSystemService);
+	}
+
+	@Override
+	public EntityImportReport doImport(Path path, DatabaseAction databaseAction, @Nullable String packageId)
+	{
+		throw new UnsupportedOperationException();
 	}
 
 	@Transactional

@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,12 @@ public class OntologyImportService implements ImportService
 	public OntologyImportService(DataService dataService)
 	{
 		this.dataService = requireNonNull(dataService);
+	}
+
+	@Override
+	public EntityImportReport doImport(Path path, DatabaseAction databaseAction, @Nullable String packageId)
+	{
+		throw new UnsupportedOperationException();
 	}
 
 	@Override

@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableMap;
 import org.molgenis.data.DataService;
 import org.molgenis.data.DatabaseAction;
 import org.molgenis.data.RepositoryCollection;
+import org.molgenis.data.Tables;
+import org.molgenis.data.csv.CsvTableFactory;
 import org.molgenis.data.importer.*;
 import org.molgenis.data.meta.MetaDataService;
 import org.molgenis.data.meta.model.EntityType;
@@ -15,6 +17,7 @@ import org.springframework.util.StringUtils;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
@@ -59,13 +62,20 @@ public class EmxImportService implements ImportService
 	}
 
 	@Override
+	public EntityImportReport doImport(Path path, DatabaseAction databaseAction, @Nullable String packageId)
+	{
+		Tables tables = action -> action.accept(CsvTableFactory.create(path));
+		ParsedMetaData parsedMetaData = parser.parse(tables, packageId);
+
+		// TODO altered entities (merge, see getEntityType)
+		return doImport(new EmxImportJob(databaseAction, tables, parsedMetaData, packageId));
+	}
+
+	@Override
 	public EntityImportReport doImport(final RepositoryCollection source, DatabaseAction databaseAction,
 			@Nullable String packageId)
 	{
-		ParsedMetaData parsedMetaData = parser.parse(source, packageId);
-
-		// TODO altered entities (merge, see getEntityType)
-		return doImport(new EmxImportJob(databaseAction, source, parsedMetaData, packageId));
+		throw new UnsupportedOperationException();
 	}
 
 	/**
