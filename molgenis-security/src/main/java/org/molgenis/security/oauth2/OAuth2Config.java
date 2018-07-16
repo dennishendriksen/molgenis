@@ -74,10 +74,30 @@ public class OAuth2Config
 	}
 
 	@Bean
+	public ClientRegistration bbmriEricClientRegistration()
+	{
+		return ClientRegistration.withRegistrationId("bbmriEric")
+								 .clientAuthenticationMethod(BASIC)
+								 .redirectUriTemplate("{baseUrl}/login/oauth2/code/{registrationId}")
+								 .authorizationGrantType(AUTHORIZATION_CODE)
+								 .clientName("BBMRI-ERIC Directory")
+								 .scope(OPENID, PROFILE, EMAIL)
+								 .jwkSetUri("https://aai-test.bbmri-eric.eu/oidc/jwk")
+								 .authorizationUri("https://aai-test.bbmri-eric.eu/oidc/authorize")
+								 .tokenUri("https://aai-test.bbmri-eric.eu/oidc/token")
+								 .userInfoUri("https://aai-test.bbmri-eric.eu/oidc/userinfo")
+								 .userNameAttributeName("sub")
+								 .clientId("4f2d4398-705d-4803-a9a3-855971b6a3c2")
+								 .clientSecret(
+										 "aw1fDDmfcuAUoWvhTyV4oBWhQzKzThcG6ug1Av6ze7AyC-iaOfYDDDveyhWjzDJx_63pXPQKHj7qHZVyvuJeQQ")
+								 .build();
+	}
+
+	@Bean
 	public InMemoryClientRegistrationRepository clientRegistrationRepository()
 	{
 		return new InMemoryClientRegistrationRepository(googleClientRegistration(), githubClientRegistration(),
-				orcidClientRegistration(), auth0ClientRegistration());
+				orcidClientRegistration(), auth0ClientRegistration(), bbmriEricClientRegistration());
 	}
 
 	@Bean
