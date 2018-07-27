@@ -135,8 +135,11 @@
     },
     created: function () {
       this.selectedSetting = this.$route.params.setting
-      api.get('/api/v2/sys_md_EntityType?sort=label&num=1000&&q=isAbstract==false;package.id==sys_set')
-        .then(this.initializeSettingsOptions, this.handleError)
+      api.get('/plugin/settings/types').then(response -> {
+        var q = 'id=in=(' + response.entityTypeIds.map(entityTypeId => '"' + encodeURIComponent(entityTypeId) + '"').join(',') + ')'
+        api.get('/api/v2/sys_md_EntityType?q=' + q)
+          .then(this.initializeSettingsOptions, this.handleError)
+      }, this.handleError)
     },
     components: {
       FormComponent

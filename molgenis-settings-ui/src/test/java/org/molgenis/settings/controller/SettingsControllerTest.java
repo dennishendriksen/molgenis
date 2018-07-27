@@ -48,7 +48,7 @@ public class SettingsControllerTest
 		when(user.isSuperuser()).thenReturn(false);
 
 		SettingsController settingsController = new SettingsController(menuReaderService, appSettings,
-				userAccountService);
+				userAccountService, null, null); // FIXME
 		mockMvc = standaloneSetup(settingsController).build();
 	}
 
