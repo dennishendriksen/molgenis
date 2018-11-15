@@ -39,7 +39,7 @@ export type PathComponent = {
   label: string
 }
 
-export type ResourceType = 'PACKAGE' | 'ENTITY_TYPE' | 'ENTITY_TYPE_ABSTRACT'
+export type ResourceType = 'PACKAGE' | 'ENTITY_TYPE' | 'ENTITY_TYPE_ABSTRACT' | 'SCRIPT'
 
 export type Resource = {
   type: ResourceType,
@@ -47,7 +47,7 @@ export type Resource = {
   label: string,
   description: ?string,
   hidden: boolean,
-  readonly: boolean
+  readonly: boolean,
 }
 
 export type Clipboard = {

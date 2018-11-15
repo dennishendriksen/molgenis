@@ -10,6 +10,7 @@ import static org.molgenis.script.core.ScriptPackage.PACKAGE_SCRIPT;
 
 import org.molgenis.data.meta.AttributeType;
 import org.molgenis.data.meta.SystemEntityType;
+import org.molgenis.data.meta.model.PackageMetadata;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,18 +38,23 @@ public class ScriptMetaData extends SystemEntityType {
   /** The names of the parameters required by this script */
   public static final String PARAMETERS = "parameters";
 
+  public static final String PACKAGE = "package";
+
   private final ScriptPackage scriptPackage;
   private final ScriptParameterMetaData scriptParameterMetaData;
   private final ScriptTypeMetaData scriptTypeMetaData;
+  private final PackageMetadata packageMetadata;
 
   ScriptMetaData(
       ScriptPackage scriptPackage,
       ScriptParameterMetaData scriptParameterMetaData,
-      ScriptTypeMetaData scriptTypeMetaData) {
+      ScriptTypeMetaData scriptTypeMetaData,
+      PackageMetadata packageMetadata) {
     super(SIMPLE_NAME, PACKAGE_SCRIPT);
     this.scriptPackage = requireNonNull(scriptPackage);
     this.scriptParameterMetaData = requireNonNull(scriptParameterMetaData);
     this.scriptTypeMetaData = requireNonNull(scriptTypeMetaData);
+    this.packageMetadata = requireNonNull(packageMetadata);
   }
 
   @Override
@@ -73,5 +79,10 @@ public class ScriptMetaData extends SystemEntityType {
         .setLabel("Parameters")
         .setDataType(MREF)
         .setRefEntity(scriptParameterMetaData);
+    addAttribute(PACKAGE)
+        .setNillable(true)
+        .setLabel("Package")
+        .setDataType(XREF)
+        .setRefEntity(packageMetadata);
   }
 }
