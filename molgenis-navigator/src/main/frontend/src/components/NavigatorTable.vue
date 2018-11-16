@@ -45,12 +45,19 @@
             icon="list"
             fixed-width/> {{ label.item.label }}
         </span>
-        <span v-else>
+        <span v-else-if="label.item.type === 'PACKAGE'">
           <router-link :to="label.item.id">
             <font-awesome-icon
               :icon="['far', 'folder-open']"
               fixed-width/> {{ label.item.label }}
           </router-link>
+        </span>
+        <span v-else>
+          <a href="/menu/plugins/scripts">
+            <font-awesome-icon
+              :icon="['far', 'file-code']"
+              fixed-width /> {{ label.item.label }}
+          </a>
         </span>
       </template>
     </b-table>

@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.toList;
 import static org.molgenis.data.meta.model.EntityTypeMetadata.ENTITY_TYPE_META_DATA;
 import static org.molgenis.navigator.model.ResourceType.ENTITY_TYPE;
 import static org.molgenis.navigator.model.ResourceType.ENTITY_TYPE_ABSTRACT;
+import static org.molgenis.navigator.model.ResourceType.SCRIPT;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Streams;
@@ -33,6 +34,8 @@ import org.molgenis.navigator.download.job.DownloadJobExecutionFactory;
 import org.molgenis.navigator.model.Resource;
 import org.molgenis.navigator.model.ResourceIdentifier;
 import org.molgenis.navigator.model.ResourceType;
+import org.molgenis.script.core.Script;
+import org.molgenis.script.core.ScriptMetaData;
 import org.molgenis.util.UnexpectedEnumException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,7 +81,14 @@ public class NavigatorServiceImpl implements NavigatorService {
               .eq(EntityTypeMetadata.PACKAGE, folderId)
               .findAll()
               .map(this::toResource);
-      return Streams.concat(packageResources, entityTypeResources).collect(toList());
+      Stream<Resource> scriptResources =
+          dataService
+              .query(ScriptMetaData.SCRIPT, Script.class)
+              .eq(ScriptMetaData.PACKAGE, folderId)
+              .findAll()
+              .map(this::toResource);
+      return Streams.concat(packageResources, entityTypeResources, scriptResources)
+          .collect(toList());
     }
   }
 
@@ -347,6 +357,15 @@ public class NavigatorServiceImpl implements NavigatorService {
         .setDescription(entityType.getDescription())
         .setHidden(isSystemEntityType)
         .setReadonly(isSystemEntityType)
+        .build();
+  }
+
+  private Resource toResource(Script script) {
+    ResourceType type = SCRIPT;
+    return Resource.builder()
+        .setType(type)
+        .setId(script.getName())
+        .setLabel(script.getName())
         .build();
   }
 
