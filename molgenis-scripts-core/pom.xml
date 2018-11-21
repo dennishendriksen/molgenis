@@ -32,6 +32,12 @@
       <artifactId>molgenis-data</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.molgenis</groupId>
+      <artifactId>molgenis-data-annotation</artifactId>
+      <version>${project.version}</version>
+      <scope>provided</scope>
+    </dependency>
     <!-- third party dependencies -->
     <dependency>
       <groupId>com.google.code.findbugs</groupId>
