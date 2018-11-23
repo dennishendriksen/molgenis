@@ -356,5 +356,10 @@
       <artifactId>molgenis-metrics</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <version>1.9.4</version>
+    </dependency>
   </dependencies>
 </project>
