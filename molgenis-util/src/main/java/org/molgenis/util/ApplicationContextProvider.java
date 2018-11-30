@@ -12,6 +12,7 @@ import org.springframework.context.ApplicationContextAware;
 @SuppressFBWarnings(
     value = "ST_WRITE_TO_STATIC_FROM_INSTANCE_METHOD",
     justification = "Intented static write from instance")
+@SuppressWarnings("squid:S2696") // Instance methods should not write to "static" fields
 public class ApplicationContextProvider implements ApplicationContextAware {
   private static ApplicationContext ctx = null;
 
