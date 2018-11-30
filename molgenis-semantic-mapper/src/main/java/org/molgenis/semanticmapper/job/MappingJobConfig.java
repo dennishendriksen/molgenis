@@ -39,11 +39,9 @@ public class MappingJobConfig {
     this.gson = new Gson();
   }
 
-  @Autowired private MenuReaderService menuReaderService;
-
   /** The MappingJob Factory bean. */
   @Bean
-  public JobFactory<MappingJobExecution> mappingJobFactory() {
+  public JobFactory<MappingJobExecution> mappingJobFactory(MenuReaderService menuReaderService) {
     return new JobFactory<MappingJobExecution>() {
       @Override
       public Job createJob(MappingJobExecution mappingJobExecution) {
