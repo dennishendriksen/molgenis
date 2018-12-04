@@ -53,8 +53,6 @@ public abstract class AbstractEntity implements Entity {
     return labelAttr != null ? get(labelAttr.getName()) : null;
   }
 
-
-
   @Override
   public String getString(String attrName) {
     return (String) get(attrName);

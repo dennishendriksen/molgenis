@@ -2,6 +2,7 @@ package org.molgenis.data.file;
 
 import java.util.Optional;
 import javax.annotation.Nullable;
+import javax.validation.constraints.NotEmpty;
 import org.molgenis.data.annotation.Attribute;
 import org.molgenis.data.annotation.Entity;
 
@@ -42,7 +43,7 @@ public abstract class MyEntityType implements org.molgenis.data.Entity {
   public abstract MyEntityType setAttr5Entities0(Iterable<Entity> entities);
 
   @Attribute(nullable = true)
-  public abstract Iterable<Entity> getAttr6Entities0();
+  public abstract @NotEmpty Iterable<Entity> getAttr6Entities0();
 
-  public abstract MyEntityType setAttr6Entities0(Iterable<Entity> entities);
+  public abstract MyEntityType setAttr6Entities0(@NotEmpty Iterable<Entity> entities);
 }

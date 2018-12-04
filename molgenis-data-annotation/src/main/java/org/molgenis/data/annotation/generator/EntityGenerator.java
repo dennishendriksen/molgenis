@@ -3,6 +3,7 @@ package org.molgenis.data.annotation.generator;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 
+import com.squareup.javapoet.AnnotationSpec;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.MethodSpec;
@@ -25,6 +26,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic.Kind;
+import javax.validation.constraints.NotEmpty;
 import org.molgenis.data.annotation.Attribute;
 
 /**
@@ -67,7 +69,7 @@ public class EntityGenerator {
                     methodSpecs,
                     baseMethodAttributeMap);
               } else if (isAbstractElement(enclosedElement)) {
-                handleAbstractAttributeGetter(
+                handleAbstractAttributeSetter(
                     (ExecutableElement) enclosedElement, methodSpecs, baseMethodAttributeMap);
               }
             });
@@ -137,8 +139,12 @@ public class EntityGenerator {
 
     // write attribute field
     TypeName returnTypeName = TypeName.get(attributeElement.getReturnType());
+    if (isIterable(returnTypeName)) {
+      returnTypeName = returnTypeName.annotated(AnnotationSpec.builder(NotEmpty.class).build());
+    }
+
     TypeName fieldTypeName;
-    if (nullable && !returnTypeName.equals(ClassName.get(Iterable.class))) {
+    if (nullable && !isIterable(returnTypeName)) {
       fieldTypeName =
           ((ParameterizedTypeName) TypeName.get(attributeElement.getReturnType()))
               .typeArguments.get(0);
@@ -147,7 +153,8 @@ public class EntityGenerator {
     }
     String fieldName = getFieldName(attributeAnnotation, attributeElement);
 
-    FieldSpec fieldSpec = FieldSpec.builder(fieldTypeName, fieldName, Modifier.PRIVATE).build();
+    FieldSpec fieldSpec =
+        FieldSpec.builder(fieldTypeName.withoutAnnotations(), fieldName, Modifier.PRIVATE).build();
     fieldSpecs.add(fieldSpec);
 
     // write attribute method
@@ -163,7 +170,7 @@ public class EntityGenerator {
             .addAnnotation(Override.class)
             .addModifiers(methodModifiers)
             .returns(returnTypeName);
-    if (nullable && !returnTypeName.equals(ClassName.get(Iterable.class))) {
+    if (nullable && !isIterable(returnTypeName)) {
       methodSpecBuilder.addStatement("return $T.ofNullable($N)", Optional.class, fieldName);
     } else {
       methodSpecBuilder.addStatement("return $N", fieldName);
@@ -173,7 +180,7 @@ public class EntityGenerator {
     methodSpecs.add(methodSpec);
   }
 
-  private void handleAbstractAttributeGetter(
+  private void handleAbstractAttributeSetter(
       ExecutableElement abstractElement,
       List<MethodSpec> methodSpecs,
       Map<String, Attribute> attributeNameMethodMap) {
@@ -193,10 +200,17 @@ public class EntityGenerator {
     VariableElement parameterElement = parameters.get(0);
     String parameterName = parameterElement.getSimpleName().toString();
 
+    TypeName parameterTypeName = TypeName.get(parameterElement.asType());
     ParameterSpec.Builder parameterSpecBuilder =
-        ParameterSpec.builder(TypeName.get(parameterElement.asType()), parameterName);
+        ParameterSpec.builder(parameterTypeName, parameterName);
     if (attribute.nullable()) {
-      parameterSpecBuilder.addAnnotation(Nullable.class);
+      // TODO validate that attribute method has nullable/notempty methods and use abstract method
+      // types
+      if (!isIterable(parameterTypeName)) {
+        parameterSpecBuilder.addAnnotation(Nullable.class);
+      } else {
+        parameterSpecBuilder.addAnnotation(NotEmpty.class);
+      }
     }
     ParameterSpec parameterSpec = parameterSpecBuilder.build();
     MethodSpec methodSpec =
@@ -218,5 +232,20 @@ public class EntityGenerator {
 
   private boolean isAttributeElement(Element element) {
     return element.getAnnotation(Attribute.class) != null;
+  }
+
+  private boolean isIterable(TypeName typeName) {
+    ClassName iterableClassName = ClassName.get(Iterable.class);
+    boolean isIterable =
+        typeName.withoutAnnotations().equals(iterableClassName.withoutAnnotations());
+    if (!isIterable && typeName instanceof ParameterizedTypeName) {
+      ParameterizedTypeName parameterizedTypeName = (ParameterizedTypeName) typeName;
+      isIterable =
+          parameterizedTypeName
+              .rawType
+              .withoutAnnotations()
+              .equals(iterableClassName.withoutAnnotations());
+    }
+    return isIterable;
   }
 }
