@@ -197,6 +197,7 @@ public class DynamicEntity implements Entity {
         // expected type is FileMeta. validation is not possible because molgenis-data does not
         // depend on molgenis-file
       case FILE:
+      case IMAGE:
       case XREF:
         if (!(value instanceof Entity)) {
           throw new MolgenisDataException(

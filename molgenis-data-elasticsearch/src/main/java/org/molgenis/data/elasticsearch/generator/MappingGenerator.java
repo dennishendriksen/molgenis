@@ -61,6 +61,7 @@ class MappingGenerator {
       case MREF:
       case ONE_TO_MANY:
       case XREF:
+      case IMAGE:
         return toMappingTypeReferenceAttribute(attribute, depth, maxDepth);
       case DATE:
         return MappingType.DATE;

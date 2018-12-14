@@ -801,6 +801,7 @@ public class RestControllerV2 {
           case CATEGORICAL:
           case XREF:
           case FILE:
+          case IMAGE:
             Entity refEntity = entity.getEntity(attrName);
             Map<String, Object> refEntityResponse;
             if (refEntity != null) {

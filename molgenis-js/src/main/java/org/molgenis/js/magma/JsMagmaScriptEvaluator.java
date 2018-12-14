@@ -177,6 +177,7 @@ public class JsMagmaScriptEvaluator {
       case CATEGORICAL:
       case FILE:
       case XREF:
+      case IMAGE:
         Entity xrefEntity = entity.getEntity(attrName);
         value = toScriptEngineValueMap(xrefEntity, depth - 1);
         break;

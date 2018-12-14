@@ -705,6 +705,7 @@ class PostgreSqlQueryGenerator {
       case CATEGORICAL:
       case FILE:
       case XREF:
+      case IMAGE:
         sqlBuilder.append(getPostgreSqlType(attr.getRefEntity().getIdAttribute()));
         break;
       case ONE_TO_MANY:

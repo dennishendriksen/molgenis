@@ -237,6 +237,7 @@ class AggregationGenerator {
       case XREF:
       case MREF:
       case FILE:
+      case IMAGE:
       case ONE_TO_MANY:
         // use id attribute of nested field
         return fieldName + '.' + getAggregateFieldName(attr.getRefEntity().getIdAttribute());

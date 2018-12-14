@@ -15,6 +15,7 @@ import static org.molgenis.data.meta.AttributeType.ENUM;
 import static org.molgenis.data.meta.AttributeType.FILE;
 import static org.molgenis.data.meta.AttributeType.HTML;
 import static org.molgenis.data.meta.AttributeType.HYPERLINK;
+import static org.molgenis.data.meta.AttributeType.IMAGE;
 import static org.molgenis.data.meta.AttributeType.INT;
 import static org.molgenis.data.meta.AttributeType.LONG;
 import static org.molgenis.data.meta.AttributeType.MREF;
@@ -414,6 +415,7 @@ public class AttributeValidator {
     // ONE_TO_MANY and FILE can never be anything else
     DATA_TYPE_ALLOWED_TRANSITIONS.put(ONE_TO_MANY, EnumSet.noneOf(AttributeType.class));
     DATA_TYPE_ALLOWED_TRANSITIONS.put(FILE, EnumSet.noneOf(AttributeType.class));
+    DATA_TYPE_ALLOWED_TRANSITIONS.put(IMAGE, EnumSet.noneOf(AttributeType.class));
 
     // Excluded MREF and CATEGORICAL_MREF because transition to a type with a junction table is not
     // possible at the moment

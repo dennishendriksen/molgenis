@@ -82,6 +82,7 @@ public class AttributeUtils {
         return convertBool(attribute, valueAsString);
       case CATEGORICAL:
       case FILE:
+      case IMAGE:
       case XREF:
         return convertRef(attribute, valueAsString, entityReferenceCreator);
       case CATEGORICAL_MREF:

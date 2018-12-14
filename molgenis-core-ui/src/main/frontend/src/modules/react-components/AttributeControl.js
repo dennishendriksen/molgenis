@@ -154,6 +154,7 @@ var AttributeControl = React.createClass({
                         layout: props.layout
                     }));
                 case 'FILE':
+                case 'IMAGE':
                     return this._createFileControl(controlProps);
                 case 'HTML':
                     return CodeEditor(_.extend({}, controlProps, {

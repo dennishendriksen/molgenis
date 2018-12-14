@@ -16,7 +16,7 @@ import {isCompoundAttr, isMrefAttr, isRefAttr, isXrefAttr} from "rest-client/Att
 import "./css/Table.css";
 import moment from "moment";
 
-var div = React.DOM.div, table = React.DOM.table, thead = React.DOM.thead, tbody = React.DOM.tbody, tr = React.DOM.tr, th = React.DOM.th, td = React.DOM.td, a = React.DOM.a, span = React.DOM.span, em = React.DOM.em, br = React.DOM.br, label = React.DOM.label;
+var div = React.DOM.div, img = React.DOM.img, table = React.DOM.table, thead = React.DOM.thead, tbody = React.DOM.tbody, tr = React.DOM.tr, th = React.DOM.th, td = React.DOM.td, a = React.DOM.a, span = React.DOM.span, em = React.DOM.em, br = React.DOM.br, label = React.DOM.label;
 
 var api = new RestClientV2();
 
@@ -650,7 +650,7 @@ var TableCell = React.createClass({
             CellContentBlocks = _.flatten(_.map(this.props.value, function (value, i) {
                 if (value !== null && value !== undefined) {
                     var CellContentForValue = this._createTableCellContent(value, 'c' + i);
-                    if ((i < this.props.value.length - 1) && this.props.attr.fieldType !== 'FILE') {
+                    if ((i < this.props.value.length - 1) && this.props.attr.fieldType !== 'FILE' && this.props.attr.fieldType !== 'IMAGE') {
                         return [CellContentForValue, br({key: 'b' + i})];
                     }
                     return CellContentForValue;
@@ -795,6 +795,16 @@ var TableCellContent = React.createClass({
                             )
                         )
                     );
+                    break;
+                case 'IMAGE':
+                    CellContent = (
+                      a({href: value['url']},
+                          img({
+                              src: value['url'],
+                              height: 20
+                          })
+                      )
+                    )
                     break;
                 case 'CATEGORICAL_MREF':
                 case 'MREF':

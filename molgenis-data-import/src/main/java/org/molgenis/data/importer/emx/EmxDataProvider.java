@@ -112,6 +112,7 @@ class EmxDataProvider implements DataProvider {
           case CATEGORICAL:
           case FILE:
           case XREF:
+          case IMAGE:
             // DataConverter.convert performs no conversion for reference types
             Entity refEntity = toRefEntity(attr, emxValue);
 

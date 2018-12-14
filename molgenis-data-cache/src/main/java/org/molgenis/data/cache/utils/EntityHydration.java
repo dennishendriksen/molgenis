@@ -100,6 +100,7 @@ public class EntityHydration {
     switch (type) {
       case CATEGORICAL:
       case FILE:
+      case IMAGE:
       case XREF:
         Entity xrefEntity = entity.getEntity(name);
         value = xrefEntity != null ? xrefEntity.getIdValue() : null;

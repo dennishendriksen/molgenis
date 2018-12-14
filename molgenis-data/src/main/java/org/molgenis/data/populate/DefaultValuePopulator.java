@@ -62,6 +62,7 @@ public class DefaultValuePopulator {
         return convertBool(attr, valueAsString);
       case CATEGORICAL:
       case FILE:
+      case IMAGE:
       case XREF:
         return convertRef(attr, valueAsString);
       case CATEGORICAL_MREF:

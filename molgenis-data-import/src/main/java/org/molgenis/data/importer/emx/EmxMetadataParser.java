@@ -22,6 +22,7 @@ import static org.molgenis.data.importer.MyEntitiesValidationReport.AttributeSta
 import static org.molgenis.data.meta.AttributeType.COMPOUND;
 import static org.molgenis.data.meta.AttributeType.ENUM;
 import static org.molgenis.data.meta.AttributeType.FILE;
+import static org.molgenis.data.meta.AttributeType.IMAGE;
 import static org.molgenis.data.meta.AttributeType.ONE_TO_MANY;
 import static org.molgenis.data.meta.AttributeType.STRING;
 import static org.molgenis.data.meta.AttributeType.toEnum;
@@ -975,7 +976,7 @@ public class EmxMetadataParser implements MetadataParser {
         attr.setEnumOptions(enumOptions);
       }
 
-      if (attr.getDataType() != FILE) {
+      if (attr.getDataType() != FILE && attr.getDataType() != IMAGE) {
         // Only if an attribute is not of type file we apply the normal reference rules
         if (isReferenceType(attr) && StringUtils.isEmpty(emxRefEntity)) {
           throw new IllegalArgumentException(
@@ -1109,7 +1110,7 @@ public class EmxMetadataParser implements MetadataParser {
       EntityType entityType = intermediateResults.getEntityType(entityTypeId);
       Attribute attribute = entityType.getAttribute(attributeName);
 
-      if (attribute.getDataType().equals(FILE)) {
+      if (attribute.getDataType().equals(FILE) || attribute.getDataType().equals(IMAGE)) {
         // If attribute is of type file, set refEntity to file meta and continue to the next
         // attribute
         if (dataService == null) {

@@ -60,9 +60,10 @@ public class FileDownloadController {
         response.setContentLength(size.intValue());
       }
 
-      response.setHeader(
-          "Content-Disposition", "attachment; filename=" + outputFilename.replace(" ", "_"));
-
+      if (!fileMeta.getContentType().equals("image/png")) {
+        response.setHeader(
+            "Content-Disposition", "attachment; filename=" + outputFilename.replace(" ", "_"));
+      }
       try (InputStream is = new FileInputStream(fileStoreFile)) {
         FileCopyUtils.copy(is, response.getOutputStream());
       }

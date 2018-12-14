@@ -134,6 +134,7 @@ class DocumentContentBuilder {
       case CATEGORICAL:
       case XREF:
       case FILE:
+      case IMAGE:
         {
           Entity xrefEntity = entity.getEntity(attrName);
           if (xrefEntity != null) {

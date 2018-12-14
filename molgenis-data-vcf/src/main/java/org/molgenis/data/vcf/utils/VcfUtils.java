@@ -128,6 +128,7 @@ public class VcfUtils {
         return VcfMetaInfo.Type.STRING.toString();
       case COMPOUND:
       case FILE:
+      case IMAGE:
         throw new RuntimeException("invalid vcf data type " + dataType);
       default:
         throw new UnexpectedEnumException(dataType);

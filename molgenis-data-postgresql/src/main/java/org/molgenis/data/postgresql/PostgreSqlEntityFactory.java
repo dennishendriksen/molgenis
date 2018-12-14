@@ -109,6 +109,7 @@ class PostgreSqlEntityFactory {
         case CATEGORICAL:
         case FILE:
         case XREF:
+        case IMAGE:
           EntityType xrefEntityType = attr.getRefEntity();
           Object refIdValue = mapValue(resultSet, xrefEntityType.getIdAttribute(), colName);
           value =
@@ -243,6 +244,7 @@ class PostgreSqlEntityFactory {
           case CATEGORICAL:
           case FILE:
           case XREF:
+          case IMAGE:
             idAttr = idAttr.getRefEntity().getIdAttribute();
             continue;
           case DATE:

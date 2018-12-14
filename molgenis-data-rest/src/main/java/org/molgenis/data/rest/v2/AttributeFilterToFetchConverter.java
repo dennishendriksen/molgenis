@@ -1,6 +1,7 @@
 package org.molgenis.data.rest.v2;
 
 import static org.molgenis.data.meta.AttributeType.FILE;
+import static org.molgenis.data.meta.AttributeType.IMAGE;
 import static org.molgenis.data.util.EntityTypeUtils.isReferenceType;
 
 import org.molgenis.data.Fetch;
@@ -174,7 +175,7 @@ public class AttributeFilterToFetchConverter {
         fetch.field(labelAttrName);
       }
 
-      if (attr.getDataType() == FILE) {
+      if (attr.getDataType() == FILE || attr.getDataType() == IMAGE) {
         fetch.field(FileMetaMetaData.URL);
       }
     } else {

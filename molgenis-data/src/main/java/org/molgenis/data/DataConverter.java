@@ -54,6 +54,7 @@ public class DataConverter {
         case CATEGORICAL_MREF:
         case MREF:
         case FILE:
+        case IMAGE:
         case ONE_TO_MANY:
           return source;
         case COMPOUND:

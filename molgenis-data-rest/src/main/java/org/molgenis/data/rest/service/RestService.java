@@ -147,6 +147,7 @@ public class RestService {
         value = convertDecimal(attr, paramValue);
         break;
       case FILE:
+      case IMAGE:
         value = convertFile(attr, paramValue, id);
         break;
       case INT:

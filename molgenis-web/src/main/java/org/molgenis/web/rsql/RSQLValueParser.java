@@ -40,6 +40,7 @@ public class RSQLValueParser {
       case CATEGORICAL:
       case XREF:
       case FILE:
+      case IMAGE:
       case CATEGORICAL_MREF:
       case MREF:
       case ONE_TO_MANY:

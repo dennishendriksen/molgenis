@@ -114,6 +114,7 @@ public class EntityAttributesValidator {
       case CATEGORICAL:
       case FILE:
       case XREF:
+      case IMAGE:
         violation = checkXref(entity, attribute, entityType);
         break;
       case CATEGORICAL_MREF:

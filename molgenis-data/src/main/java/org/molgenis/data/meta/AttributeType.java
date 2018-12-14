@@ -21,6 +21,7 @@ public enum AttributeType {
   FILE,
   HTML(65535L),
   HYPERLINK(255L),
+  IMAGE,
   INT,
   LONG,
   MREF,

@@ -198,6 +198,7 @@ public class EntityReference implements Entity {
       case DECIMAL:
       case ENUM:
       case FILE:
+      case IMAGE:
       case HTML:
       case MREF:
       case ONE_TO_MANY:

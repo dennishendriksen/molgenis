@@ -34,6 +34,7 @@ public class EntityTypeUtils {
     switch (attrType) {
       case CATEGORICAL:
       case FILE:
+      case IMAGE:
       case XREF:
         return true;
       case BOOL:
@@ -81,6 +82,7 @@ public class EntityTypeUtils {
       case EMAIL:
       case ENUM:
       case FILE:
+      case IMAGE:
       case HTML:
       case HYPERLINK:
       case INT:
@@ -116,6 +118,7 @@ public class EntityTypeUtils {
       case CATEGORICAL:
       case CATEGORICAL_MREF:
       case FILE:
+      case IMAGE:
       case MREF:
       case ONE_TO_MANY:
       case XREF:
@@ -163,6 +166,7 @@ public class EntityTypeUtils {
       case DECIMAL:
       case ENUM:
       case FILE:
+      case IMAGE:
       case HTML: // text type is not a string type
       case INT:
       case LONG:
@@ -200,6 +204,7 @@ public class EntityTypeUtils {
       case EMAIL:
       case ENUM:
       case FILE:
+      case IMAGE:
       case HYPERLINK:
       case INT:
       case LONG:
@@ -237,6 +242,7 @@ public class EntityTypeUtils {
       case EMAIL:
       case ENUM:
       case FILE:
+      case IMAGE:
       case HYPERLINK:
       case MREF:
       case STRING:
@@ -272,6 +278,7 @@ public class EntityTypeUtils {
       case EMAIL:
       case ENUM:
       case FILE:
+      case IMAGE:
       case HYPERLINK:
       case MREF:
       case STRING:

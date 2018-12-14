@@ -347,6 +347,7 @@ function createInput(attr, attrs, val, lbl) {
         case 'MREF':
         case 'XREF':
         case 'FILE':
+        case 'IMAGE':
         case 'ONE_TO_MANY':
             return createBasicInput('hidden', attrs, val).addClass('form-control');
         default:

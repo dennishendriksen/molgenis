@@ -214,6 +214,7 @@ public class QueryGenerator {
       case MREF:
       case FILE:
       case ONE_TO_MANY:
+      case IMAGE:
         if (attributePath.size() > 1) {
           throw new MolgenisQueryException(CANNOT_FILTER_DEEP_REFERENCE_MSG);
         }
@@ -261,6 +262,7 @@ public class QueryGenerator {
       case MREF:
       case ONE_TO_MANY:
       case XREF:
+      case IMAGE:
         if (attributePath.size() > 1) {
           throw new MolgenisQueryException(CANNOT_FILTER_DEEP_REFERENCE_MSG);
         }
@@ -319,6 +321,7 @@ public class QueryGenerator {
         case CATEGORICAL_MREF:
         case ONE_TO_MANY:
         case FILE:
+        case IMAGE:
           queryField =
               getQueryFieldName(attr)
                   + "."
@@ -444,6 +447,7 @@ public class QueryGenerator {
       case XREF:
       case FILE:
       case ONE_TO_MANY:
+      case IMAGE:
         if (attributePath.size() > 1) {
           throw new UnsupportedOperationException(CANNOT_FILTER_DEEP_REFERENCE_MSG);
         }
@@ -497,6 +501,7 @@ public class QueryGenerator {
       case CATEGORICAL:
       case CATEGORICAL_MREF:
       case FILE:
+      case IMAGE:
       case HTML: // due to size would result in large amount of ngrams
       case MREF:
       case ONE_TO_MANY:
@@ -636,6 +641,7 @@ public class QueryGenerator {
       case ONE_TO_MANY:
       case XREF:
       case FILE:
+      case IMAGE:
         if (attributePath.size() > 1) {
           throw new UnsupportedOperationException(CANNOT_FILTER_DEEP_REFERENCE_MSG);
         }
@@ -686,6 +692,7 @@ public class QueryGenerator {
       case XREF:
       case MREF:
       case FILE:
+      case IMAGE:
       case ONE_TO_MANY:
         return useNotAnalyzedField(attr.getRefEntity().getIdAttribute());
       case COMPOUND:
@@ -712,6 +719,7 @@ public class QueryGenerator {
       case EMAIL:
       case ENUM:
       case FILE:
+      case IMAGE:
       case HTML:
       case HYPERLINK:
       case MREF:
@@ -798,6 +806,7 @@ public class QueryGenerator {
       case MREF:
       case ONE_TO_MANY:
       case XREF:
+      case IMAGE:
         return queryRuleValue instanceof Entity
             ? ((Entity) queryRuleValue).getIdValue()
             : queryRuleValue;

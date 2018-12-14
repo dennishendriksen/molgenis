@@ -199,6 +199,7 @@ public class AlgorithmServiceImpl implements AlgorithmService {
       case CATEGORICAL:
       case XREF:
       case FILE:
+      case IMAGE:
         convertedValue =
             value != null
                 ? entityManager.getReference(

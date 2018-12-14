@@ -66,6 +66,7 @@ class PostgreSqlUtils {
       case TEXT:
         return entity.getString(attrName);
       case FILE:
+      case IMAGE:
         FileMeta fileEntity = entity.getEntity(attrName, FileMeta.class);
         return fileEntity != null
             ? getPostgreSqlValue(fileEntity, fileEntity.getEntityType().getIdAttribute())

@@ -74,6 +74,7 @@ class SortGenerator {
       case CATEGORICAL:
       case CATEGORICAL_MREF:
       case FILE:
+      case IMAGE:
       case MREF:
       case ONE_TO_MANY:
       case XREF:

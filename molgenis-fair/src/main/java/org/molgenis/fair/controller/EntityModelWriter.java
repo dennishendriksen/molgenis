@@ -160,6 +160,7 @@ public class EntityModelWriter {
       case XREF:
       case CATEGORICAL:
       case FILE:
+      case IMAGE:
         addRelationForXrefTypeAttribute(model, subject, predicate, objectEntity.getEntity(name));
         break;
       default:

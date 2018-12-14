@@ -2,6 +2,7 @@ package org.molgenis.core.ui.style;
 
 import static java.util.Objects.requireNonNull;
 import static org.molgenis.data.meta.AttributeType.FILE;
+import static org.molgenis.data.meta.AttributeType.IMAGE;
 import static org.molgenis.data.meta.AttributeType.STRING;
 import static org.molgenis.data.meta.model.EntityType.AttributeRole.ROLE_ID;
 import static org.molgenis.data.meta.model.EntityType.AttributeRole.ROLE_LABEL;
@@ -20,6 +21,7 @@ public class StyleSheetMetadata extends SystemEntityType {
 
   public static final String ID = "id";
   public static final String NAME = "name";
+  public static final String TEST_IMAGE = "testImage";
   public static final String BOOTSTRAP_3_THEME = "bootstrap3Theme";
   public static final String BOOTSTRAP_4_THEME = "bootstrap4Theme";
   private final SettingsPackage settingsPackage;
@@ -40,6 +42,8 @@ public class StyleSheetMetadata extends SystemEntityType {
     addAttribute(ID, ROLE_ID).setAuto(true).setVisible(false);
 
     addAttribute(NAME, ROLE_LABEL).setNillable(false).setDataType(STRING);
+
+    addAttribute(TEST_IMAGE).setNillable(true).setDataType(IMAGE).setRefEntity(fileMetaMetaData);
 
     addAttribute(BOOTSTRAP_3_THEME)
         .setNillable(false)
