@@ -1,6 +1,9 @@
 package org.molgenis.data.annotation.generator;
 
+import static com.squareup.javapoet.MethodSpec.methodBuilder;
+import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
+import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 import com.squareup.javapoet.AnnotationSpec;
@@ -12,8 +15,12 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 import com.squareup.javapoet.TypeSpec.Builder;
+import com.squareup.javapoet.TypeVariableName;
 import java.beans.Introspector;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,18 +34,11 @@ import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
 import javax.tools.Diagnostic.Kind;
 import javax.validation.constraints.NotEmpty;
+import org.molgenis.data.Entity;
 import org.molgenis.data.annotation.Attribute;
+import org.molgenis.data.meta.model.EntityType;
 
-/**
- * TODO: add validation rules
- *
- * <ul>
- *   <li>Attribute names must be unique (note: don't forget to include default names)
- *   <li>Attribute annotations only applied to abstract getters
- *   <li>getter/setter signature must match
- *   <li>Attribute nullable=true: getter returns Optional, setter is annotated with @Nullable
- * </ul>
- */
+// TODO set empty list by default for mrefs
 public class EntityGenerator {
   private final ProcessingEnvironment processingEnv;
   private final Messager messager;
@@ -73,12 +73,250 @@ public class EntityGenerator {
                     (ExecutableElement) enclosedElement, methodSpecs, baseMethodAttributeMap);
               }
             });
+    AttributeSpec attributeSpec =
+        new AttributeSpec("id", FieldSpec.builder(String.class, "id").build(), true, true);
+    Map<String, AttributeSpec> attributeSpecsMap = singletonMap("id", attributeSpec);
+    AttributeSpecs attributeSpecs = new AttributeSpecs(attributeSpecsMap);
 
+    methodSpecs.add(createEntityType());
+    methodSpecs.add(createGetAttributeNames(attributeSpecs));
+    methodSpecs.addAll(createGetSetIdValue(attributeSpecs));
+    methodSpecs.add(createGetLabelValue(attributeSpecs));
+    methodSpecs.add(createGet(attributeSpecs));
+    methodSpecs.addAll(createGenericGetters());
+    methodSpecs.addAll(createSetters(attributeSpecs));
     return TypeSpec.classBuilder(className)
         .superclass(superclassName)
         .addModifiers(Modifier.FINAL)
         .addFields(fieldSpecs)
         .addMethods(methodSpecs);
+  }
+
+  private MethodSpec createEntityType() {
+    return methodBuilder("getEntityType")
+        .addAnnotation(Override.class)
+        .addModifiers(Modifier.PUBLIC)
+        .returns(EntityType.class)
+        .addStatement("throw new $T(\"TODO implement\")", RuntimeException.class)
+        .build();
+  }
+
+  private MethodSpec createGetAttributeNames(AttributeSpecs attributeSpecs) {
+    ParameterizedTypeName iterableType = ParameterizedTypeName.get(Iterable.class, String.class);
+    String literal =
+        attributeSpecs
+            .get()
+            .stream()
+            .map(attributeSpec -> '"' + attributeSpec.getAttributeName() + '"')
+            .collect(joining(", "));
+    return methodBuilder("getAttributeNames")
+        .addAnnotation(Override.class)
+        .addModifiers(Modifier.PUBLIC)
+        .returns(iterableType)
+        .addStatement("return $T.asList($L)", Arrays.class, literal)
+        .build();
+  }
+
+  private List<MethodSpec> createGetSetIdValue(AttributeSpecs attributeSpecs) {
+    List<MethodSpec> methodSpecs = new ArrayList<>();
+
+    Optional<AttributeSpec> idAttributeSpecOptional = attributeSpecs.getIdAttributeSpec();
+    if (idAttributeSpecOptional.isPresent()) {
+      AttributeSpec idAttributeSpec = idAttributeSpecOptional.get();
+      String attributeName = idAttributeSpec.getAttributeName();
+      FieldSpec field = idAttributeSpec.getField();
+
+      methodSpecs.add(
+          methodBuilder("getIdValue")
+              .addAnnotation(Override.class)
+              .addModifiers(Modifier.PUBLIC)
+              .returns(Object.class)
+              .addStatement("return $N", attributeName)
+              .build());
+
+      ParameterSpec idParameter = ParameterSpec.builder(Object.class, "id").build();
+
+      methodSpecs.add(
+          methodBuilder("setIdValue")
+              .addAnnotation(Override.class)
+              .addModifiers(Modifier.PUBLIC)
+              .addParameter(idParameter)
+              .addStatement("this.$N = ($T) $N", attributeName, field.type, idParameter)
+              .build());
+
+    } else {
+      throw new RuntimeException("TODO implement (call super)");
+    }
+    return methodSpecs;
+  }
+
+  private MethodSpec createGetLabelValue(AttributeSpecs attributeSpecs) {
+    MethodSpec methodSpec;
+
+    Optional<AttributeSpec> labelAttributeSpecOptional = attributeSpecs.getLabelAttributeSpec();
+    if (labelAttributeSpecOptional.isPresent()) {
+      AttributeSpec labelAttributeSpec = labelAttributeSpecOptional.get();
+
+      methodSpec =
+          methodBuilder("getLabelValue")
+              .addAnnotation(Override.class)
+              .addModifiers(Modifier.PUBLIC)
+              .returns(Object.class)
+              .addStatement("return $N", labelAttributeSpec.getAttributeName())
+              .build();
+    } else {
+      throw new RuntimeException("TODO implement (call super)");
+    }
+    return methodSpec;
+  }
+
+  /** Returns an implementation for {@link Entity#set(String, Object)}. */
+  private List<MethodSpec> createSetters(AttributeSpecs attributeSpecs) {
+    List<MethodSpec> methodSpecs = new ArrayList<>();
+
+    methodSpecs.add(createSetAttributeValue(attributeSpecs));
+    methodSpecs.add(createSetEntity(attributeSpecs));
+
+    return methodSpecs;
+  }
+
+  private MethodSpec createSetEntity(AttributeSpecs attributeSpecs) {
+    ParameterSpec entityParameter = ParameterSpec.builder(Entity.class, "entity").build();
+
+    MethodSpec.Builder methodBuilder =
+        methodBuilder("set")
+            .addAnnotation(Override.class)
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(entityParameter)
+            .addStatement("throw new $T(\"TODO implement\")", RuntimeException.class);
+
+    // TODO add implementation
+    return methodBuilder.build();
+  }
+
+  private MethodSpec createSetAttributeValue(AttributeSpecs attributeSpecs) {
+    // set(String attributeName, String value)
+    ParameterSpec attributeNameParameter = createAttributeNameParameter();
+    ParameterSpec valueParameter = ParameterSpec.builder(Object.class, "value").build();
+    MethodSpec.Builder methodBuilder =
+        methodBuilder("set")
+            .addAnnotation(Override.class)
+            .addModifiers(Modifier.PUBLIC)
+            .addParameter(attributeNameParameter)
+            .addParameter(valueParameter);
+
+    methodBuilder.beginControlFlow("switch($N)", attributeNameParameter);
+    attributeSpecs
+        .get()
+        .forEach(
+            attributeSpec -> {
+              FieldSpec field = attributeSpec.getField();
+              methodBuilder.addCode("case $S:\n", attributeSpec.getAttributeName());
+              // TODO validate value type
+              // TODO validate not-null for mrefs
+              methodBuilder.addStatement("  this.$N = ($T) $N", field, field.type, valueParameter);
+              methodBuilder.addStatement("  break");
+            });
+    methodBuilder.addCode("default:\n");
+    methodBuilder.addStatement(
+        "  throw new $T($N)", IllegalArgumentException.class, attributeNameParameter);
+    methodBuilder.endControlFlow();
+
+    methodBuilder.addStatement("return");
+    return methodBuilder.build();
+  }
+
+  /** Returns an implementation for {@link Entity#get(String)}. */
+  private MethodSpec createGet(AttributeSpecs attributeSpecs) {
+    ParameterSpec attributeNameParameter = createAttributeNameParameter();
+    MethodSpec.Builder methodBuilder =
+        methodBuilder("get")
+            .addAnnotation(Override.class)
+            .addModifiers(Modifier.PUBLIC)
+            .returns(Object.class)
+            .addParameter(attributeNameParameter);
+
+    methodBuilder.beginControlFlow("switch($N)", attributeNameParameter);
+    attributeSpecs
+        .get()
+        .forEach(
+            attributeSpec -> {
+              methodBuilder.addCode("case $S:\n", attributeSpec.getAttributeName());
+              methodBuilder.addStatement("  return $N", attributeSpec.getField());
+            });
+    methodBuilder.addCode("default:\n");
+    methodBuilder.addStatement(
+        "  throw new $T($N)", IllegalArgumentException.class, attributeNameParameter);
+    methodBuilder.endControlFlow();
+
+    return methodBuilder.build();
+  }
+
+  /** Returns implementations for {@link Entity#getBoolean(String)} and similar methods. */
+  private List<MethodSpec> createGenericGetters() {
+    List<MethodSpec> methodSpecs = new ArrayList<>();
+
+    ParameterizedTypeName iterableType = ParameterizedTypeName.get(Iterable.class, Entity.class);
+
+    methodSpecs.add(createGetter("getBoolean", Boolean.class));
+    methodSpecs.add(createGetter("getDouble", Double.class));
+    methodSpecs.add(createGetter("getEntity", Entity.class));
+    methodSpecs.add(createGetter("getEntities", iterableType));
+    methodSpecs.add(createGetter("getInstant", Instant.class));
+    methodSpecs.add(createGetter("getInt", Integer.class));
+    methodSpecs.add(createGetter("getLocalDate", LocalDate.class));
+    methodSpecs.add(createGetter("getLong", Long.class));
+    methodSpecs.add(createGetter("getString", String.class));
+
+    TypeVariableName entityType = TypeVariableName.get("E", Entity.class);
+    ParameterizedTypeName typedIterableType =
+        ParameterizedTypeName.get(ClassName.get(Iterable.class), entityType);
+
+    methodSpecs.add(createTypedGetter("getEntity", entityType, entityType));
+    methodSpecs.add(createTypedGetter("getEntities", typedIterableType, entityType));
+
+    return methodSpecs;
+  }
+
+  private MethodSpec createGetter(String methodName, Class<?> returnClass) {
+    ClassName returnType = ClassName.get(returnClass);
+    return createGetter(methodName, returnType);
+  }
+
+  private MethodSpec createGetter(String methodName, TypeName returnType) {
+    ParameterSpec attributeNameParam = createAttributeNameParameter();
+    return MethodSpec.methodBuilder(methodName)
+        .addAnnotation(Override.class)
+        .addModifiers(Modifier.PUBLIC)
+        .returns(returnType)
+        .addParameter(attributeNameParam)
+        .addStatement("return ($T) get($N)", returnType, attributeNameParam)
+        .build();
+  }
+
+  private MethodSpec createTypedGetter(
+      String methodName, TypeName returnType, TypeVariableName entityType) {
+    ParameterSpec attributeNameParam = createAttributeNameParameter();
+
+    ParameterizedTypeName classType =
+        ParameterizedTypeName.get(ClassName.get(Class.class), entityType);
+    return methodBuilder(methodName)
+        .addAnnotation(
+            AnnotationSpec.builder(SuppressWarnings.class)
+                .addMember("value", "\"unchecked\"")
+                .build())
+        .addAnnotation(Override.class)
+        .addModifiers(Modifier.PUBLIC)
+        .addTypeVariable(entityType)
+        .returns(returnType)
+        .addParameter(attributeNameParam)
+        .addParameter(classType, "clazz")
+        .addStatement("return ($T) get($N)", returnType, attributeNameParam)
+        .build();
+  }
+
+  private ParameterSpec createAttributeNameParameter() {
+    return ParameterSpec.builder(String.class, "attributeName").build();
   }
 
   private Map<String, Attribute> createBaseMethodAttributeMap(Element element) {
@@ -166,7 +404,7 @@ public class EntityGenerator {
             .filter(modifier -> modifier != Modifier.ABSTRACT)
             .collect(toList());
     MethodSpec.Builder methodSpecBuilder =
-        MethodSpec.methodBuilder(methodName)
+        methodBuilder(methodName)
             .addAnnotation(Override.class)
             .addModifiers(methodModifiers)
             .returns(returnTypeName);
@@ -214,7 +452,7 @@ public class EntityGenerator {
     }
     ParameterSpec parameterSpec = parameterSpecBuilder.build();
     MethodSpec methodSpec =
-        MethodSpec.methodBuilder(methodName)
+        methodBuilder(methodName)
             .addAnnotation(Override.class)
             .addModifiers(methodModifiers)
             .returns(TypeName.get(abstractElement.getReturnType()))

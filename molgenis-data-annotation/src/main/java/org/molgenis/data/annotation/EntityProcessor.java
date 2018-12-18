@@ -24,6 +24,7 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic.Kind;
 import org.molgenis.data.annotation.generator.EntityFactoryGenerator;
 import org.molgenis.data.annotation.generator.EntityGenerator;
+import org.molgenis.data.annotation.generator.EntityMetadataGenerator;
 import org.molgenis.data.annotation.generator.EntityValidator;
 
 @SupportedAnnotationTypes("org.molgenis.data.annotation.Entity")
@@ -35,14 +36,16 @@ public class EntityProcessor extends AbstractProcessor {
   private static final String POSTFIX_ENTITY_FACTORY = "Factory";
 
   private Messager messager;
-  private EntityFactoryGenerator entityFactoryGenerator;
-  private EntityGenerator entityGenerator;
   private EntityValidator entityValidator;
+  private EntityFactoryGenerator entityFactoryGenerator;
+  private EntityMetadataGenerator entityMetadataGenerator;
+  private EntityGenerator entityGenerator;
 
   @Override
   public synchronized void init(ProcessingEnvironment processingEnv) {
     super.init(processingEnv);
     messager = processingEnv.getMessager();
+    entityMetadataGenerator = new EntityMetadataGenerator(processingEnv);
     entityFactoryGenerator = new EntityFactoryGenerator(processingEnv);
     entityGenerator = new EntityGenerator(processingEnv);
     entityValidator = new EntityValidator(processingEnv);
@@ -76,6 +79,15 @@ public class EntityProcessor extends AbstractProcessor {
   private ClassName createEntityMetadata(Element element) {
     String packageName = getPackageName(element);
     String className = element.getSimpleName() + POSTFIX_ENTITY_METADATA;
+    // TODO fix
+    //
+    //    TypeSpec entityFactoryTypeSpec =
+    //        entityMetadataGenerator
+    //            .createEntityMetadata(className, entityClassName, entityMetadataClassName)
+    //            .addAnnotation(getGeneratedAnnotation())
+    //            .build();
+    //    writeTypeSpec(packageName, entityFactoryTypeSpec);
+
     return ClassName.get(packageName, className);
   }
 
@@ -95,15 +107,16 @@ public class EntityProcessor extends AbstractProcessor {
 
   private void createEntityFactory(
       Element element, ClassName entityMetadataClassName, ClassName entityClassName) {
-    String packageName = getPackageName(element);
-    String className = element.getSimpleName() + POSTFIX_ENTITY_FACTORY;
-
-    TypeSpec entityFactoryTypeSpec =
-        entityFactoryGenerator
-            .createEntityFactory(className, entityClassName, entityMetadataClassName)
-            .addAnnotation(getGeneratedAnnotation())
-            .build();
-    writeTypeSpec(packageName, entityFactoryTypeSpec);
+    // TODO enable once createEntityMetadata works
+    //    String packageName = getPackageName(element);
+    //    String className = element.getSimpleName() + POSTFIX_ENTITY_FACTORY;
+    //
+    //    TypeSpec entityFactoryTypeSpec =
+    //        entityFactoryGenerator
+    //            .createEntityFactory(className, entityClassName, entityMetadataClassName)
+    //            .addAnnotation(getGeneratedAnnotation())
+    //            .build();
+    //    writeTypeSpec(packageName, entityFactoryTypeSpec);
   }
 
   private String getPackageName(Element element) {
