@@ -47,6 +47,7 @@
         - [REST api V1](developer_documentation/ref-rest.md)
         - [REST api V2](developer_documentation/ref-rest2.md)
         - [RSQL operators](developer_documentation/ref-RSQL.md)
+        - [RSQL operators](developer_documentation/ref-permissions-api.md)
         - [Swagger specification](developer_documentation/ref-swagger.md)
       - [R](developer_documentation/ref-R.md)
       - [Python](developer_documentation/ref-python.md)  
