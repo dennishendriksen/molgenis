@@ -2,7 +2,7 @@ package org.molgenis.oneclickimporter.controller;
 
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
-import static org.molgenis.data.rest.util.Href.concatEntityHref;
+import static org.molgenis.oneclickimporter.controller.Href.concatEntityHref;
 import static org.molgenis.oneclickimporter.controller.OneClickImporterController.URI;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;

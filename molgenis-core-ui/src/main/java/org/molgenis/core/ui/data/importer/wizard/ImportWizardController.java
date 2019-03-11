@@ -32,7 +32,6 @@ import org.molgenis.data.importer.ImportRunService;
 import org.molgenis.data.importer.ImportService;
 import org.molgenis.data.importer.ImportServiceFactory;
 import org.molgenis.data.importer.MetadataAction;
-import org.molgenis.data.rest.util.Href;
 import org.molgenis.security.core.utils.SecurityUtils;
 import org.molgenis.web.PluginController;
 import org.slf4j.Logger;

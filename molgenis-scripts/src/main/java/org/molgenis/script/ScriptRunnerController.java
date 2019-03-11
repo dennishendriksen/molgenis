@@ -2,7 +2,7 @@ package org.molgenis.script;
 
 import static java.text.MessageFormat.format;
 import static java.util.Objects.requireNonNull;
-import static org.molgenis.data.rest.util.Href.concatEntityHref;
+import static org.molgenis.script.Href.concatEntityHref;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 import static org.springframework.http.ResponseEntity.ok;
 

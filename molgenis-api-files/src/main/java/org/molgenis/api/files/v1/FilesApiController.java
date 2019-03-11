@@ -3,6 +3,7 @@ package org.molgenis.api.files.v1;
 import static java.util.Objects.requireNonNull;
 import static org.molgenis.api.files.FilesApiNamespace.API_FILES_ID;
 import static org.molgenis.api.files.FilesApiNamespace.API_FILES_PATH;
+import static org.molgenis.api.files.v1.FilesApiController.API_FILES_V1_PATH;
 import static org.springframework.http.HttpStatus.CREATED;
 
 import io.swagger.annotations.Api;
@@ -31,7 +32,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @Api("Files")
 @RestController
-@RequestMapping(FilesApiController.API_FILES_V1_PATH)
+@RequestMapping(API_FILES_V1_PATH)
 class FilesApiController extends ApiController {
   private static final int API_FILES_V1_VERSION = 1;
   static final String API_FILES_V1_PATH = API_FILES_PATH + "/v" + API_FILES_V1_VERSION;
@@ -74,6 +75,8 @@ class FilesApiController extends ApiController {
     FileMeta fileMeta = filesApiService.getFileMeta(fileId);
     return toFileResponse(fileMeta);
   }
+
+  // TODO Add delete for consistency
 
   @ApiOperation("Download one file")
   @ApiResponses({
