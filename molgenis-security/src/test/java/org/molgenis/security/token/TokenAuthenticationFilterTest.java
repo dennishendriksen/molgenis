@@ -6,11 +6,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-import static org.molgenis.data.meta.AttributeType.INT;
-import static org.molgenis.data.meta.AttributeType.ONE_TO_MANY;
-import static org.molgenis.data.meta.AttributeType.STRING;
-import static org.molgenis.data.meta.AttributeType.XREF;
-import static org.testng.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -45,12 +40,13 @@ public class TokenAuthenticationFilterTest {
   @DataProvider(name = "requestUriProvider")
   public static Iterator<Object[]> parseProvider() {
     return newArrayList(
-        new Object[] {"/login"},
-        new Object[] {"/logout"},
-        new Object[] {"/api/login"},
-        new Object[] {"/api/logout"})
+            new Object[] {"/login"},
+            new Object[] {"/logout"},
+            new Object[] {"/api/login"},
+            new Object[] {"/api/logout"})
         .iterator();
   }
+
   @Test(dataProvider = "requestUriProvider")
   public void doFilterLoginRequestUri(String requestUri) throws IOException, ServletException {
     MockHttpServletRequest request = new MockHttpServletRequest();
@@ -73,7 +69,8 @@ public class TokenAuthenticationFilterTest {
     FilterChain chain = mock(FilterChain.class);
 
     Authentication authentication = mock(Authentication.class);
-    when(authenticationProvider.authenticate(new RestAuthenticationToken("invalid-token"))).thenReturn(authentication);
+    when(authenticationProvider.authenticate(new RestAuthenticationToken("invalid-token")))
+        .thenReturn(authentication);
 
     filter.doFilter(request, response, chain);
 
@@ -90,7 +87,9 @@ public class TokenAuthenticationFilterTest {
     FilterChain chain = mock(FilterChain.class);
 
     AuthenticationException authenticationException = mock(AuthenticationException.class);
-    doThrow(authenticationException).when(authenticationProvider).authenticate(new RestAuthenticationToken("token"));
+    doThrow(authenticationException)
+        .when(authenticationProvider)
+        .authenticate(new RestAuthenticationToken("token"));
 
     filter.doFilter(request, response, chain);
 
