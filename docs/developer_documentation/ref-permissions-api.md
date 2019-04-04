@@ -19,7 +19,7 @@ This maps to the 'identifier' in Spring security's ObjectIdentity.
 - user
 The user for which to get/create/update the permission. This should be the username as stated in the 'sys_sec_User' table in the MOLGENIS database.
 - role
-The role for which to get/create/update the permission. This should be the rolename as stated in the 'sys_sec_Role' table in the MOLGENIS database;
+The role for which to get/create/update the permission. This should be the rolename as stated in the 'sys_sec_Role' table in the MOLGENIS database.
 
 The user/role query for this API's GET operations should be provided in the [RSQL syntax](developer_documentation/ref-RSQL.md)
 Examples:
