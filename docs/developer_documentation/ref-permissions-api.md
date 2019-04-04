@@ -240,7 +240,7 @@ The neurologist and the nurse inherit their READ permissions from the their "NEU
 ### Getting permissions for one or more users and/or roles for a resource type
 ##### Endpoint
 ```
-GET https://molgenis.mydomain.example/api/permissions/v1/{typeId}")
+GET https://molgenis.mydomain.example/api/permissions/v1/{typeId}
 ```
 ##### Parameters
 URL: 
