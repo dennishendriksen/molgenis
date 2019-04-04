@@ -545,7 +545,7 @@ Body:
 
 ##### Endpoint
 ```
-DELETE https://molgenis.mydomain.example/api/permissions/v1/{typeId}/{objectId}")
+DELETE https://molgenis.mydomain.example/api/permissions/v1/{typeId}/{objectId}
 ```
 
 ##### Parameters
