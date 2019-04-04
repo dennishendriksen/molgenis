@@ -115,7 +115,7 @@ Request:
 ### Creating a new access control list for a resource
 ##### Endpoint
 ```
-POST https://molgenis.mydomain.example/api/permissions/v1/objects/{typeId}/{objectId}")
+POST https://molgenis.mydomain.example/api/permissions/v1/objects/{typeId}/{objectId}
 ```
 ##### Parameters
 URL: 
