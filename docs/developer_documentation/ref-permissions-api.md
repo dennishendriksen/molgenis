@@ -69,7 +69,7 @@ Response:
 ### Getting all suitable permissions for a resource type
 ##### Endpoint
 ```
-GET https://molgenis.mydomain.example/api/permissions/v1/types/{typeId}")
+GET https://molgenis.mydomain.example/api/permissions/v1/types/permissions/{typeId}
 ```
 ##### Parameters
 URL: TypeId as described in the [parameters section](##Parameters)
