@@ -176,7 +176,7 @@ Response:
 ### Getting permissions for one or more users and/or roles for a resource
 ##### Endpoint
 ```
-GET https://molgenis.mydomain.example/api/permissions/v1/{typeId}/{objectId}")
+GET https://molgenis.mydomain.example/api/permissions/v1/{typeId}/{objectId}
 ```
 ##### Parameters
 URL: 
