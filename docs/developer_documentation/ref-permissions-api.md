@@ -97,7 +97,7 @@ You can use the endpoint in the next section 'Creating a new access control list
 
 ##### Endpoint
 ```
-POST https://molgenis.mydomain.example/api/permissions/v1/types/{typeId}")
+POST https://molgenis.mydomain.example/api/permissions/v1/types/{typeId}
 ```
 ########## Parameters
 URL: 'typeId' as described in the [parameters section](##Parameters)
