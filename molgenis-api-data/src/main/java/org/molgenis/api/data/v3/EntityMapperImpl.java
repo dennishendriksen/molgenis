@@ -229,8 +229,8 @@ public class EntityMapperImpl implements EntityMapper {
   }
 
   private URI createEntitiesResponseUri(Integer pageNumber) {
-    UriComponentsBuilder builder = DecodingServletUriComponentsBuilder
-        .fromCurrentRequestDecodedQuery();
+    UriComponentsBuilder builder =
+        DecodingServletUriComponentsBuilder.fromCurrentRequestDecodedQuery();
     if (pageNumber != null) {
       builder.replaceQueryParam("page", pageNumber);
     }
