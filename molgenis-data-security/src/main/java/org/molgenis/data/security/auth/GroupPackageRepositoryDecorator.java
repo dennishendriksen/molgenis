@@ -12,23 +12,19 @@ import java.util.stream.Stream;
 import org.molgenis.data.AbstractRepositoryDecorator;
 import org.molgenis.data.Repository;
 import org.molgenis.data.UnknownPackageException;
-import org.molgenis.data.meta.MetaDataService;
 import org.molgenis.data.meta.model.Package;
+import org.molgenis.data.security.exception.GroupPackageDowngradeException;
 import org.molgenis.data.util.PackageUtils;
 
 public class GroupPackageRepositoryDecorator extends AbstractRepositoryDecorator<Package> {
   private static final int BATCH_SIZE = 1000;
 
   private final GroupPackageService groupPackageService;
-  private final MetaDataService metadataService;
 
   public GroupPackageRepositoryDecorator(
-      Repository<Package> delegateRepository,
-      GroupPackageService groupPackageService,
-      MetaDataService metadataService) {
+      Repository<Package> delegateRepository, GroupPackageService groupPackageService) {
     super(delegateRepository);
     this.groupPackageService = requireNonNull(groupPackageService);
-    this.metadataService = requireNonNull(metadataService);
   }
 
   @Override
@@ -59,11 +55,8 @@ public class GroupPackageRepositoryDecorator extends AbstractRepositoryDecorator
 
   @Override
   public void update(Package aPackage) {
-    Package currentPackage = findOneById(aPackage.getId());
-    if (currentPackage == null) {
-      throw new UnknownPackageException(aPackage.getId());
-    }
-
+    Package currentPackage = getPackage(aPackage.getId());
+    validateUpdate(currentPackage, aPackage);
     super.update(aPackage);
 
     if (!isGroupPackage(currentPackage) && isGroupPackage(aPackage)) {
@@ -113,7 +106,7 @@ public class GroupPackageRepositoryDecorator extends AbstractRepositoryDecorator
     if (isGroupPackage(aPackage)) {
       groupPackageService.deleteGroup(aPackage);
     }
-    super.deleteById(id);
+    super.delete(aPackage);
   }
 
   @Override
@@ -136,7 +129,7 @@ public class GroupPackageRepositoryDecorator extends AbstractRepositoryDecorator
 
   @Override
   public void deleteAll(Stream<Object> ids) {
-    ids =
+    Stream<Object> packages =
         ids.filter(
             id -> {
               Package pack = getPackage(id);
@@ -145,19 +138,20 @@ public class GroupPackageRepositoryDecorator extends AbstractRepositoryDecorator
               }
               return true;
             });
-    super.deleteAll(ids);
+    super.deleteAll(packages);
   }
 
   private Package getPackage(Object id) {
-    return metadataService
-        .getPackage(id.toString())
-        .orElseThrow(() -> new UnknownPackageException(id.toString()));
+    Package aPackage = findOneById(id);
+    if (aPackage == null) {
+      throw new UnknownPackageException(id.toString());
+    }
+    return aPackage;
   }
 
   private void validateUpdate(Package currentPackage, Package updatedPackage) {
     if (isGroupPackage(currentPackage) && !isGroupPackage(updatedPackage)) {
-      throw new RuntimeException(
-          "cannot update group package to non-group package"); // TODO coded exception
+      throw new GroupPackageDowngradeException(updatedPackage);
     }
   }
 
